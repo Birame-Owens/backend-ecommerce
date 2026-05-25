@@ -1,0 +1,160 @@
+services:
+
+  # ─── Base de données ────────────────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: ndeya_db
+    environment:
+      POSTGRES_DB:       ${DB_DATABASE:-ndeya}
+      POSTGRES_USER:     ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-ndeya}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ndeya_network
+
+  # ─── Cache / Queue ──────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: ndeya_redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ndeya_network
+
+  # ─── Backend Laravel (PHP-FPM) ───────────────────────────────────────────────
+  backend:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    container_name: ndeya_backend
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      APP_ENV:   ${APP_ENV:-local}
+      APP_KEY:   ${APP_KEY:?APP_KEY must be set — run: php artisan key:generate --show}
+      APP_DEBUG: ${APP_DEBUG:-true}
+      APP_URL:   ${APP_URL:-http://localhost:8080}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      ADMIN_PATH:   ${ADMIN_PATH:-ndeya-backoffice}
+      TELESCOPE_ENABLED: "false"
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080}
+      SESSION_DRIVER:       redis
+      SESSION_HTTP_ONLY:    "true"
+      SESSION_SECURE_COOKIE: "false"
+      SESSION_SAME_SITE:    lax
+      DB_CONNECTION: pgsql
+      DB_HOST:       db
+      DB_PORT:       5432
+      DB_DATABASE:   ${DB_DATABASE:-ndeya}
+      DB_USERNAME:   ${DB_USERNAME:-postgres}
+      DB_PASSWORD:   ${DB_PASSWORD:-password}
+      CACHE_STORE:      redis
+      CACHE_DRIVER:     redis
+      QUEUE_CONNECTION: redis
+      REDIS_CLIENT: phpredis
+      REDIS_HOST:   redis
+      REDIS_PORT:   6379
+      FILESYSTEM_DISK: local
+      MAIL_MAILER:       ${MAIL_MAILER:-log}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@ndeya-shop.local}
+      MAIL_FROM_NAME:    "NDEYA SHOP"
+      NABOOPAY_BASE_URL:       ${NABOOPAY_BASE_URL:-https://api.naboopay.com}
+      NABOOPAY_API_KEY:        ${NABOOPAY_API_KEY:-}
+      NABOOPAY_WEBHOOK_SECRET: ${NABOOPAY_WEBHOOK_SECRET:-}
+      SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-localhost:8080,localhost:3000}
+      PERFORMANCE_TEST_BYPASS_TOKEN: ${PERFORMANCE_TEST_BYPASS_TOKEN:-}
+    volumes:
+      - backend_storage:/app/storage
+    networks:
+      - ndeya_network
+
+  # ─── Nginx (reverse proxy) ───────────────────────────────────────────────────
+  nginx:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.nginx
+    container_name: ndeya_nginx
+    depends_on:
+      - backend
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - backend_storage:/app/storage:ro
+    networks:
+      - ndeya_network
+
+  # ─── Worker Queue ────────────────────────────────────────────────────────────
+  queue:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    container_name: ndeya_queue
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      APP_ENV:   ${APP_ENV:-local}
+      APP_KEY:   ${APP_KEY:?APP_KEY must be set}
+      APP_DEBUG: ${APP_DEBUG:-true}
+      APP_URL:   ${APP_URL:-http://localhost:8080}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      ADMIN_PATH:   ${ADMIN_PATH:-ndeya-backoffice}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080}
+      SESSION_DRIVER:       redis
+      SESSION_HTTP_ONLY:    "true"
+      SESSION_SECURE_COOKIE: "false"
+      SESSION_SAME_SITE:    lax
+      DB_CONNECTION: pgsql
+      DB_HOST:       db
+      DB_PORT:       5432
+      DB_DATABASE:   ${DB_DATABASE:-ndeya}
+      DB_USERNAME:   ${DB_USERNAME:-postgres}
+      DB_PASSWORD:   ${DB_PASSWORD:-password}
+      CACHE_STORE:      redis
+      CACHE_DRIVER:     redis
+      QUEUE_CONNECTION: redis
+      REDIS_CLIENT: phpredis
+      REDIS_HOST:   redis
+      REDIS_PORT:   6379
+      FILESYSTEM_DISK: local
+      MAIL_MAILER:       ${MAIL_MAILER:-log}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@ndeya-shop.local}
+      MAIL_FROM_NAME:    "NDEYA SHOP"
+      NABOOPAY_BASE_URL:       ${NABOOPAY_BASE_URL:-https://api.naboopay.com}
+      NABOOPAY_API_KEY:        ${NABOOPAY_API_KEY:-}
+      NABOOPAY_WEBHOOK_SECRET: ${NABOOPAY_WEBHOOK_SECRET:-}
+      TELESCOPE_ENABLED: "false"
+    volumes:
+      - backend_storage:/app/storage
+    command: >
+      sh -c "sleep 10 && php artisan config:clear && php artisan queue:work redis
+             --queue=payments,emails,default --sleep=3 --tries=3"
+    networks:
+      - ndeya_network
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_storage:
+
+networks:
+  ndeya_network:
+    driver: bridge

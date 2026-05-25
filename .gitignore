@@ -1,0 +1,22 @@
+# Backend
+backend/vendor/
+backend/.env
+backend/storage/logs/*.log
+backend/storage/framework/cache/
+backend/storage/framework/sessions/
+backend/storage/framework/views/
+backend/bootstrap/cache/
+backend/public/storage
+
+# Frontend
+front/node_modules/
+front/dist/
+front/.env
+front/.env.local
+
+# Infra
+infra/.env
+
+# OS
+.DS_Store
+Thumbs.db
