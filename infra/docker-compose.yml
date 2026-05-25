@@ -1,3 +1,5 @@
+name: ndeya-shop
+
 services:
 
   # ─── Base de données ────────────────────────────────────────────────────────
@@ -9,7 +11,7 @@ services:
       POSTGRES_USER:     ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "${DB_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -24,8 +26,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: ndeya_redis
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
+    # Redis interne seulement — pas exposé à l'hôte
     volumes:
       - redis_data:/data
     healthcheck:
@@ -49,7 +50,7 @@ services:
         condition: service_healthy
     environment:
       APP_ENV:   ${APP_ENV:-local}
-      APP_KEY:   ${APP_KEY:?APP_KEY must be set — run: php artisan key:generate --show}
+      APP_KEY:   "${APP_KEY:?APP_KEY must be set in infra/.env}"
       APP_DEBUG: ${APP_DEBUG:-true}
       APP_URL:   ${APP_URL:-http://localhost:8080}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
@@ -95,7 +96,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "${APP_PORT:-8080}:80"
+      - "${APP_PORT:-8090}:80"
     volumes:
       - backend_storage:/app/storage:ro
     networks:

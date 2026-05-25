@@ -1,32 +1,57 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { LoginPage } from '@/features/admin/auth/LoginPage'
+import { DashboardPage } from '@/features/admin/dashboard/DashboardPage'
 import { AdminPrivateRoute, AdminPublicRoute } from './AdminRoutes'
+import { AdminLayout } from '@/layouts/AdminLayout'
+import { ComingSoonPage } from '@/features/admin/ComingSoonPage'
 
-export const router = createBrowserRouter([
+export const router = createBrowserRouter(
+  [
+    {
+      path: '/admin',
+      children: [
+        // Routes publiques (login)
+        {
+          element: <AdminPublicRoute />,
+          children: [
+            { path: 'login', element: <LoginPage /> },
+          ],
+        },
+
+        // Routes protégées (avec sidebar)
+        {
+          element: <AdminPrivateRoute />,
+          children: [
+            {
+              element: <AdminLayout />,
+              children: [
+                { path: 'dashboard',   element: <DashboardPage /> },
+                { path: 'categories',  element: <ComingSoonPage title="Catégories" /> },
+                { path: 'produits',    element: <ComingSoonPage title="Produits" /> },
+                { path: 'commandes',   element: <ComingSoonPage title="Commandes" /> },
+                { path: 'clients',     element: <ComingSoonPage title="Clients" /> },
+                { path: 'paiements',   element: <ComingSoonPage title="Paiements" /> },
+                { path: 'promotions',  element: <ComingSoonPage title="Promotions" /> },
+                { path: 'livraison',   element: <ComingSoonPage title="Livraison" /> },
+                { path: 'avis-clients',element: <ComingSoonPage title="Avis Clients" /> },
+                { path: 'messages',    element: <ComingSoonPage title="Messages" /> },
+                { path: 'rapports',    element: <ComingSoonPage title="Rapports" /> },
+              ],
+            },
+          ],
+        },
+
+        // /admin → /admin/dashboard
+        { index: true, element: <Navigate to="/admin/dashboard" replace /> },
+      ],
+    },
+
+    // Tout autre chemin → login
+    { path: '*', element: <Navigate to="/admin/login" replace /> },
+  ],
   {
-    path: '/admin',
-    children: [
-      // Routes publiques admin (non connecté seulement)
-      {
-        element: <AdminPublicRoute />,
-        children: [
-          { path: 'login', element: <LoginPage /> },
-        ],
-      },
-      // Routes protégées admin
-      {
-        element: <AdminPrivateRoute />,
-        children: [
-          {
-            path: 'dashboard',
-            lazy: () => import('@/features/admin/dashboard/DashboardPage').then((m) => ({ Component: m.DashboardPage })),
-          },
-        ],
-      },
-      // Redirect /admin → /admin/login
-      { index: true, element: <LoginPage /> },
-    ],
+    future: {
+      v7_startTransition: true,
+    },
   },
-  // Catch-all
-  { path: '*', element: <LoginPage /> },
-])
+)
