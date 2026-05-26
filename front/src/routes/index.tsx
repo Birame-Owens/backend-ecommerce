@@ -5,6 +5,7 @@ import { CategoriesPage } from '@/features/admin/categories/CategoriesPage'
 import { AdminPrivateRoute, AdminPublicRoute } from './AdminRoutes'
 import { AdminLayout } from '@/layouts/AdminLayout'
 import { ComingSoonPage } from '@/features/admin/ComingSoonPage'
+import { ProductsPage } from '@/features/admin/products/ProductsPage'
 
 export const router = createBrowserRouter(
   [
@@ -28,7 +29,7 @@ export const router = createBrowserRouter(
               children: [
                 { path: 'dashboard',   element: <DashboardPage /> },
                 { path: 'categories',  element: <CategoriesPage /> },
-                { path: 'produits',    element: <ComingSoonPage title="Produits" /> },
+                { path: 'produits',    element: <ProductsPage /> },
                 { path: 'commandes',   element: <ComingSoonPage title="Commandes" /> },
                 { path: 'clients',     element: <ComingSoonPage title="Clients" /> },
                 { path: 'paiements',   element: <ComingSoonPage title="Paiements" /> },
