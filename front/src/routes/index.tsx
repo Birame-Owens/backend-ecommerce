@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { LoginPage } from '@/features/admin/auth/LoginPage'
 import { DashboardPage } from '@/features/admin/dashboard/DashboardPage'
+import { CategoriesPage } from '@/features/admin/categories/CategoriesPage'
 import { AdminPrivateRoute, AdminPublicRoute } from './AdminRoutes'
 import { AdminLayout } from '@/layouts/AdminLayout'
 import { ComingSoonPage } from '@/features/admin/ComingSoonPage'
@@ -26,7 +27,7 @@ export const router = createBrowserRouter(
               element: <AdminLayout />,
               children: [
                 { path: 'dashboard',   element: <DashboardPage /> },
-                { path: 'categories',  element: <ComingSoonPage title="Catégories" /> },
+                { path: 'categories',  element: <CategoriesPage /> },
                 { path: 'produits',    element: <ComingSoonPage title="Produits" /> },
                 { path: 'commandes',   element: <ComingSoonPage title="Commandes" /> },
                 { path: 'clients',     element: <ComingSoonPage title="Clients" /> },
@@ -36,6 +37,7 @@ export const router = createBrowserRouter(
                 { path: 'avis-clients',element: <ComingSoonPage title="Avis Clients" /> },
                 { path: 'messages',    element: <ComingSoonPage title="Messages" /> },
                 { path: 'rapports',    element: <ComingSoonPage title="Rapports" /> },
+                { path: 'parametres',  element: <ComingSoonPage title="Paramètres" /> },
               ],
             },
           ],

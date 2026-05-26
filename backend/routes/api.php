@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 
 
@@ -132,8 +132,10 @@ Route::prefix('admin')->group(function () {
         // =================== FIN SYSTÈME DE RAPPORTS ===================
 
         // Catégories
+        Route::get('/categories/stats', [CategoryController::class, 'stats']);
         Route::get('/categories/options', [CategoryController::class, 'options']);
         Route::post('/categories/{category}/toggle-status', [CategoryController::class, 'toggleStatus']);
+        Route::get('/categories/{category}/sous-categories', [CategoryController::class, 'sousCategoriesOf']);
         Route::apiResource('categories', CategoryController::class);
 
         // =================== SYNCHRONISATION CATÉGORIES-PRODUITS ===================

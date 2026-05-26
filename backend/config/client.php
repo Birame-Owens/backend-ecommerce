@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // config/client.php
 
 return [

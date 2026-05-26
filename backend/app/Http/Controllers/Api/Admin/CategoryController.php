@@ -14,19 +14,82 @@ use Illuminate\Support\Str;
 class CategoryController extends Controller
 {
     /**
+     * Statistiques des catégories (pour les cartes du header)
+     */
+    public function stats(): JsonResponse
+    {
+        try {
+            $totalCategories     = Category::whereNull('parent_id')->count();
+            $totalSousCategories = Category::whereNotNull('parent_id')->count();
+            $totalProduits       = \App\Models\Produit::count();
+            $categoriesActives   = Category::whereNull('parent_id')->where('est_active', true)->count();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total_categories'     => $totalCategories,
+                    'total_sous_categories'=> $totalSousCategories,
+                    'total_produits'       => $totalProduits,
+                    'categories_actives'   => $categoriesActives,
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Erreur stats catégories', ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+            return response()->json(['success' => false, 'message' => 'Erreur: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Sous-catégories d'une catégorie parente
+     */
+    public function sousCategoriesOf(Category $category): JsonResponse
+    {
+        try {
+            $sousCats = $category->categories()
+                ->withCount('produits')
+                ->orderBy('ordre_affichage')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'sous_categories' => $sousCats->map(fn($cat) => [
+                        'id'           => $cat->id,
+                        'nom'          => $cat->nom,
+                        'slug'         => $cat->slug,
+                        'description'  => $cat->description,
+                        'image'        => $cat->image ? asset('storage/' . $cat->image) : null,
+                        'parent_id'    => $cat->parent_id,
+                        'est_active'   => $cat->est_active,
+                        'produits_count' => $cat->produits_count,
+                        'created_at'   => $cat->created_at->format('d/m/Y H:i'),
+                    ])
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Erreur sous-catégories'], 500);
+        }
+    }
+
+    /**
      * Liste toutes les catégories
+     * type=parents → uniquement les parents avec leurs sous-catégories embarquées
      */
     public function index(Request $request): JsonResponse
     {
         try {
-            $perPage = $request->get('per_page', 10);
-            $search = $request->get('search');
-            $sort = $request->get('sort', 'ordre_affichage');
+            $perPage   = $request->get('per_page', 10);
+            $search    = $request->get('search');
+            $sort      = $request->get('sort', 'ordre_affichage');
             $direction = $request->get('direction', 'asc');
+            $type      = $request->get('type'); // 'parents' | null
 
-            $query = Category::withCount('produits');
+            $query = Category::withCount(['produits', 'categories as sous_categories_count']);
 
-            // Recherche
+            if ($type === 'parents') {
+                $query->whereNull('parent_id');
+            }
+
             if ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('nom', 'ILIKE', "%{$search}%")
@@ -34,10 +97,56 @@ class CategoryController extends Controller
                 });
             }
 
-            // Tri
             $allowedSorts = ['nom', 'ordre_affichage', 'created_at', 'produits_count'];
             if (in_array($sort, $allowedSorts)) {
                 $query->orderBy($sort, $direction);
+            }
+
+            $formatCategory = function ($category) use ($type) {
+                $data = [
+                    'id'                   => $category->id,
+                    'nom'                  => $category->nom,
+                    'slug'                 => $category->slug,
+                    'description'          => $category->description,
+                    'image'                => $category->image ? asset('storage/' . $category->image) : null,
+                    'parent_id'            => $category->parent_id,
+                    'ordre_affichage'      => $category->ordre_affichage,
+                    'est_active'           => $category->est_active,
+                    'est_populaire'        => $category->est_populaire,
+                    'couleur_theme'        => $category->couleur_theme,
+                    'produits_count'       => $category->produits_count,
+                    'sous_categories_count'=> $category->sous_categories_count ?? 0,
+                    'created_at'           => $category->created_at->format('d/m/Y H:i'),
+                    'updated_at'           => $category->updated_at->format('d/m/Y H:i'),
+                ];
+
+                if ($type === 'parents') {
+                    $sousCats = $category->categories()
+                        ->withCount('produits')
+                        ->orderBy('ordre_affichage')
+                        ->get();
+                    $data['sous_categories'] = $sousCats->map(fn($cat) => [
+                        'id'           => $cat->id,
+                        'nom'          => $cat->nom,
+                        'slug'         => $cat->slug,
+                        'description'  => $cat->description,
+                        'image'        => $cat->image ? asset('storage/' . $cat->image) : null,
+                        'parent_id'    => $cat->parent_id,
+                        'est_active'   => $cat->est_active,
+                        'produits_count' => $cat->produits_count,
+                        'created_at'   => $cat->created_at->format('d/m/Y H:i'),
+                    ]);
+                }
+
+                return $data;
+            };
+
+            if ($type === 'parents') {
+                $categories = $query->get();
+                return response()->json([
+                    'success' => true,
+                    'data'    => ['categories' => $categories->map($formatCategory)]
+                ]);
             }
 
             $categories = $query->paginate($perPage);
@@ -45,28 +154,12 @@ class CategoryController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'categories' => $categories->map(function ($category) {
-                        return [
-                            'id' => $category->id,
-                            'nom' => $category->nom,
-                            'slug' => $category->slug,
-                            'description' => $category->description,
-                            'image' => $category->image ? asset('storage/' . $category->image) : null,
-                            'parent_id' => $category->parent_id,
-                            'ordre_affichage' => $category->ordre_affichage,
-                            'est_active' => $category->est_active,
-                            'est_populaire' => $category->est_populaire,
-                            'couleur_theme' => $category->couleur_theme,
-                            'produits_count' => $category->produits_count,
-                            'created_at' => $category->created_at->format('d/m/Y H:i'),
-                            'updated_at' => $category->updated_at->format('d/m/Y H:i'),
-                        ];
-                    }),
+                    'categories' => $categories->map($formatCategory),
                     'pagination' => [
                         'current_page' => $categories->currentPage(),
-                        'per_page' => $categories->perPage(),
-                        'total' => $categories->total(),
-                        'last_page' => $categories->lastPage(),
+                        'per_page'     => $categories->perPage(),
+                        'total'        => $categories->total(),
+                        'last_page'    => $categories->lastPage(),
                     ]
                 ]
             ]);
@@ -316,9 +409,18 @@ class CategoryController extends Controller
     public function destroy(Category $category): JsonResponse
     {
         try {
+            // Vérifier les sous-catégories
+            $sousCatsCount = $category->categories()->count();
+            if ($sousCatsCount > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Impossible de supprimer cette catégorie car elle contient {$sousCatsCount} sous-catégorie(s). Supprimez d'abord les sous-catégories."
+                ], 400);
+            }
+
             // Vérifier s'il y a des produits associés
             $produitsCount = $category->produits()->count();
-            
+
             if ($produitsCount > 0) {
                 return response()->json([
                     'success' => false,
