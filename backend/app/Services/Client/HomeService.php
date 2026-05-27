@@ -142,28 +142,29 @@ class HomeService
      * Aperçu des catégories principales
      */
     public function getCategoriesPreview(): array
-{
-    $categories = Category::where('est_active', true)
-        // Retirez le filtre est_populaire pour afficher toutes les catégories actives
-        ->withCount('produits')
-        ->orderBy('ordre_affichage')
-        ->limit(8) // Augmenté à 8 au lieu de 6
-        ->get();
+    {
+        $categories = Category::where('est_active', true)
+            ->whereNull('parent_id')
+            ->withCount('produits')
+            ->orderBy('ordre_affichage')
+            ->limit(12)
+            ->get();
 
-    return $categories->map(function ($category) {
-        return [
-            'id' => $category->id,
-            'nom' => $category->nom,
-            'slug' => $category->slug,
-            'description' => $category->description,
-            'image' => $category->image ? asset('storage/' . $category->image) : null,
-            'couleur_theme' => $category->couleur_theme,
-            'produits_count' => $category->produits_count,
-            'est_populaire' => $category->est_populaire ?? false,
-            'url' => '/categories/' . $category->slug
-        ];
-    })->toArray();
-}
+        return $categories->map(function ($category) {
+            return [
+                'id' => $category->id,
+                'parent_id' => $category->parent_id,
+                'nom' => $category->nom,
+                'slug' => $category->slug,
+                'description' => $category->description,
+                'image' => $category->image ? asset('storage/' . $category->image) : null,
+                'couleur_theme' => $category->couleur_theme,
+                'produits_count' => $category->produits_count,
+                'est_populaire' => $category->est_populaire ?? false,
+                'url' => '/categories/' . $category->slug
+            ];
+        })->toArray();
+    }
     /**
      * Promotions actives pour les bannières
      */
@@ -467,64 +468,58 @@ class HomeService
      * Formater un produit pour l'affichage client
      */
     private function formatProductForClient(Produit $produit, array $options = []): array
-{
-    // Chercher l'image dans images_produits, sinon utiliser image_principale, sinon placeholder
-    $image = $produit->images_produits->first();
-    $isCompact = $options['compact'] ?? false;
+    {
+        $isCompact = $options['compact'] ?? false;
 
-    $imageUrl = asset('assets/images/placeholder.jpg');
-    
-    if ($image) {
-        $imageUrl = asset('storage/' . ($image->chemin_moyen ?: $image->chemin_miniature ?: $image->chemin_original));
-    } elseif ($produit->image_principale) {
-        $imageUrl = asset('storage/' . $produit->image_principale);
-    }
+        // Utilise l'accesseur getImageAttribute() du modèle qui gère
+        // images_produits (via url accessor) + fallback image_principale
+        $imageUrl = $produit->image;
 
-    $data = [
-        'id' => $produit->id,
-        'nom' => $produit->nom,
-        'slug' => $produit->slug,
-        'prix' => $produit->prix,
-        'prix_promo' => $produit->prix_promo,
-        'prix_affiche' => $produit->prix_promo ?: $produit->prix,
-        'en_promo' => $produit->prix_promo !== null,
-        'image' => $imageUrl,
-        'url' => '/products/' . $produit->slug,
-        'est_nouveaute' => $produit->est_nouveaute,
-        'est_populaire' => $produit->est_populaire,
-        // 📦 Informations de stock (toujours incluses)
-        'stock_quantite' => $produit->gestion_stock ? $this->resolveStockTotal($produit) : 999,
-        'en_stock' => !$produit->gestion_stock || $this->resolveStockTotal($produit) > 0
-    ];
+        $prixActuel = $produit->prix_promo ?: $produit->prix;
 
-    if (!$isCompact) {
-        $data = array_merge($data, [
-            'description_courte' => $produit->description_courte,
-            'categorie' => $produit->category ? [
-                'nom' => $produit->category->nom,
-                'slug' => $produit->category->slug
-            ] : null,
-            'note_moyenne' => $produit->note_moyenne ?? 0,
-            'nombre_avis' => $produit->nombre_avis ?? 0,
-            'fait_sur_mesure' => $produit->fait_sur_mesure,
-            'stock_disponible' => $produit->gestion_stock ? $this->resolveStockTotal($produit) : null,
-            'en_stock' => !$produit->gestion_stock || $this->resolveStockTotal($produit) > 0,
-            'tailles_disponibles' => $produit->tailles_disponibles ? 
-                json_decode($produit->tailles_disponibles, true) : [],
-            'couleurs_disponibles' => $produit->couleurs_disponibles ? 
-                json_decode($produit->couleurs_disponibles, true) : []
-        ]);
-    }
-
-    if (isset($options['badge'])) {
-        $data['badge'] = [
-            'text' => $options['badge'],
-            'color' => $options['badge_color'] ?? 'blue'
+        $data = [
+            'id'               => $produit->id,
+            'nom'              => $produit->nom,
+            'slug'             => $produit->slug,
+            'prix'             => $produit->prix,
+            'prix_promo'       => $produit->prix_promo,
+            'prix_actuel'      => $prixActuel,
+            'en_promo'         => $produit->prix_promo !== null,
+            'image_principale' => $imageUrl,
+            'url'              => '/produits/' . $produit->slug,
+            'est_nouveaute'    => $produit->est_nouveaute,
+            'est_populaire'    => $produit->est_populaire,
+            'stock_quantite'   => $produit->gestion_stock ? $this->resolveStockTotal($produit) : 999,
+            'en_stock'         => !$produit->gestion_stock || $this->resolveStockTotal($produit) > 0,
         ];
-    }
 
-    return $data;
-}
+        if (!$isCompact) {
+            $data = array_merge($data, [
+                'description_courte'  => $produit->description_courte,
+                'categorie'           => $produit->category ? [
+                    'nom'  => $produit->category->nom,
+                    'slug' => $produit->category->slug,
+                ] : null,
+                'note_moyenne'        => $produit->note_moyenne ?? 0,
+                'nombre_avis'         => $produit->nombre_avis ?? 0,
+                'fait_sur_mesure'     => $produit->fait_sur_mesure,
+                'stock_disponible'    => $produit->gestion_stock ? $this->resolveStockTotal($produit) : null,
+                'tailles_disponibles' => $produit->tailles_disponibles
+                    ? json_decode($produit->tailles_disponibles, true) : [],
+                'couleurs_disponibles' => $produit->couleurs_disponibles
+                    ? json_decode($produit->couleurs_disponibles, true) : [],
+            ]);
+        }
+
+        if (isset($options['badge'])) {
+            $data['badge'] = [
+                'text'  => $options['badge'],
+                'color' => $options['badge_color'] ?? 'blue',
+            ];
+        }
+
+        return $data;
+    }
 
     /**
      * Calcule le stock total réel d'un produit (variant ou simple)

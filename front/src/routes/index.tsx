@@ -4,8 +4,10 @@ import { DashboardPage } from '@/features/admin/dashboard/DashboardPage'
 import { CategoriesPage } from '@/features/admin/categories/CategoriesPage'
 import { AdminPrivateRoute, AdminPublicRoute } from './AdminRoutes'
 import { AdminLayout } from '@/layouts/AdminLayout'
+import { ClientLayout } from '@/layouts/ClientLayout'
 import { ComingSoonPage } from '@/features/admin/ComingSoonPage'
 import { ProductsPage } from '@/features/admin/products/ProductsPage'
+import { HomePage } from '@/features/client/home/HomePage'
 
 export const router = createBrowserRouter(
   [
@@ -49,8 +51,25 @@ export const router = createBrowserRouter(
       ],
     },
 
-    // Tout autre chemin → login
-    { path: '*', element: <Navigate to="/admin/login" replace /> },
+    // Routes client publiques
+    {
+      element: <ClientLayout />,
+      children: [
+        { path: '/', element: <HomePage /> },
+        { path: '/categories', element: <ComingSoonPage title="Catégories" /> },
+        { path: '/categories/:slug', element: <ComingSoonPage title="Catégorie" /> },
+        { path: '/produits', element: <ComingSoonPage title="Produits" /> },
+        { path: '/produits/:slug', element: <ComingSoonPage title="Produit" /> },
+        { path: '/promotions', element: <ComingSoonPage title="Promotions" /> },
+        { path: '/favoris', element: <ComingSoonPage title="Favoris" /> },
+        { path: '/panier', element: <ComingSoonPage title="Panier" /> },
+        { path: '/profil', element: <ComingSoonPage title="Profil" /> },
+        { path: '/a-propos', element: <ComingSoonPage title="À propos" /> },
+      ],
+    },
+
+    // Tout autre chemin → accueil
+    { path: '*', element: <Navigate to="/" replace /> },
   ],
   {
     future: {
