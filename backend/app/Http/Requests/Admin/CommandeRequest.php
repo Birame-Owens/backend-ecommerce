@@ -168,7 +168,7 @@ class CommandeRequest extends FormRequest
             'articles.*.taille' => [
                 'nullable',
                 'string',
-                'in:XS,S,M,L,XL,XXL,XXXL'
+                'max:50'
             ],
             'articles.*.couleur' => [
                 'nullable',
@@ -349,6 +349,26 @@ class CommandeRequest extends FormRequest
                         $produit = \App\Models\Produit::find($article['produit_id']);
                         if ($produit && $produit->gestion_stock) {
                             $stockDisponible = $produit->stock_disponible;
+                            $couleur = $article['couleur'] ?? null;
+                            $taille = $article['taille'] ?? null;
+                            $stockMap = $produit->couleur_tailles_stock
+                                ? json_decode($produit->couleur_tailles_stock, true)
+                                : null;
+                            if (is_array($stockMap)) {
+                                if ($couleur && $taille) {
+                                    $stockDisponible = $stockMap[$couleur][$taille] ?? 0;
+                                } elseif ($couleur) {
+                                    $stockDisponible = array_sum($stockMap[$couleur] ?? []);
+                                } elseif ($taille) {
+                                    $sum = 0;
+                                    foreach ($stockMap as $sizes) {
+                                        if (is_array($sizes)) {
+                                            $sum += $sizes[$taille] ?? 0;
+                                        }
+                                    }
+                                    $stockDisponible = $sum;
+                                }
+                            }
                             
                             // Si on modifie une commande existante, ajouter le stock de l'ancien article
                             if ($this->route('commande')) {
@@ -357,7 +377,13 @@ class CommandeRequest extends FormRequest
                                     ->where('produit_id', $article['produit_id'])
                                     ->first();
                                 if ($ancienArticle) {
-                                    $stockDisponible += $ancienArticle->quantite;
+                                    if (!empty($couleur) && !empty($taille)
+                                        && $ancienArticle->couleur_choisie === $couleur
+                                        && $ancienArticle->taille_choisie === $taille) {
+                                        $stockDisponible += $ancienArticle->quantite;
+                                    } elseif (empty($couleur) || empty($taille)) {
+                                        $stockDisponible += $ancienArticle->quantite;
+                                    }
                                 }
                             }
                             

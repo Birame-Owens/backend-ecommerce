@@ -488,6 +488,7 @@ class CommandeController extends Controller
         ] : null,
         'nom_destinataire' => $commande->nom_destinataire,
         'telephone_livraison' => $commande->telephone_livraison,
+        'adresse_livraison' => $commande->adresse_livraison,
         'montant_total' => $commande->montant_total,
         'statut' => $commande->statut,
         'statut_label' => $this->getStatutLabel($commande->statut),

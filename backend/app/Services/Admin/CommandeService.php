@@ -401,8 +401,49 @@ class CommandeService
             $produit = $article->produit;
 
             if ($produit && $produit->gestion_stock) {
-                if ($produit->stock_disponible < $article->quantite) {
-                    throw new \Exception("Stock insuffisant pour {$produit->nom}. Disponible: {$produit->stock_disponible}");
+                $stockDisponible = $produit->stock_disponible;
+                $couleur = trim((string) ($article->couleur_choisie ?? ''));
+                $taille = trim((string) ($article->taille_choisie ?? ''));
+                $stockMapRaw = $produit->couleur_tailles_stock;
+                $stockMap = null;
+                if (is_string($stockMapRaw) && $stockMapRaw !== '') {
+                    $stockMap = json_decode($stockMapRaw, true);
+                } elseif (is_array($stockMapRaw)) {
+                    $stockMap = $stockMapRaw;
+                }
+                if (is_array($stockMap)) {
+                    $norm = function (string $value): string {
+                        $value = trim($value);
+                        return function_exists('mb_strtolower') ? mb_strtolower($value) : strtolower($value);
+                    };
+                    $normalized = [];
+                    foreach ($stockMap as $colorName => $sizes) {
+                        if (!is_array($sizes)) {
+                            continue;
+                        }
+                        $sizeMap = [];
+                        foreach ($sizes as $sizeKey => $count) {
+                            $sizeMap[trim((string) $sizeKey)] = (int) $count;
+                        }
+                        $normalized[$norm((string) $colorName)] = $sizeMap;
+                    }
+
+                    $colorKey = $couleur !== '' ? $norm($couleur) : '';
+                    if ($colorKey !== '' && $taille !== '') {
+                        $stockDisponible = $normalized[$colorKey][$taille] ?? 0;
+                    } elseif ($colorKey !== '') {
+                        $stockDisponible = array_sum($normalized[$colorKey] ?? []);
+                    } elseif ($taille !== '') {
+                        $sum = 0;
+                        foreach ($normalized as $sizes) {
+                            $sum += $sizes[$taille] ?? 0;
+                        }
+                        $stockDisponible = $sum;
+                    }
+                }
+
+                if ($stockDisponible < $article->quantite) {
+                    throw new \Exception("Stock insuffisant pour {$produit->nom}. Disponible: {$stockDisponible}");
                 }
 
                 $produit->decrement('stock_disponible', $article->quantite);
