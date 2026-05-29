@@ -61,7 +61,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->middleware('throttle.api:10,1');
 
     // Routes protégées
-    Route::middleware(['throttle.api:120,1', 'auth:sanctum', 'admin.auth'])->group(function () {
+    Route::middleware(['throttle.api:120,1', 'auth:sanctum', 'admin.auth', 'admin.audit'])->group(function () {
         Route::get('/user', [AuthController::class, 'user']);
         Route::get('/check', [AuthController::class, 'check']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
