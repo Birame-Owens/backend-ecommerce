@@ -40,10 +40,50 @@ export interface ShopStats {
   livraison_gratuite_seuil: number
 }
 
+export interface PromotionBanner {
+  id: number
+  nom: string
+  description: string | null
+  code: string | null
+  valeur: number
+  type: 'pourcentage' | 'montant_fixe' | 'livraison_gratuite' | string
+  valeur_formatted?: string
+  image: string | null
+  couleur: string | null
+  date_fin: string
+  jours_restants: number
+  is_flash_sale?: boolean
+}
+
+export interface FlashSale {
+  id: number
+  nom: string
+  description: string | null
+  valeur: number
+  type: 'pourcentage' | 'montant_fixe' | 'livraison_gratuite' | string
+  code: string | null
+  date_fin: string
+  heures_restantes: number
+  minutes_restantes: number
+  produits: ProductClient[]
+  couleur: string | null
+}
+
+export interface Testimonial {
+  id: number
+  nom_client: string
+  note: number
+  commentaire: string
+  produit_nom: string
+  date: string
+  avis_verifie: boolean
+  photos: string[]
+}
+
 export interface HomeData {
   hero_banner: {
     has_promotion: boolean
-    promotion: unknown | null
+    promotion: PromotionBanner | null
     default_message: {
       titre: string
       sous_titre: string
@@ -54,9 +94,10 @@ export interface HomeData {
   categories_preview: CategoryPreview[]
   featured_products: ProductClient[]
   new_arrivals: ProductClient[]
-  active_promotions: unknown[]
+  active_promotions: PromotionBanner[]
+  testimonials: Testimonial[]
   shop_stats: ShopStats
-  flash_sale: unknown | null
+  flash_sale: FlashSale | null
 }
 
 export const homeClientApi = {

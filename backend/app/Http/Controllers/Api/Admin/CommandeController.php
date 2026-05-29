@@ -28,96 +28,32 @@ class CommandeController extends Controller
     public function index(Request $request): JsonResponse
 {
     try {
-        Log::info('=== DEBUG COMMANDES INDEX ===', [
-            'request_params' => $request->all(),
-            'user_id' => auth()->id()
-        ]);
-
-        // Test 1: Compter toutes les commandes
-        $totalCommandes = Commande::count();
-        Log::info('Total commandes dans la DB:', ['count' => $totalCommandes]);
-
-        // Test 2: Récupérer les commandes avec relations
-        $commandesWithRelations = Commande::with(['client', 'articles_commandes.produit'])->get();
-        Log::info('Commandes avec relations:', [
-            'count' => $commandesWithRelations->count(),
-            'first_commande' => $commandesWithRelations->first() ? [
-                'id' => $commandesWithRelations->first()->id,
-                'numero' => $commandesWithRelations->first()->numero_commande,
-                'has_client' => $commandesWithRelations->first()->client !== null,
-                'articles_count' => $commandesWithRelations->first()->articles_commandes->count()
-            ] : null
-        ]);
-
         $perPage = $request->get('per_page', 15);
-        
-        // Construire les filtres
+
         $filters = [
             'numero_commande' => $request->get('numero_commande'),
-            'client_search' => $request->get('client_search'),
-            'produit_search' => $request->get('produit_search'),
-            'statut' => $request->get('statut'),
-            'date_debut' => $request->get('date_debut'),
-            'date_fin' => $request->get('date_fin'),
-            'priorite' => $request->get('priorite')
+            'client_search'   => $request->get('client_search'),
+            'produit_search'  => $request->get('produit_search'),
+            'statut'          => $request->get('statut'),
+            'date_debut'      => $request->get('date_debut'),
+            'date_fin'        => $request->get('date_fin'),
+            'priorite'        => $request->get('priorite'),
         ];
 
-        Log::info('Filtres appliqués:', $filters);
+        $commandes = $this->commandeService->searchCommandes($filters)->paginate($perPage);
 
-        // Test 3: Rechercher avec filtres
-        $query = $this->commandeService->searchCommandes($filters);
-        
-        Log::info('Requête SQL:', [
-            'sql' => $query->toSql(),
-            'bindings' => $query->getBindings(),
-            'count_before_pagination' => $query->count()
-        ]);
-        
-        // Paginer
-        $commandes = $query->paginate($perPage);
-
-        Log::info('Résultat après pagination:', [
-            'items_count' => $commandes->count(),
-            'total' => $commandes->total(),
-            'current_page' => $commandes->currentPage(),
-            'per_page' => $commandes->perPage(),
-            'last_page' => $commandes->lastPage()
-        ]);
-
-        // Test 4: Formater une commande pour voir si le problème est là
-        if ($commandes->count() > 0) {
-            $premiereCommande = $commandes->first();
-            Log::info('Première commande avant formatage:', [
-                'raw_data' => $premiereCommande->toArray()
-            ]);
-            
-            $formatee = $this->formatCommandeList($premiereCommande);
-            Log::info('Première commande après formatage:', $formatee);
-        }
-
-        $result = [
+        return response()->json([
             'success' => true,
             'data' => [
-                'commandes' => $commandes->map(function ($commande) {
-                    return $this->formatCommandeList($commande);
-                }),
+                'commandes' => $commandes->map(fn ($c) => $this->formatCommandeList($c)),
                 'pagination' => [
                     'current_page' => $commandes->currentPage(),
-                    'per_page' => $commandes->perPage(),
-                    'total' => $commandes->total(),
-                    'last_page' => $commandes->lastPage()
-                ]
+                    'per_page'     => $commandes->perPage(),
+                    'total'        => $commandes->total(),
+                    'last_page'    => $commandes->lastPage(),
+                ],
             ],
-            'debug' => [
-                'total_db' => $totalCommandes,
-                'filtered_count' => $query->count(),
-                'paginated_count' => $commandes->count()
-            ]
-        ];
-
-        Log::info('Réponse finale:', $result);
-
-        return response()->json($result);
+        ]);
 
     } catch (\Exception $e) {
         Log::error('Erreur lors de la récupération des commandes', [
@@ -488,6 +424,7 @@ class CommandeController extends Controller
         ] : null,
         'nom_destinataire' => $commande->nom_destinataire,
         'telephone_livraison' => $commande->telephone_livraison,
+        'adresse_livraison' => $commande->adresse_livraison,
         'montant_total' => $commande->montant_total,
         'statut' => $commande->statut,
         'statut_label' => $this->getStatutLabel($commande->statut),
@@ -498,12 +435,11 @@ class CommandeController extends Controller
         'est_payee' => $this->isCommandePaid($commande),
         'peut_modifier' => !$this->isCommandePaid($commande),
         'peut_supprimer' => !$this->isCommandePaid($commande),
-        'est_en_retard' => $commande->date_livraison_prevue && 
-                           $commande->date_livraison_prevue < now() && 
-                           !in_array($commande->statut, ['livree', 'annulee'])
+        'est_en_retard' => $commande->date_livraison_prevue &&
+                           $commande->date_livraison_prevue < now() &&
+                           !in_array($commande->statut, ['livree', 'annulee']),
     ];
-    
-    Log::info('Commande formatée:', $formatted);
+
     return $formatted;
 }
 
