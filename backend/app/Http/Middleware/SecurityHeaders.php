@@ -31,18 +31,19 @@ class SecurityHeaders
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 
-        // Content Security Policy
+        // Content Security Policy — plus d'unsafe-inline/unsafe-eval
         $csp = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.naboopay.com https://www.googletagmanager.com",
+            "script-src 'self' https://checkout.naboopay.com https://www.googletagmanager.com",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com data:",
             "img-src 'self' data: https: blob:",
-            "connect-src 'self' https://api.naboopay.com https://www.google-analytics.com",
-            "frame-src 'self' https://checkout.naboopay.com",
+            "connect-src 'self' https://api.naboopay.com https://www.google-analytics.com " . config('app.url'),
+            "frame-src https://checkout.naboopay.com",
             "object-src 'none'",
             "base-uri 'self'",
             "form-action 'self'",
+            "upgrade-insecure-requests",
         ];
 
         $response->headers->set('Content-Security-Policy', implode('; ', $csp));

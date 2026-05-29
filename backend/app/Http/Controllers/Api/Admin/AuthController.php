@@ -129,14 +129,11 @@ class AuthController extends Controller
                 'user_agent' => $request->userAgent()
             ]);
 
-            $token = $user->createToken('admin-session')->plainTextToken;
-
             return response()->json([
                 'success' => true,
                 'message' => 'Connexion réussie. Bienvenue dans l\'administration NDEYA SHOP.',
                 'data' => [
                     'user' => new UserResource($user),
-                    'token' => $token,
                     'expires_in' => config('session.lifetime'),
                 ]
             ]);
@@ -203,23 +200,10 @@ class AuthController extends Controller
             $user = $request->user();
 
             if ($user) {
-                // Supprimer le token actuel ou tous les tokens
-                if ($request->boolean('all_devices', false)) {
-                    // Supprimer tous les tokens de l'utilisateur
-                    $user->tokens()->delete();
-                } elseif ($request->user()?->currentAccessToken()) {
-                    $request->user()->currentAccessToken()->delete();
-                } else {
-                    // Supprimer seulement le token actuel
-                    $request->session()->regenerate();
-                }
-
-                // Log de la déconnexion
                 Log::info('Déconnexion administrateur', [
                     'user_id' => $user->id,
                     'email' => $user->email,
                     'ip' => $request->ip(),
-                    'all_devices' => $request->boolean('all_devices', false)
                 ]);
             }
 

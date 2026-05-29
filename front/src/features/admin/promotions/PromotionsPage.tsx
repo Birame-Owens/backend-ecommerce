@@ -377,7 +377,7 @@ function PromotionFormModal({
             <h2 className="text-2xl font-serif font-bold text-ink mt-1">Promotion marketing</h2>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl border border-beige-300 hover:bg-beige-200">
-            <Eye className="w-4 h-4 text-muted" strokeWidth={1.5} />
+            <X className="w-4 h-4 text-muted" strokeWidth={1.5} />
           </button>
         </div>
 

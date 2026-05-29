@@ -22,11 +22,8 @@ export interface LoginCredentials {
 
 export interface AuthResponse {
   success: boolean
-  token: string
-  user: AdminUser
   message?: string
   data?: {
-    token: string
     user: AdminUser
     expires_in?: number
   }

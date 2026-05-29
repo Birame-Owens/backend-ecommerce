@@ -36,9 +36,10 @@ return Application::configure(basePath: dirname(__DIR__))
         
         // Rate limiting et Monitoring
         $middleware->alias([
-            'admin.auth' => \App\Http\Middleware\AdminAuthenticated::class,
-            'admin.role' => \App\Http\Middleware\CheckAdminRole::class,
+            'admin.auth'   => \App\Http\Middleware\AdminAuthenticated::class,
+            'admin.role'   => \App\Http\Middleware\CheckAdminRole::class,
             'throttle.api' => \App\Http\Middleware\RateLimitMiddleware::class,
+            'admin.audit'  => \App\Http\Middleware\AdminAuditLog::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

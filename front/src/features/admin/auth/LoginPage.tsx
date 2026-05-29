@@ -31,7 +31,7 @@ export function LoginPage() {
     try {
       const res = await adminAuthApi.login(data)
       const payload = res.data.data ?? res.data
-      setAuth(payload.token, payload.user)
+      setAuth(payload.user)
       navigate('/admin/dashboard', { replace: true })
     } catch (err) {
       const axiosErr = err as AxiosError<ApiError>
