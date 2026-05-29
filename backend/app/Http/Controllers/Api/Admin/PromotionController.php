@@ -501,7 +501,7 @@ public function options(): JsonResponse
             'type_label' => $this->getTypeLabel($promotion->type_promotion),
             'valeur' => $promotion->valeur,
             'valeur_formatted' => $this->formatValeur($promotion),
-            'image' => $promotion->image ? Storage::url($promotion->image) : null,
+            'image' => $promotion->image ? asset('storage/' . $promotion->image) : null,
             'est_active' => $promotion->est_active,
             'is_current_active' => $isActive,
             'statut' => $this->getStatut($promotion),
@@ -511,33 +511,34 @@ public function options(): JsonResponse
             'nombre_utilisations' => $promotion->nombre_utilisations,
             'chiffre_affaires_genere' => $promotion->chiffre_affaires_genere,
             'nombre_commandes' => $promotion->nombre_commandes,
-            'jours_restants' => max(0, $promotion->date_fin->diffInDays($now)),
-            'created_at' => $promotion->created_at->format('d/m/Y H:i')
+            'jours_restants' => max(0, $promotion->date_fin->diffInDays($now, false)),
+            'created_at' => $promotion->created_at->format('d/m/Y H:i'),
+            // Champs utiles pour la liste
+            'cible_client' => $promotion->cible_client,
+            'montant_minimum' => $promotion->montant_minimum,
+            'utilisation_maximum' => $promotion->utilisation_maximum,
+            'utilisation_par_client' => $promotion->utilisation_par_client,
+            'jours_semaine_valides' => $promotion->jours_semaine_valides ?
+                json_decode($promotion->jours_semaine_valides, true) : null,
+            'categories_eligibles' => $promotion->categories_eligibles ?
+                json_decode($promotion->categories_eligibles, true) : null,
+            'produits_eligibles' => $promotion->produits_eligibles ?
+                json_decode($promotion->produits_eligibles, true) : null,
         ];
 
         if ($detailed) {
             $data = array_merge($data, [
-                'montant_minimum' => $promotion->montant_minimum,
                 'reduction_maximum' => $promotion->reduction_maximum,
-                'utilisation_maximum' => $promotion->utilisation_maximum,
-                'utilisation_par_client' => $promotion->utilisation_par_client,
-                'cible_client' => $promotion->cible_client,
-                'categories_eligibles' => $promotion->categories_eligibles ? 
-                    json_decode($promotion->categories_eligibles, true) : null,
-                'produits_eligibles' => $promotion->produits_eligibles ? 
-                    json_decode($promotion->produits_eligibles, true) : null,
                 'cumul_avec_autres' => $promotion->cumul_avec_autres,
                 'premiere_commande_seulement' => $promotion->premiere_commande_seulement,
-                'jours_semaine_valides' => $promotion->jours_semaine_valides ? 
-                    json_decode($promotion->jours_semaine_valides, true) : null,
                 'afficher_site' => $promotion->afficher_site,
                 'envoyer_whatsapp' => $promotion->envoyer_whatsapp,
                 'envoyer_email' => $promotion->envoyer_email,
                 'couleur_affichage' => $promotion->couleur_affichage,
                 'date_debut_iso' => $promotion->date_debut->toISOString(),
                 'date_fin_iso' => $promotion->date_fin->toISOString(),
-                'taux_utilisation' => $promotion->utilisation_maximum ? 
-                    ($promotion->nombre_utilisations / $promotion->utilisation_maximum * 100) : null
+                'taux_utilisation' => $promotion->utilisation_maximum ?
+                    round($promotion->nombre_utilisations / $promotion->utilisation_maximum * 100, 1) : null
             ]);
         }
 

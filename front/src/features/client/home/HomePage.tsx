@@ -2,11 +2,27 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ChevronRight, Heart, ShoppingBag, Star,
-  Package, Users, Award, Truck, Sparkles, ImageIcon, ArrowRight,
+  Package, Users, Award, Truck, Sparkles, ImageIcon, ArrowRight, BadgePercent,
 } from 'lucide-react'
-import { homeClientApi, type HomeData, type CategoryPreview, type ProductClient } from '@/api/client/home'
+import {
+  homeClientApi,
+  type HomeData,
+  type CategoryPreview,
+  type ProductClient,
+  type PromotionBanner,
+  type FlashSale,
+  type Testimonial,
+} from '@/api/client/home'
 
 function fmt(n: number | undefined | null) { return (n ?? 0).toLocaleString('fr-FR') }
+
+function formatPromotionValue(promo: PromotionBanner) {
+  if (promo.valeur_formatted) return promo.valeur_formatted
+  if (promo.type === 'pourcentage') return `${promo.valeur}%`
+  if (promo.type === 'montant_fixe') return `${fmt(promo.valeur)} F`
+  if (promo.type === 'livraison_gratuite') return 'Livraison gratuite'
+  return String(promo.valeur)
+}
 
 // ─── Section Header ───────────────────────────────────────────────────────────
 
@@ -143,28 +159,43 @@ function CategorySkeleton() {
 
 // ─── Countdown ────────────────────────────────────────────────────────────────
 
-function Countdown() {
-  const [time, setTime] = useState({ h: 4, m: 23, s: 47 })
+function PromoCountdown({ endDate }: { endDate: string }) {
+  const getRemaining = () => {
+    const end = new Date(endDate).getTime()
+    if (Number.isNaN(end)) return null
+    const diff = Math.max(0, end - Date.now())
+    const totalSeconds = Math.floor(diff / 1000)
+    return {
+      d: Math.floor(totalSeconds / 86400),
+      h: Math.floor((totalSeconds % 86400) / 3600),
+      m: Math.floor((totalSeconds % 3600) / 60),
+      s: totalSeconds % 60,
+    }
+  }
+
+  const [time, setTime] = useState(getRemaining)
 
   useEffect(() => {
-    const t = setInterval(() => {
-      setTime(prev => {
-        let { h, m, s } = prev
-        s -= 1
-        if (s < 0) { s = 59; m -= 1 }
-        if (m < 0) { m = 59; h -= 1 }
-        if (h < 0) { h = 23; m = 59; s = 59 }
-        return { h, m, s }
-      })
-    }, 1000)
+    const t = setInterval(() => setTime(getRemaining), 1000)
     return () => clearInterval(t)
-  }, [])
+  }, [endDate])
+
+  if (!time) return null
 
   const pad = (n: number) => String(n).padStart(2, '0')
+  const segments = [pad(time.h), pad(time.m), pad(time.s)]
 
   return (
     <div className="flex items-center gap-2">
-      {[pad(time.h), pad(time.m), pad(time.s)].map((val, i) => (
+      {time.d > 0 && (
+        <span className="flex items-center gap-2">
+          <span className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center font-bold text-lg sm:text-xl text-white font-mono">
+            {pad(time.d)}
+          </span>
+          <span className="text-white/70 font-bold text-lg">:</span>
+        </span>
+      )}
+      {segments.map((val, i) => (
         <span key={i} className="flex items-center gap-2">
           <span className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center font-bold text-lg sm:text-xl text-white font-mono">
             {val}
@@ -172,6 +203,108 @@ function Countdown() {
           {i < 2 && <span className="text-white/70 font-bold text-lg">:</span>}
         </span>
       ))}
+    </div>
+  )
+}
+
+function PromotionCard({ promo }: { promo: PromotionBanner }) {
+  const bg = promo.couleur ?? '#b68a64'
+  return (
+    <div
+      className="rounded-3xl p-5 sm:p-6 text-white shadow-lg border border-white/10"
+      style={{ background: `linear-gradient(135deg, ${bg} 0%, #1f1b16 100%)` }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <span className="inline-flex items-center gap-1.5 text-[11px] uppercase font-bold tracking-widest text-white/80">
+            <BadgePercent className="w-3.5 h-3.5" /> Promotion
+          </span>
+          <h3 className="font-serif font-bold text-xl sm:text-2xl mt-2">{promo.nom}</h3>
+          {promo.description && (
+            <p className="text-sm text-white/80 mt-2 max-w-xs">{promo.description}</p>
+          )}
+        </div>
+        <span className="bg-white/15 text-white px-3 py-1 rounded-full text-xs font-bold">
+          {formatPromotionValue(promo)}
+        </span>
+      </div>
+      <div className="flex flex-wrap items-center gap-3 mt-4">
+        {promo.code && (
+          <span className="bg-white/15 px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider">
+            Code: {promo.code}
+          </span>
+        )}
+        {promo.date_fin && <PromoCountdown endDate={promo.date_fin} />}
+      </div>
+      <Link
+        to="/promotions"
+        className="inline-flex items-center gap-2 mt-5 px-4 py-2.5 bg-white text-ink text-xs font-bold rounded-xl shadow-lg hover:bg-beige-100 transition-colors"
+      >
+        Voir la promo
+        <ArrowRight className="w-4 h-4" />
+      </Link>
+    </div>
+  )
+}
+
+function FlashSaleCard({ sale }: { sale: FlashSale }) {
+  const bg = sale.couleur ?? '#ef4444'
+  return (
+    <div
+      className="rounded-3xl p-6 sm:p-8 text-white shadow-lg border border-white/10"
+      style={{ background: `linear-gradient(135deg, ${bg} 0%, #1f1b16 100%)` }}
+    >
+      <span className="inline-flex items-center gap-1.5 text-[11px] uppercase font-bold tracking-widest text-white/80">
+        <BadgePercent className="w-3.5 h-3.5" /> Vente flash
+      </span>
+      <h3 className="font-serif font-bold text-2xl sm:text-3xl mt-2">{sale.nom}</h3>
+      {sale.description && (
+        <p className="text-sm text-white/80 mt-2 max-w-md">{sale.description}</p>
+      )}
+      <div className="flex flex-wrap items-center gap-3 mt-4">
+        {sale.code && (
+          <span className="bg-white/15 px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider">
+            Code: {sale.code}
+          </span>
+        )}
+        <span className="bg-white/15 px-3 py-1.5 rounded-full text-xs font-bold">
+          {sale.type === 'pourcentage' ? `${sale.valeur}%` : sale.type === 'livraison_gratuite' ? 'Livraison gratuite' : `${fmt(sale.valeur)} F`}
+        </span>
+      </div>
+      {sale.date_fin && <div className="mt-4"><PromoCountdown endDate={sale.date_fin} /></div>}
+      <Link
+        to="/promotions"
+        className="inline-flex items-center gap-2 mt-5 px-4 py-2.5 bg-white text-ink text-xs font-bold rounded-xl shadow-lg hover:bg-beige-100 transition-colors"
+      >
+        Profiter de la vente flash
+        <ArrowRight className="w-4 h-4" />
+      </Link>
+    </div>
+  )
+}
+
+function TestimonialCard({ item }: { item: Testimonial }) {
+  return (
+    <div className="bg-beige-50 border border-beige-200 rounded-3xl p-5 sm:p-6 shadow-beige">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-ink">{item.nom_client}</p>
+          <p className="text-[11px] text-muted">{item.date}</p>
+        </div>
+        <div className="flex items-center gap-1">
+          <Star className="w-4 h-4 text-amber-400 fill-amber-400" strokeWidth={0} />
+          <span className="text-xs font-bold text-muted">{item.note}</span>
+        </div>
+      </div>
+      <p className="text-sm text-ink/80 mt-3 leading-relaxed">{item.commentaire}</p>
+      <div className="mt-4 flex items-center justify-between">
+        <span className="text-[11px] font-semibold text-beige-500">{item.produit_nom}</span>
+        {item.avis_verifie && (
+          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-full">
+            Avis verifie
+          </span>
+        )}
+      </div>
     </div>
   )
 }
@@ -207,10 +340,15 @@ export function HomePage() {
   }, [])
 
   const categories = (data?.categories_preview ?? []).filter(c => c.parent_id == null)
+  const featuredCategories = categories.filter(cat => cat.est_populaire)
   const featured = data?.featured_products ?? []
   const newArrivals = data?.new_arrivals ?? []
+  const promotions = data?.active_promotions ?? []
+  const flashSale = data?.flash_sale
+  const testimonials = data?.testimonials ?? []
   const stats = data?.shop_stats
   const hero = data?.hero_banner?.default_message
+  const heroPromo = data?.hero_banner?.promotion
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -247,6 +385,11 @@ export function HomePage() {
               </div>
 
               <div className="mt-6 lg:mt-auto">
+                {heroPromo && (
+                  <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full text-[11px] font-bold text-white tracking-widest uppercase mb-3">
+                    <BadgePercent className="w-3.5 h-3.5" /> {formatPromotionValue(heroPromo)}
+                  </div>
+                )}
                 <h1 className="font-serif font-bold text-white text-2xl sm:text-4xl lg:text-5xl leading-tight mb-3 drop-shadow-sm">
                   {hero?.titre ?? 'Élégance moderne\npour votre style'}
                 </h1>
@@ -259,7 +402,7 @@ export function HomePage() {
                     className="flex items-center gap-2 px-5 py-3 bg-white text-ink text-sm font-bold rounded-2xl shadow-lg hover:bg-beige-100 transition-colors"
                   >
                     <ShoppingBag className="w-4 h-4" strokeWidth={2} />
-                    Découvrir
+                    {hero?.cta ?? 'Découvrir'}
                   </Link>
                   <Link
                     to="/promotions"
@@ -294,8 +437,8 @@ export function HomePage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 lg:gap-5">
             {[
               { icon: Package, val: fmt(stats.produits_disponibles), label: 'Produits disponibles' },
-              { icon: Users, val: fmt(stats.clients_satisfaits), label: 'Clients satisfaits' },
-              { icon: Award, val: `${stats.annees_experience} ans`, label: "D'expérience" },
+              { icon: Users, val: fmt(stats.commandes_livrees), label: 'Commandes livrees' },
+              { icon: Award, val: `${stats.note_moyenne} / 5`, label: 'Note moyenne' },
               { icon: Truck, val: `${fmt(stats.livraison_gratuite_seuil / 1000)}k F`, label: 'Livraison gratuite dès' },
             ].map(({ icon: Icon, val, label }) => (
               <div key={label} className="bg-beige-50 rounded-2xl p-4 lg:p-6 text-center border border-beige-200 shadow-beige">
@@ -349,6 +492,40 @@ export function HomePage() {
         )}
       </div>
 
+      {/* ── COLLECTIONS EN VEDETTE ───────────────────────────────────────── */}
+      {featuredCategories.length > 0 && (
+        <div className="pb-8 lg:pb-12">
+          <SectionHeader title="Collections en vedette" subtitle="Nos categories les plus appreciees" linkTo="/categories" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {featuredCategories.map(cat => (
+              <Link
+                key={cat.id}
+                to={`/categories/${cat.slug}`}
+                className="group rounded-3xl border border-beige-200 bg-beige-50 overflow-hidden shadow-beige hover:shadow-beige-lg transition-all"
+              >
+                <div className="relative h-40 sm:h-48">
+                  {cat.image ? (
+                    <img src={cat.image} alt={cat.nom} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  ) : (
+                    <div className="w-full h-full bg-beige-200 flex items-center justify-center">
+                      <Package className="w-10 h-10 text-beige-400" strokeWidth={1.5} />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+                  <div className="absolute bottom-4 left-4">
+                    <p className="text-white text-lg font-bold">{cat.nom}</p>
+                    <p className="text-white/80 text-xs">{cat.produits_count} produits</p>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <p className="text-sm text-muted line-clamp-2">{cat.description ?? 'Decouvrez la selection premium de cette collection.'}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── PRODUITS POPULAIRES ───────────────────────────────────────────── */}
       <div className="pb-8 lg:pb-12">
         <SectionHeader title="Populaires" subtitle="Nos best-sellers du moment" linkTo="/produits" />
@@ -364,38 +541,29 @@ export function HomePage() {
         </div>
       </div>
 
-      {/* ── BANNIÈRE PROMO ────────────────────────────────────────────────── */}
-      <div className="pb-8 lg:pb-12">
-        <div
-          className="relative rounded-3xl overflow-hidden p-6 sm:p-10 lg:p-14"
-          style={{ background: 'linear-gradient(135deg, #1E1E1E 0%, #3a2e26 60%, #B68A64 100%)' }}
-        >
-          <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-10"
-            style={{ background: 'radial-gradient(circle, #C9A98A, transparent)', transform: 'translate(30%, -30%)' }} />
-          <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full opacity-10"
-            style={{ background: 'radial-gradient(circle, #C9A98A, transparent)', transform: 'translate(-30%, 30%)' }} />
-
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 lg:gap-12">
-            <div>
-              <span className="inline-block px-3 py-1 bg-beige-400/30 rounded-full text-[11px] font-bold text-beige-300 tracking-widest uppercase mb-3">
-                Offre limitée
-              </span>
-              <h2 className="font-serif font-bold text-white text-2xl sm:text-3xl lg:text-4xl mb-2">
-                Jusqu'à <span className="text-beige-400">-40%</span>
-              </h2>
-              <p className="text-white/60 text-sm lg:text-base mb-5">Sur la nouvelle collection. Offre valable aujourd'hui.</p>
-              <Countdown />
+      {/* ── PROMOTIONS & VENTE FLASH ─────────────────────────────────────── */}
+      {(flashSale || promotions.length > 0) && (
+        <div className="pb-8 lg:pb-12">
+          <SectionHeader title="Promotions" subtitle="Offres actives en ce moment" linkTo="/promotions" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {flashSale ? <FlashSaleCard sale={flashSale} /> : promotions[0] && <PromotionCard promo={promotions[0]} />}
+            <div className="space-y-4">
+              {promotions.slice(flashSale ? 0 : 1, flashSale ? 2 : 3).map(promo => (
+                <PromotionCard key={promo.id} promo={promo} />
+              ))}
             </div>
-            <Link
-              to="/promotions"
-              className="flex items-center gap-2 self-start sm:self-auto px-6 py-4 bg-beige-400 hover:bg-beige-300 text-ink text-sm font-bold rounded-2xl transition-colors shadow-lg whitespace-nowrap"
-            >
-              Acheter maintenant
-              <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
-            </Link>
           </div>
+
+          {flashSale?.produits?.length ? (
+            <div className="mt-6">
+              <SectionHeader title="Selection flash" subtitle="Produits éligibles à la vente flash" linkTo="/produits" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-4">
+                {flashSale.produits.map(p => <ProductCard key={p.id} product={p} />)}
+              </div>
+            </div>
+          ) : null}
         </div>
-      </div>
+      )}
 
       {/* ── NOUVEAUTÉS ────────────────────────────────────────────────────── */}
       <div className="pb-8 lg:pb-12">
@@ -453,6 +621,28 @@ export function HomePage() {
             Notre histoire <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
+      </div>
+
+      {/* ── AVIS CLIENTS ─────────────────────────────────────────────────── */}
+      <div className="pb-12 lg:pb-16">
+        <SectionHeader title="Avis clients" subtitle="Ce qu'ils pensent de nous" />
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-beige-50 rounded-3xl border border-beige-200 p-6 animate-pulse">
+                <div className="h-4 w-32 bg-beige-200 rounded" />
+                <div className="h-3 w-20 bg-beige-200 rounded mt-3" />
+                <div className="h-16 bg-beige-200 rounded mt-4" />
+              </div>
+            ))}
+          </div>
+        ) : testimonials.length === 0 ? (
+          <EmptyState label="Aucun avis disponible" note="Les avis clients apparaitront ici." />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {testimonials.map(item => <TestimonialCard key={item.id} item={item} />)}
+          </div>
+        )}
       </div>
 
     </div>

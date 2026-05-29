@@ -7,7 +7,20 @@ import { AdminLayout } from '@/layouts/AdminLayout'
 import { ClientLayout } from '@/layouts/ClientLayout'
 import { ComingSoonPage } from '@/features/admin/ComingSoonPage'
 import { ProductsPage } from '@/features/admin/products/ProductsPage'
+import { OrdersPage } from '@/features/admin/orders/OrdersPage'
+import ClientsPage from '@/features/admin/clients/ClientsPage'
+import PromotionsPage from '@/features/admin/promotions/PromotionsPage'
+import PaymentsPage from '@/features/admin/payments/PaymentsPage'
+import ShippingPage from '@/features/admin/shipping/ShippingPage'
+import ReviewsPage from '@/features/admin/reviews/ReviewsPage'
+import ReportsPage from '@/features/admin/reports/ReportsPage'
+import MessagesPage from '@/features/admin/messages/MessagesPage'
+import SettingsPage from '@/features/admin/settings/SettingsPage'
 import { HomePage } from '@/features/client/home/HomePage'
+import { CategoriesPage as ClientCategoriesPage } from '@/features/client/catalog/CategoriesPage'
+import { CategoryDetailPage as ClientCategoryDetailPage } from '@/features/client/catalog/CategoryDetailPage'
+import { ProductDetailPage as ClientProductDetailPage } from '@/features/client/catalog/ProductDetailPage'
+import { ProductsPage as ClientProductsPage } from '@/features/client/catalog/ProductsPage'
 
 export const router = createBrowserRouter(
   [
@@ -32,15 +45,15 @@ export const router = createBrowserRouter(
                 { path: 'dashboard',   element: <DashboardPage /> },
                 { path: 'categories',  element: <CategoriesPage /> },
                 { path: 'produits',    element: <ProductsPage /> },
-                { path: 'commandes',   element: <ComingSoonPage title="Commandes" /> },
-                { path: 'clients',     element: <ComingSoonPage title="Clients" /> },
-                { path: 'paiements',   element: <ComingSoonPage title="Paiements" /> },
-                { path: 'promotions',  element: <ComingSoonPage title="Promotions" /> },
-                { path: 'livraison',   element: <ComingSoonPage title="Livraison" /> },
-                { path: 'avis-clients',element: <ComingSoonPage title="Avis Clients" /> },
-                { path: 'messages',    element: <ComingSoonPage title="Messages" /> },
-                { path: 'rapports',    element: <ComingSoonPage title="Rapports" /> },
-                { path: 'parametres',  element: <ComingSoonPage title="Paramètres" /> },
+                { path: 'commandes',   element: <OrdersPage /> },
+                { path: 'clients',     element: <ClientsPage /> },
+                { path: 'paiements',   element: <PaymentsPage /> },
+                { path: 'promotions',  element: <PromotionsPage /> },
+                { path: 'livraison',   element: <ShippingPage /> },
+                { path: 'avis-clients',element: <ReviewsPage /> },
+                { path: 'messages',    element: <MessagesPage /> },
+                { path: 'rapports',    element: <ReportsPage /> },
+                { path: 'parametres',  element: <SettingsPage /> },
               ],
             },
           ],
@@ -56,10 +69,10 @@ export const router = createBrowserRouter(
       element: <ClientLayout />,
       children: [
         { path: '/', element: <HomePage /> },
-        { path: '/categories', element: <ComingSoonPage title="Catégories" /> },
-        { path: '/categories/:slug', element: <ComingSoonPage title="Catégorie" /> },
-        { path: '/produits', element: <ComingSoonPage title="Produits" /> },
-        { path: '/produits/:slug', element: <ComingSoonPage title="Produit" /> },
+        { path: '/categories', element: <ClientCategoriesPage /> },
+        { path: '/categories/:slug', element: <ClientCategoryDetailPage /> },
+        { path: '/produits', element: <ClientProductsPage /> },
+        { path: '/produits/:slug', element: <ClientProductDetailPage /> },
         { path: '/promotions', element: <ComingSoonPage title="Promotions" /> },
         { path: '/favoris', element: <ComingSoonPage title="Favoris" /> },
         { path: '/panier', element: <ComingSoonPage title="Panier" /> },

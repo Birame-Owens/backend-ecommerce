@@ -401,82 +401,56 @@ class PaiementController extends Controller
     public function paymentMethods(): JsonResponse
     {
         try {
-            $methods = [
-                [
-                    'value' => 'especes',
-                    'label' => 'Espèces',
-                    'icon' => 'banknote',
-                    'description' => 'Paiement en espèces au magasin',
-                    'fees' => 0,
-                    'active' => true,
-                    'manual' => true
-                ],
-                [
-                    'value' => 'cheque',
-                    'label' => 'Chèque',
-                    'icon' => 'file-text',
-                    'description' => 'Paiement par chèque',
-                    'fees' => 0,
-                    'active' => true,
-                    'manual' => true
-                ],
-                [
-                    'value' => 'virement',
-                    'label' => 'Virement bancaire',
-                    'icon' => 'building-2',
-                    'description' => 'Virement sur compte bancaire',
-                    'fees' => 0,
-                    'active' => true,
-                    'manual' => true
-                ],
-                [
-                    'value' => 'carte_bancaire',
-                    'label' => 'Carte bancaire (terminal)',
-                    'icon' => 'credit-card',
-                    'description' => 'Terminal de paiement en magasin',
-                    'fees' => 2.5,
-                    'active' => true,
-                    'manual' => true
-                ],
-                // Les méthodes suivantes sont pour information (paiements clients)
-                [
-                    'value' => 'wave',
-                    'label' => 'Wave (client)',
-                    'icon' => 'smartphone',
-                    'description' => 'Paiement mobile initié par le client',
-                    'fees' => 1.0,
-                    'active' => false, // Non créable par admin
-                    'manual' => false
-                ],
-                [
-                    'value' => 'orange_money',
-                    'label' => 'Orange Money (client)',
-                    'icon' => 'smartphone',
-                    'description' => 'Paiement mobile initié par le client',
-                    'fees' => 1.5,
-                    'active' => false, // Non créable par admin
-                    'manual' => false
-                ]
+            $stored = \App\Models\ShopSetting::getValue('payment_methods_config');
+            $config = $stored ? json_decode($stored, true) : [];
+
+            $allMethods = [
+                ['value' => 'especes',       'label' => 'Espèces',                 'icon' => 'banknote',    'description' => 'Paiement en espèces à la livraison',        'fees' => 0,   'manual' => true],
+                ['value' => 'cheque',        'label' => 'Chèque',                  'icon' => 'file-text',   'description' => 'Paiement par chèque bancaire',              'fees' => 0,   'manual' => true],
+                ['value' => 'virement',      'label' => 'Virement bancaire',        'icon' => 'building-2',  'description' => 'Virement sur compte bancaire',               'fees' => 0,   'manual' => true],
+                ['value' => 'carte_bancaire','label' => 'Carte bancaire (terminal)','icon' => 'credit-card', 'description' => 'Terminal de paiement en magasin ou livraison','fees' => 2.5, 'manual' => true],
+                ['value' => 'wave',          'label' => 'Wave',                     'icon' => 'smartphone',  'description' => 'Paiement mobile Wave',                       'fees' => 1.0, 'manual' => true],
+                ['value' => 'orange_money',  'label' => 'Orange Money',             'icon' => 'smartphone',  'description' => 'Paiement mobile Orange Money',               'fees' => 1.5, 'manual' => true],
             ];
 
-            // Filtrer pour ne montrer que les méthodes actives dans le formulaire
-            $methodsForForm = array_filter($methods, fn($method) => $method['manual']);
+            $methods = array_map(function ($m) use ($config) {
+                $m['active'] = array_key_exists($m['value'], $config) ? (bool)$config[$m['value']] : true;
+                return $m;
+            }, $allMethods);
+
+            return response()->json(['success' => true, 'data' => $methods]);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur récupération méthodes paiement', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Erreur'], 500);
+        }
+    }
+
+    public function togglePaymentMethod(Request $request, string $method): JsonResponse
+    {
+        try {
+            $allowed = ['especes', 'cheque', 'virement', 'carte_bancaire', 'wave', 'orange_money'];
+            if (!in_array($method, $allowed)) {
+                return response()->json(['success' => false, 'message' => 'Méthode inconnue'], 400);
+            }
+
+            $stored = \App\Models\ShopSetting::getValue('payment_methods_config');
+            $config = $stored ? json_decode($stored, true) : [];
+
+            $current = array_key_exists($method, $config) ? (bool)$config[$method] : true;
+            $config[$method] = !$current;
+
+            \App\Models\ShopSetting::setValue('payment_methods_config', json_encode($config), 'paiements');
 
             return response()->json([
                 'success' => true,
-                'data' => $methodsForForm
+                'data' => ['method' => $method, 'active' => $config[$method]],
+                'message' => $config[$method] ? 'Méthode activée' : 'Méthode désactivée',
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Erreur récupération méthodes paiement', [
-                'error' => $e->getMessage(),
-                'admin_id' => auth()->id()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur lors de la récupération des méthodes de paiement'
-            ], 500);
+            Log::error('Erreur toggle méthode paiement', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Erreur'], 500);
         }
     }
 
