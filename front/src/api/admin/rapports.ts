@@ -7,6 +7,7 @@ import type {
   AdminReportCommandes,
   AdminReportDashboard,
   AdminReportFinancier,
+  AdminReportPerformanceProduits,
   AdminReportProduits,
   AdminReportVentes,
 } from '@/types/admin'
@@ -50,6 +51,9 @@ export const rapportsAdminApi = {
 
   analytics: (params?: ReportPeriodParams) =>
     api.get<{ success: boolean; data: AdminReportAnalytics }>('/api/admin/rapports/analytics', { params }),
+
+  performanceProduits: (params?: ReportPeriodParams) =>
+    api.get<{ success: boolean; data: AdminReportPerformanceProduits }>('/api/admin/rapports/performance-produits', { params }),
 
   export: (payload: { type: string; format: 'excel' | 'csv' | 'pdf' } & ReportPeriodParams) =>
     api.post('/api/admin/rapports/export', payload, { responseType: 'blob' }),

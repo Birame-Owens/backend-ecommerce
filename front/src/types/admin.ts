@@ -569,6 +569,30 @@ export interface AdminReportAnalytics {
   periode?: { debut: string; fin: string; jours: number }
 }
 
+export interface AdminReportPerformanceProduits {
+  produits_performance: Array<{
+    nom: string
+    nombre_vues: number
+    ventes: number
+    taux_conversion: number
+  }>
+  analyse_commandes: {
+    total_commandes: number
+    commandes_validees: number
+    commandes_payees: number
+    taux_validation: number
+    taux_paiement: number
+  }
+  analyse_paniers: {
+    total_paniers: number
+    paniers_transformes: number
+    taux_transformation: number
+    taux_abandon: number
+  }
+  top_couleurs: Array<{ couleur: string; total_vendus: number; nb_commandes: number }>
+  top_tailles: Array<{ taille: string; total_vendus: number; nb_commandes: number }>
+}
+
 // ─── Messages (Admin) ─────────────────────────────────────────────────────
 
 export interface AdminMessageGroup {
@@ -697,23 +721,27 @@ export interface AdminPromotionListItem {
   nombre_commandes: number
   jours_restants?: number
   created_at?: string | null
+  // Champs exposés dans la liste
+  cible_client?: string | null
+  montant_minimum?: number | null
+  utilisation_maximum?: number | null
+  utilisation_par_client?: number | null
+  jours_semaine_valides?: number[] | null
+  categories_eligibles?: number[] | null
+  produits_eligibles?: number[] | null
 }
 
 export interface AdminPromotionDetail extends AdminPromotionListItem {
-  montant_minimum?: number | null
   reduction_maximum?: number | null
-  utilisation_maximum?: number | null
-  utilisation_par_client?: number | null
-  cible_client?: 'tous' | 'nouveaux' | 'vip' | 'reguliers' | string
-  categories_eligibles?: number[] | null
-  produits_eligibles?: number[] | null
   cumul_avec_autres?: boolean
   premiere_commande_seulement?: boolean
-  jours_semaine_valides?: number[] | null
   afficher_site?: boolean
   envoyer_whatsapp?: boolean
   envoyer_email?: boolean
   couleur_affichage?: string | null
+  taux_utilisation?: number | null
+  date_debut_iso?: string | null
+  date_fin_iso?: string | null
 }
 
 export interface AdminPromotionStats {
@@ -748,6 +776,50 @@ export interface AdminPromotionOptions {
   categories: Array<{ id: number; nom: string }>
   produits: Array<{ id: number; nom: string; prix: number }>
 }
+
+// ─── Paramètres boutique (Admin) ──────────────────────────────────────────────
+
+export interface AdminShopSettingsGeneral {
+  boutique_nom: string
+  boutique_email: string
+  boutique_telephone: string
+  boutique_adresse: string
+  boutique_devise: string
+  boutique_langue: string
+  boutique_description: string
+  boutique_ville: string
+  boutique_pays: string
+  boutique_horaires: string
+}
+
+export interface AdminShopSettingsSocial {
+  social_instagram: string
+  social_facebook: string
+  social_tiktok: string
+  social_whatsapp: string
+}
+
+export interface AdminShopSettingsSeo {
+  seo_titre: string
+  seo_description: string
+  seo_mots_cles: string
+}
+
+export interface AdminShopSettingsNotifications {
+  notif_nouvelle_commande: string
+  notif_paiement_recu: string
+  notif_livraison: string
+  notif_promotions: string
+}
+
+export interface AdminShopSettings {
+  general: AdminShopSettingsGeneral
+  social: AdminShopSettingsSocial
+  seo: AdminShopSettingsSeo
+  notifications: AdminShopSettingsNotifications
+}
+
+// ─── Commandes (Admin) ────────────────────────────────────────────────────────
 
 export interface AdminOrderPagination {
   current_page: number

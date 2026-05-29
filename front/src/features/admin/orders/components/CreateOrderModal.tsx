@@ -7,12 +7,46 @@ import type {
   AdminOrderDetail,
   AdminOrderProductOption,
 } from '@/types/admin'
-import { fmtMoney, sizeOptions } from '../orderHelpers'
+import { fmtMoney } from '../orderHelpers'
 
 interface Props {
   onClose: () => void
   onCreated: (order: AdminOrderDetail) => void
   onError: (message: string) => void
+}
+
+function getVariants(produit: AdminOrderProductOption | undefined, selectedColor: string) {
+  if (!produit) return { colorOptions: null, sizeOptions: null, isMapMode: false }
+
+  const isMapMode = !!(produit.couleur_tailles && Object.keys(produit.couleur_tailles).length > 0)
+
+  let colorOptions: string[] | null = null
+  if (isMapMode) {
+    colorOptions = Object.keys(produit.couleur_tailles!)
+  } else if (produit.couleurs_disponibles?.length) {
+    colorOptions = produit.couleurs_disponibles
+  }
+
+  let sizeOptions: string[] | null = null
+  if (isMapMode) {
+    if (selectedColor) {
+      const sizes = produit.couleur_tailles![selectedColor] ?? []
+      sizeOptions = sizes.length > 0 ? sizes : null
+    }
+  } else if (produit.tailles_disponibles?.length) {
+    sizeOptions = produit.tailles_disponibles
+  }
+
+  return { colorOptions, sizeOptions, isMapMode }
+}
+
+function getVariantStock(
+  produit: AdminOrderProductOption | undefined,
+  color: string,
+  taille: string,
+): number | null {
+  if (!produit?.couleur_tailles_stock || !color || !taille) return null
+  return produit.couleur_tailles_stock[color]?.[taille] ?? null
 }
 
 export function CreateOrderModal({ onClose, onCreated, onError }: Props) {
@@ -114,12 +148,16 @@ export function CreateOrderModal({ onClose, onCreated, onError }: Props) {
   const handleProductSelect = (id: number, produitId: number) => {
     const produit = products.find(p => p.id === produitId)
     const prix = produit?.prix_promo ?? produit?.prix ?? 0
-    handleArticleChange(id, {
-      produit_id: produitId,
-      prix_unitaire: prix,
-      taille: '',
-      couleur: '',
-    })
+    handleArticleChange(id, { produit_id: produitId, prix_unitaire: prix, taille: '', couleur: '' })
+  }
+
+  const handleColorChange = (id: number, couleur: string) => {
+    const article = articles.find(a => a.id === id)
+    if (!article) return
+    const produit = productById.get(Number(article.produit_id))
+    const { isMapMode } = getVariants(produit, '')
+    // En mode map, changer la couleur invalide la taille sélectionnée
+    handleArticleChange(id, isMapMode ? { couleur, taille: '' } : { couleur })
   }
 
   const addArticle = () => {
@@ -154,23 +192,14 @@ export function CreateOrderModal({ onClose, onCreated, onError }: Props) {
     for (const article of articles) {
       const produit = productById.get(Number(article.produit_id))
       if (!produit) continue
-      const couleursFromMap = produit.couleur_tailles ? Object.keys(produit.couleur_tailles) : []
-      const couleurs = produit.couleurs_disponibles?.length
-        ? produit.couleurs_disponibles
-        : couleursFromMap
-      const taillesFromMap = produit.couleur_tailles && article.couleur
-        ? produit.couleur_tailles[article.couleur] ?? []
-        : []
-      const tailles = produit.tailles_disponibles?.length
-        ? produit.tailles_disponibles
-        : taillesFromMap
+      const { colorOptions, sizeOptions } = getVariants(produit, article.couleur)
 
-      if (couleurs.length && !article.couleur) {
-        onError(`Veuillez choisir une couleur pour ${produit.nom}.`)
+      if (colorOptions?.length && !article.couleur) {
+        onError(`Veuillez choisir une couleur pour "${produit.nom}".`)
         return
       }
-      if (tailles.length && !article.taille) {
-        onError(`Veuillez choisir une taille/pointure pour ${produit.nom}.`)
+      if (sizeOptions?.length && !article.taille) {
+        onError(`Veuillez choisir une taille/pointure pour "${produit.nom}".`)
         return
       }
     }
@@ -218,7 +247,7 @@ export function CreateOrderModal({ onClose, onCreated, onError }: Props) {
       onCreated(res.data.data.commande)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-      onError(msg ?? 'Creation impossible.')
+      onError(msg ?? 'Création impossible.')
     } finally {
       setSubmitting(false)
     }
@@ -230,7 +259,7 @@ export function CreateOrderModal({ onClose, onCreated, onError }: Props) {
         <div className="p-6 border-b border-beige-300 flex items-start justify-between">
           <div>
             <p className="text-xs font-semibold text-muted uppercase tracking-widest">Nouvelle commande</p>
-            <h2 className="text-2xl font-serif font-bold text-ink mt-1">Creer une commande</h2>
+            <h2 className="text-2xl font-serif font-bold text-ink mt-1">Créer une commande</h2>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl border border-beige-300 hover:bg-beige-200">
             <X className="w-4 h-4 text-muted" strokeWidth={1.5} />
@@ -239,6 +268,7 @@ export function CreateOrderModal({ onClose, onCreated, onError }: Props) {
 
         <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
+            {/* Client */}
             <div className="bg-beige-100 rounded-2xl border border-beige-300 p-5">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-ink flex items-center gap-2"><User className="w-4 h-4" /> Client</h3>
@@ -297,7 +327,7 @@ export function CreateOrderModal({ onClose, onCreated, onError }: Props) {
                   <input
                     value={form.new_client_telephone}
                     onChange={(e) => setForm(prev => ({ ...prev, new_client_telephone: e.target.value }))}
-                    placeholder="Telephone"
+                    placeholder="Téléphone"
                     className="px-3 py-2.5 rounded-xl text-sm bg-beige-50 border border-beige-300 text-ink"
                   />
                   <input
@@ -322,25 +352,26 @@ export function CreateOrderModal({ onClose, onCreated, onError }: Props) {
               )}
             </div>
 
+            {/* Livraison */}
             <div className="bg-beige-100 rounded-2xl border border-beige-300 p-5">
               <h3 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2"><MapPin className="w-4 h-4" /> Livraison</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <input
                   value={form.nom_destinataire}
                   onChange={(e) => setForm(prev => ({ ...prev, nom_destinataire: e.target.value }))}
-                  placeholder="Nom destinataire"
+                  placeholder="Nom destinataire *"
                   className="px-3 py-2.5 rounded-xl text-sm bg-beige-50 border border-beige-300 text-ink"
                 />
                 <input
                   value={form.telephone_livraison}
                   onChange={(e) => setForm(prev => ({ ...prev, telephone_livraison: e.target.value }))}
-                  placeholder="Telephone livraison"
+                  placeholder="Téléphone livraison *"
                   className="px-3 py-2.5 rounded-xl text-sm bg-beige-50 border border-beige-300 text-ink"
                 />
                 <input
                   value={form.adresse_livraison}
                   onChange={(e) => setForm(prev => ({ ...prev, adresse_livraison: e.target.value }))}
-                  placeholder="Adresse livraison"
+                  placeholder="Adresse livraison *"
                   className="px-3 py-2.5 rounded-xl text-sm bg-beige-50 border border-beige-300 text-ink md:col-span-2"
                 />
                 <input
@@ -368,6 +399,7 @@ export function CreateOrderModal({ onClose, onCreated, onError }: Props) {
               </div>
             </div>
 
+            {/* Articles */}
             <div className="bg-beige-100 rounded-2xl border border-beige-300 p-5">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-ink flex items-center gap-2"><Package className="w-4 h-4" /> Articles</h3>
@@ -388,128 +420,147 @@ export function CreateOrderModal({ onClose, onCreated, onError }: Props) {
               <div className="space-y-3">
                 {articles.map((article) => {
                   const produit = productById.get(Number(article.produit_id))
-                  const couleursFromMap = produit?.couleur_tailles ? Object.keys(produit.couleur_tailles) : []
-                  const couleurs = produit?.couleurs_disponibles?.length
-                    ? produit.couleurs_disponibles
-                    : couleursFromMap.length ? couleursFromMap : null
-                  const taillesFromMap = produit?.couleur_tailles && article.couleur
-                    ? produit.couleur_tailles[article.couleur] ?? []
-                    : []
-                  const tailles = produit?.tailles_disponibles?.length
-                    ? produit.tailles_disponibles
-                    : (produit?.couleur_tailles ? taillesFromMap : sizeOptions)
+                  const { colorOptions, sizeOptions, isMapMode } = getVariants(produit, article.couleur)
+                  const variantStock = getVariantStock(produit, article.couleur, article.taille)
+
                   return (
-                  <div key={article.id} className="bg-beige-50 border border-beige-300 rounded-2xl p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
-                      <div className="md:col-span-2">
-                        <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">Produit</label>
-                        <select
-                          value={article.produit_id}
-                          onChange={(e) => handleProductSelect(article.id, Number(e.target.value))}
-                          className="w-full px-3 py-2.5 rounded-xl text-xs font-semibold bg-beige-100 border border-beige-300 text-muted"
-                        >
-                          <option value="">Choisir un produit</option>
-                          {productLoading ? (
-                            <option value="">Chargement…</option>
-                          ) : products.map((p) => (
-                            <option key={p.id} value={p.id}>{p.nom}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">Quantite</label>
-                        <input
-                          type="number"
-                          min={1}
-                          value={article.quantite}
-                          onChange={(e) => handleArticleChange(article.id, { quantite: Number(e.target.value) })}
-                          className="w-full px-3 py-2.5 rounded-xl text-sm bg-beige-100 border border-beige-300 text-ink"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">Prix unitaire</label>
-                        <input
-                          type="number"
-                          min={0}
-                          value={article.prix_unitaire}
-                          onChange={(e) => handleArticleChange(article.id, { prix_unitaire: Number(e.target.value) })}
-                          className="w-full px-3 py-2.5 rounded-xl text-sm bg-beige-100 border border-beige-300 text-ink"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">Taille / Pointure</label>
-                        <select
-                          value={article.taille}
-                          onChange={(e) => handleArticleChange(article.id, { taille: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl text-xs font-semibold bg-beige-100 border border-beige-300 text-muted"
-                        >
-                          <option value="">—</option>
-                          {tailles.map((size) => (
-                            <option key={size} value={size}>{size}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">Couleur</label>
-                        {couleurs ? (
+                    <div key={article.id} className="bg-beige-50 border border-beige-300 rounded-2xl p-4">
+                      {/* Ligne 1 : Produit + Qté + Prix */}
+                      <div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-3">
+                        <div className="md:col-span-3">
+                          <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">Produit *</label>
                           <select
-                            value={article.couleur}
-                            onChange={(e) => handleArticleChange(article.id, { couleur: e.target.value })}
+                            value={article.produit_id}
+                            onChange={(e) => handleProductSelect(article.id, Number(e.target.value))}
                             className="w-full px-3 py-2.5 rounded-xl text-xs font-semibold bg-beige-100 border border-beige-300 text-muted"
                           >
-                            <option value="">—</option>
-                            {couleurs.map((couleur) => (
-                              <option key={couleur} value={couleur}>{couleur}</option>
+                            <option value="">Choisir un produit</option>
+                            {productLoading ? (
+                              <option value="" disabled>Chargement…</option>
+                            ) : products.map((p) => (
+                              <option key={p.id} value={p.id}>{p.nom}</option>
                             ))}
                           </select>
-                        ) : (
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">Qté</label>
                           <input
-                            value={article.couleur}
-                            onChange={(e) => handleArticleChange(article.id, { couleur: e.target.value })}
+                            type="number"
+                            min={1}
+                            value={article.quantite}
+                            onChange={(e) => handleArticleChange(article.id, { quantite: Number(e.target.value) })}
                             className="w-full px-3 py-2.5 rounded-xl text-sm bg-beige-100 border border-beige-300 text-ink"
                           />
-                        )}
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">Prix unitaire (FCFA)</label>
+                          <input
+                            type="number"
+                            min={0}
+                            value={article.prix_unitaire}
+                            onChange={(e) => handleArticleChange(article.id, { prix_unitaire: Number(e.target.value) })}
+                            className="w-full px-3 py-2.5 rounded-xl text-sm bg-beige-100 border border-beige-300 text-ink"
+                          />
+                        </div>
                       </div>
-                      <div className="md:col-span-5">
-                        <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">Instructions</label>
-                        <input
-                          value={article.instructions}
-                          onChange={(e) => handleArticleChange(article.id, { instructions: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl text-sm bg-beige-100 border border-beige-300 text-ink"
-                        />
-                      </div>
-                      <div className="flex items-end justify-end">
+
+                      {/* Ligne 2 : Couleur + Taille (seulement si le produit en a) */}
+                      {(colorOptions || sizeOptions || isMapMode) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                          {colorOptions && (
+                            <div>
+                              <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">
+                                Couleur {colorOptions.length > 0 ? '*' : ''}
+                              </label>
+                              <select
+                                value={article.couleur}
+                                onChange={(e) => handleColorChange(article.id, e.target.value)}
+                                className="w-full px-3 py-2.5 rounded-xl text-xs font-semibold bg-beige-100 border border-beige-300 text-muted"
+                              >
+                                <option value="">— Choisir une couleur</option>
+                                {colorOptions.map((c) => (
+                                  <option key={c} value={c}>{c}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+
+                          {(sizeOptions || isMapMode) && (
+                            <div>
+                              <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">
+                                Taille / Pointure {sizeOptions?.length ? '*' : ''}
+                              </label>
+                              {sizeOptions ? (
+                                <select
+                                  value={article.taille}
+                                  onChange={(e) => handleArticleChange(article.id, { taille: e.target.value })}
+                                  className="w-full px-3 py-2.5 rounded-xl text-xs font-semibold bg-beige-100 border border-beige-300 text-muted"
+                                >
+                                  <option value="">— Choisir</option>
+                                  {sizeOptions.map((s) => {
+                                    const stock = produit?.couleur_tailles_stock?.[article.couleur]?.[s]
+                                    const label = stock != null ? `${s} (stock: ${stock})` : s
+                                    return <option key={s} value={s}>{label}</option>
+                                  })}
+                                </select>
+                              ) : (
+                                <select disabled className="w-full px-3 py-2.5 rounded-xl text-xs bg-beige-50 border border-beige-300 text-muted/50">
+                                  <option>{isMapMode && !article.couleur ? '— Sélectionner couleur d\'abord' : '— Aucune taille'}</option>
+                                </select>
+                              )}
+                              {variantStock !== null && (
+                                <p className={`text-[11px] mt-1 font-semibold ${variantStock === 0 ? 'text-rose-500' : variantStock <= 3 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                  Stock disponible : {variantStock}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Ligne 3 : Instructions + Supprimer */}
+                      <div className="flex items-end gap-3">
+                        <div className="flex-1">
+                          <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">Instructions / Personnalisation</label>
+                          <input
+                            value={article.instructions}
+                            onChange={(e) => handleArticleChange(article.id, { instructions: e.target.value })}
+                            placeholder="Ex : broderie prénom, couleur doublure…"
+                            className="w-full px-3 py-2.5 rounded-xl text-sm bg-beige-100 border border-beige-300 text-ink"
+                          />
+                        </div>
                         <button
                           onClick={() => removeArticle(article.id)}
-                          className="p-2 rounded-xl border border-blush/50 hover:bg-blush/20"
+                          className="p-2 rounded-xl border border-blush/50 hover:bg-blush/20 flex-shrink-0"
                           title="Supprimer"
                           disabled={articles.length === 1}
                         >
                           <Trash2 className="w-4 h-4 text-rose-400" strokeWidth={1.5} />
                         </button>
                       </div>
+
+                      {selectedClient?.a_mesures && (
+                        <label className="flex items-center gap-2 text-xs text-muted mt-3">
+                          <input
+                            type="checkbox"
+                            checked={article.utilise_mesures_client}
+                            onChange={(e) => handleArticleChange(article.id, { utilise_mesures_client: e.target.checked })}
+                            className="rounded border-beige-300 text-beige-500 focus:ring-beige-400"
+                          />
+                          Utiliser les mesures du client
+                        </label>
+                      )}
                     </div>
-                    {selectedClient?.a_mesures && (
-                      <label className="flex items-center gap-2 text-xs text-muted mt-3">
-                        <input
-                          type="checkbox"
-                          checked={article.utilise_mesures_client}
-                          onChange={(e) => handleArticleChange(article.id, { utilise_mesures_client: e.target.checked })}
-                          className="rounded border-beige-300 text-beige-500 focus:ring-beige-400"
-                        />
-                        Utiliser les mesures du client
-                      </label>
-                    )}
-                  </div>
                   )
                 })}
               </div>
             </div>
           </div>
 
+          {/* Colonne droite */}
           <div className="space-y-6">
             <div className="bg-beige-100 rounded-2xl border border-beige-300 p-5">
-              <h3 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2"><CreditCard className="w-4 h-4" /> Resume</h3>
+              <h3 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2"><CreditCard className="w-4 h-4" /> Résumé</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span>Sous-total</span><span>{fmtMoney(subtotal)} FCFA</span></div>
                 <div className="flex justify-between"><span>Livraison</span><span>{fmtMoney(form.frais_livraison)} FCFA</span></div>
@@ -521,16 +572,16 @@ export function CreateOrderModal({ onClose, onCreated, onError }: Props) {
             </div>
 
             <div className="bg-beige-100 rounded-2xl border border-beige-300 p-5">
-              <h3 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2"><Clock className="w-4 h-4" /> Parametres</h3>
+              <h3 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2"><Clock className="w-4 h-4" /> Paramètres</h3>
               <div className="space-y-3">
                 <select
                   value={form.priorite}
                   onChange={(e) => setForm(prev => ({ ...prev, priorite: e.target.value }))}
                   className="w-full px-3 py-2.5 rounded-xl text-xs font-semibold bg-beige-50 border border-beige-300 text-muted"
                 >
-                  <option value="normale">Priorite normale</option>
+                  <option value="normale">Priorité normale</option>
                   <option value="urgente">Urgente</option>
-                  <option value="tres_urgente">Tres urgente</option>
+                  <option value="tres_urgente">Très urgente</option>
                 </select>
                 <input
                   type="number"
@@ -578,7 +629,7 @@ export function CreateOrderModal({ onClose, onCreated, onError }: Props) {
 
         <div className="px-6 pb-6 flex items-center justify-between">
           <p className="text-xs text-muted flex items-center gap-2">
-            <AlertTriangle className="w-3.5 h-3.5" /> Les champs obligatoires doivent etre remplis.
+            <AlertTriangle className="w-3.5 h-3.5" /> Les champs marqués * sont obligatoires.
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -592,7 +643,7 @@ export function CreateOrderModal({ onClose, onCreated, onError }: Props) {
               disabled={submitting}
               className="px-4 py-2 rounded-xl text-xs font-semibold bg-beige-500 text-white hover:bg-beige-400 disabled:opacity-50"
             >
-              {submitting ? 'Creation…' : 'Creer la commande'}
+              {submitting ? 'Création…' : 'Créer la commande'}
             </button>
           </div>
         </div>

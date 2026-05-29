@@ -17,8 +17,6 @@ export const statusLabels: Record<string, string> = {
   annulee: 'Annulee',
 }
 
-export const sizeOptions = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
-
 export const paymentMethods = [
   { value: 'especes', label: 'Especes' },
   { value: 'wave', label: 'Wave' },

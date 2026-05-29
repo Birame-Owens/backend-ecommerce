@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Admin\AvisClientController;
 use App\Http\Controllers\Api\Admin\RapportController;
 use App\Http\Controllers\Api\Admin\MessageGroupeController;
 use App\Http\Controllers\Api\Admin\SyncController;
+use App\Http\Controllers\Api\Admin\ShopSettingController;
 use App\Http\Controllers\Api\Client\HomeController;
 
 use App\Http\Controllers\Api\Client\HomeController as ClientHomeController;
@@ -188,6 +189,7 @@ Route::prefix('admin')->group(function () {
         // Paiements
         Route::get('/paiements/stats', [PaiementController::class, 'stats']);
         Route::get('/paiements/payment-methods', [PaiementController::class, 'paymentMethods']);
+        Route::post('/paiements/payment-methods/{method}/toggle', [PaiementController::class, 'togglePaymentMethod']);
         Route::post('/paiements/{paiement}/confirm', [PaiementController::class, 'confirm']);
         Route::post('/paiements/{paiement}/reject', [PaiementController::class, 'reject']);
         Route::post('/paiements/{paiement}/refund', [PaiementController::class, 'refund']);
@@ -219,6 +221,14 @@ Route::prefix('admin')->group(function () {
         Route::post('/avis-clients/{avis}/toggle-mise-en-avant', [AvisClientController::class, 'toggleMiseEnAvant']);
         Route::post('/avis-clients/{avis}/toggle-verifie', [AvisClientController::class, 'toggleVerifie']);
         Route::apiResource('avis-clients', AvisClientController::class)->only(['index', 'show', 'destroy']);
+
+        // =================== PARAMÈTRES BOUTIQUE ===================
+        Route::prefix('settings')->name('settings.')->group(function () {
+            Route::get('/', [ShopSettingController::class, 'index'])->name('index');
+            Route::put('/', [ShopSettingController::class, 'update'])->name('update');
+            Route::post('/change-password', [ShopSettingController::class, 'changePassword'])->name('change-password');
+        });
+        // =================== FIN PARAMÈTRES BOUTIQUE ===================
 
         // Messages Groupés
         Route::prefix('messages')->group(function () {

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  Sparkles, Download, Filter, Search, Tag, Percent, Gift, Timer,
+  Sparkles, Filter, Search, Tag, Percent, Gift, Timer,
   Megaphone, Calendar, FileText, Eye, Pencil, Power, Trash2,
-  ChevronLeft, ChevronRight, Crown,
+  ChevronLeft, ChevronRight, Crown, X, Users, CalendarDays,
+  ShoppingBag, CheckCircle2, XCircle, Layers, Clock,
 } from 'lucide-react'
 import { promotionsAdminApi } from '@/api/admin/promotions'
 import type {
@@ -66,6 +67,200 @@ function statusBadge(promo: AdminPromotionListItem) {
     default:
       return 'bg-beige-200 text-muted'
   }
+}
+
+const JOURS_LABELS: Record<number, string> = { 0: 'Dim', 1: 'Lun', 2: 'Mar', 3: 'Mer', 4: 'Jeu', 5: 'Ven', 6: 'Sam' }
+const CIBLE_LABELS: Record<string, string> = { tous: 'Tous', nouveaux: 'Nouveaux', vip: 'VIP', reguliers: 'Réguliers' }
+
+function DetailDrawer({
+  promotion,
+  options,
+  onClose,
+  onEdit,
+}: {
+  promotion: AdminPromotionDetail
+  options: AdminPromotionOptions | null
+  onClose: () => void
+  onEdit: () => void
+}) {
+  const jours = promotion.jours_semaine_valides ?? []
+  const cats = promotion.categories_eligibles ?? []
+  const prods = promotion.produits_eligibles ?? []
+
+  const catNames = options?.categories.filter((c) => cats.includes(c.id)).map((c) => c.nom) ?? []
+  const prodNames = options?.produits.filter((p) => prods.includes(p.id)).map((p) => p.nom) ?? []
+
+  const bool = (v: boolean | undefined, trueLabel = 'Oui', falseLabel = 'Non') =>
+    v ? (
+      <span className="flex items-center gap-1 text-emerald-600 font-semibold text-xs"><CheckCircle2 className="w-3.5 h-3.5" />{trueLabel}</span>
+    ) : (
+      <span className="flex items-center gap-1 text-muted text-xs"><XCircle className="w-3.5 h-3.5" />{falseLabel}</span>
+    )
+
+  return (
+    <div className="fixed inset-0 z-[140] flex">
+      <div className="flex-1 bg-black/30 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="w-full max-w-lg bg-beige-50 shadow-beige-lg border-l border-beige-300 overflow-y-auto flex flex-col">
+        {/* Header */}
+        <div className="p-5 border-b border-beige-300 flex items-start gap-3">
+          {promotion.image && (
+            <img src={promotion.image} alt={promotion.nom} className="w-14 h-14 rounded-xl object-cover border border-beige-300 flex-shrink-0" />
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-semibold text-muted uppercase tracking-widest">Détail promotion</p>
+            <h2 className="text-lg font-serif font-bold text-ink truncate">{promotion.nom}</h2>
+            {promotion.code && (
+              <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-beige-200 rounded-lg text-xs font-mono font-semibold text-beige-600">
+                <Tag className="w-3 h-3" strokeWidth={1.5} />{promotion.code}
+              </span>
+            )}
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg border border-beige-300 hover:bg-beige-200 flex-shrink-0">
+            <X className="w-4 h-4 text-muted" strokeWidth={1.5} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4 flex-1">
+          {/* Status + type */}
+          <div className="flex flex-wrap gap-2">
+            <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusBadge(promotion as AdminPromotionListItem)}`}>
+              {promotion.statut_label ?? promotion.statut}
+            </span>
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-beige-200 text-ink">
+              {promotion.type_label ?? promotion.type_promotion}
+            </span>
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-beige-500 text-white">
+              {promotion.valeur_formatted ?? promotion.valeur}
+            </span>
+          </div>
+
+          {/* Description */}
+          <div className="bg-beige-100 rounded-xl border border-beige-300 p-3">
+            <p className="text-xs text-muted mb-1 uppercase tracking-widest font-semibold">Description</p>
+            <p className="text-sm text-ink">{promotion.description}</p>
+          </div>
+
+          {/* Dates + cible */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-beige-100 rounded-xl border border-beige-300 p-3">
+              <p className="text-[11px] text-muted uppercase tracking-widest font-semibold flex items-center gap-1"><CalendarDays className="w-3 h-3" />Période</p>
+              <p className="text-sm font-semibold text-ink mt-1">{promotion.date_debut}</p>
+              <p className="text-sm font-semibold text-ink">→ {promotion.date_fin}</p>
+              {(promotion.jours_restants ?? 0) > 0 && (
+                <p className="text-[11px] text-muted mt-1"><Clock className="w-3 h-3 inline" /> {promotion.jours_restants}j restants</p>
+              )}
+            </div>
+            <div className="bg-beige-100 rounded-xl border border-beige-300 p-3">
+              <p className="text-[11px] text-muted uppercase tracking-widest font-semibold flex items-center gap-1"><Users className="w-3 h-3" />Cible client</p>
+              <p className="text-sm font-semibold text-ink mt-1">{CIBLE_LABELS[promotion.cible_client ?? ''] ?? promotion.cible_client ?? '—'}</p>
+              {promotion.montant_minimum && (
+                <p className="text-[11px] text-muted mt-1">Min. {fmtMoney(promotion.montant_minimum)} F</p>
+              )}
+            </div>
+          </div>
+
+          {/* Utilisations */}
+          <div className="bg-beige-100 rounded-xl border border-beige-300 p-3">
+            <p className="text-[11px] text-muted uppercase tracking-widest font-semibold flex items-center gap-1"><ShoppingBag className="w-3 h-3" />Utilisations</p>
+            <div className="flex items-center gap-4 mt-2">
+              <div>
+                <p className="text-xl font-bold text-ink">{promotion.nombre_utilisations}</p>
+                <p className="text-[11px] text-muted">utilisées</p>
+              </div>
+              {promotion.utilisation_maximum && (
+                <>
+                  <div className="text-muted">/</div>
+                  <div>
+                    <p className="text-xl font-bold text-ink">{promotion.utilisation_maximum}</p>
+                    <p className="text-[11px] text-muted">max global</p>
+                  </div>
+                </>
+              )}
+              {promotion.utilisation_par_client && (
+                <div className="ml-auto">
+                  <p className="text-sm font-semibold text-ink">{promotion.utilisation_par_client}x</p>
+                  <p className="text-[11px] text-muted">/ client</p>
+                </div>
+              )}
+            </div>
+            {promotion.utilisation_maximum && (
+              <div className="mt-2 h-1.5 bg-beige-300 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-beige-500 rounded-full"
+                  style={{ width: `${Math.min(100, (promotion.nombre_utilisations / promotion.utilisation_maximum) * 100)}%` }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Jours valides */}
+          {jours.length > 0 && (
+            <div className="bg-beige-100 rounded-xl border border-beige-300 p-3">
+              <p className="text-[11px] text-muted uppercase tracking-widest font-semibold mb-2">Jours valides</p>
+              <div className="flex flex-wrap gap-1.5">
+                {[1,2,3,4,5,6,0].map((j) => (
+                  <span key={j} className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${jours.includes(j) ? 'bg-beige-500 text-white' : 'bg-beige-200 text-muted opacity-40'}`}>
+                    {JOURS_LABELS[j]}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Categories / Produits éligibles */}
+          {(cats.length > 0 || prods.length > 0) && (
+            <div className="bg-beige-100 rounded-xl border border-beige-300 p-3">
+              <p className="text-[11px] text-muted uppercase tracking-widest font-semibold flex items-center gap-1 mb-2">
+                <Layers className="w-3 h-3" />{cats.length > 0 ? 'Catégories éligibles' : 'Produits éligibles'}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {(cats.length > 0 ? catNames : prodNames).map((name) => (
+                  <span key={name} className="px-2 py-0.5 bg-beige-200 rounded-lg text-xs font-medium text-ink">{name}</span>
+                ))}
+                {(cats.length > 0 ? catNames : prodNames).length === 0 && (
+                  <span className="text-xs text-muted">{cats.length > 0 ? `${cats.length} catégorie(s)` : `${prods.length} produit(s)`}</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Options booléennes */}
+          <div className="bg-beige-100 rounded-xl border border-beige-300 p-3">
+            <p className="text-[11px] text-muted uppercase tracking-widest font-semibold mb-2">Options</p>
+            <div className="grid grid-cols-2 gap-1.5 text-xs">
+              <div className="flex items-center justify-between"><span className="text-muted">Cumulable</span>{bool(promotion.cumul_avec_autres)}</div>
+              <div className="flex items-center justify-between"><span className="text-muted">1ère commande</span>{bool(promotion.premiere_commande_seulement)}</div>
+              <div className="flex items-center justify-between"><span className="text-muted">Affiché site</span>{bool(promotion.afficher_site)}</div>
+              <div className="flex items-center justify-between"><span className="text-muted">Notif WhatsApp</span>{bool(promotion.envoyer_whatsapp)}</div>
+              <div className="flex items-center justify-between"><span className="text-muted">Notif email</span>{bool(promotion.envoyer_email)}</div>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-beige-100 rounded-xl border border-beige-300 p-3">
+              <p className="text-[11px] text-muted uppercase tracking-widest">CA généré</p>
+              <p className="text-base font-bold text-ink mt-1">{fmtMoney(promotion.chiffre_affaires_genere)} F</p>
+            </div>
+            <div className="bg-beige-100 rounded-xl border border-beige-300 p-3">
+              <p className="text-[11px] text-muted uppercase tracking-widest">Commandes</p>
+              <p className="text-base font-bold text-ink mt-1">{promotion.nombre_commandes}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-5 border-t border-beige-300 flex gap-2">
+          <button onClick={onEdit} className="flex-1 px-4 py-2.5 rounded-xl bg-beige-500 text-white text-xs font-semibold hover:bg-beige-400 flex items-center justify-center gap-2">
+            <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />Modifier
+          </button>
+          <button onClick={onClose} className="px-4 py-2.5 rounded-xl border border-beige-300 text-xs font-semibold text-muted hover:bg-beige-200">
+            Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function PromotionFormModal({
@@ -209,12 +404,24 @@ function PromotionFormModal({
                   placeholder="Description"
                   className="px-3 py-2.5 rounded-xl text-sm bg-beige-50 border border-beige-300 text-ink md:col-span-2 min-h-[100px]"
                 />
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setForm((prev) => ({ ...prev, image: e.target.files?.[0] ?? null }))}
-                  className="px-3 py-2.5 rounded-xl text-xs font-semibold bg-beige-50 border border-beige-300 text-muted md:col-span-2"
-                />
+                <div className="md:col-span-2">
+                  {mode === 'edit' && promotion?.image && !form.image && (
+                    <div className="mb-2">
+                      <p className="text-[11px] text-muted uppercase tracking-widest mb-1.5">Image actuelle</p>
+                      <img
+                        src={promotion.image}
+                        alt="image promo"
+                        className="h-20 w-auto rounded-xl object-cover border border-beige-300"
+                      />
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setForm((prev) => ({ ...prev, image: e.target.files?.[0] ?? null }))}
+                    className="w-full px-3 py-2.5 rounded-xl text-xs font-semibold bg-beige-50 border border-beige-300 text-muted"
+                  />
+                </div>
               </div>
             </div>
 
@@ -477,6 +684,9 @@ export default function PromotionsPage() {
   const [formTarget, setFormTarget] = useState<AdminPromotionDetail | null>(null)
   const [formLoading, setFormLoading] = useState(false)
 
+  const [viewTarget, setViewTarget] = useState<AdminPromotionDetail | null>(null)
+  const [viewLoading, setViewLoading] = useState(false)
+
   const [deleteLoadingId, setDeleteLoadingId] = useState<number | null>(null)
   const [toasts, setToasts] = useState<ToastItem[]>([])
 
@@ -564,6 +774,7 @@ export default function PromotionsPage() {
   }
 
   const openEdit = async (promotionId: number) => {
+    setViewTarget(null)
     setFormLoading(true)
     try {
       await loadOptions()
@@ -574,6 +785,19 @@ export default function PromotionsPage() {
       addToast('Impossible de charger la promotion.', 'error')
     } finally {
       setFormLoading(false)
+    }
+  }
+
+  const openView = async (promotionId: number) => {
+    setViewLoading(true)
+    try {
+      await loadOptions()
+      const res = await promotionsAdminApi.show(promotionId)
+      setViewTarget(res.data.data.promotion)
+    } catch {
+      addToast('Impossible de charger la promotion.', 'error')
+    } finally {
+      setViewLoading(false)
     }
   }
 
@@ -591,8 +815,12 @@ export default function PromotionsPage() {
       setFormMode(null)
       setFormTarget(null)
       await refresh()
-    } catch {
-      addToast('Enregistrement impossible.', 'error')
+    } catch (err: any) {
+      const errors = err?.response?.data?.errors
+      const msg = errors
+        ? Object.values(errors).flat().join(' — ')
+        : (err?.response?.data?.message ?? 'Enregistrement impossible.')
+      addToast(msg || 'Enregistrement impossible.', 'error')
     } finally {
       setFormLoading(false)
     }
@@ -765,12 +993,14 @@ export default function PromotionsPage() {
       </div>
 
       <div className="hidden lg:block bg-beige-50 border border-beige-300 rounded-2xl overflow-hidden">
-        <div className="grid grid-cols-[1.6fr_0.8fr_0.9fr_0.7fr_1fr_0.9fr_1fr] gap-4 px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-widest border-b border-beige-300">
+        <div className="grid grid-cols-[1.8fr_0.9fr_0.8fr_0.9fr_0.7fr_0.8fr_0.9fr_0.8fr_auto] gap-3 px-5 py-3 text-[11px] font-semibold text-muted uppercase tracking-widest border-b border-beige-300">
           <div>Promotion</div>
-          <div>Type</div>
-          <div>Produits</div>
-          <div>Reduction</div>
-          <div>Periode</div>
+          <div>Type / Valeur</div>
+          <div>Cible</div>
+          <div>Éligibilité</div>
+          <div>Jours</div>
+          <div>Utilisations</div>
+          <div>Période</div>
           <div>Statut</div>
           <div>Actions</div>
         </div>
@@ -787,55 +1017,124 @@ export default function PromotionsPage() {
             <p className="text-xs text-muted">Créez une nouvelle offre pour booster les ventes.</p>
           </div>
         ) : (
-          promotions.map((promo) => (
-            <div
-              key={promo.id}
-              className="grid grid-cols-[1.6fr_0.8fr_0.9fr_0.7fr_1fr_0.9fr_1fr] gap-4 px-5 py-4 border-b border-beige-200 hover:bg-beige-100 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-beige-200 flex items-center justify-center text-xs font-semibold text-muted">
-                  {promo.code ? promo.code.slice(0, 2).toUpperCase() : 'PR'}
+          promotions.map((promo) => {
+            const joursCount = promo.jours_semaine_valides?.length ?? 0
+            const catsCount = promo.categories_eligibles?.length ?? 0
+            const prodsCount = promo.produits_eligibles?.length ?? 0
+            return (
+              <div
+                key={promo.id}
+                className="grid grid-cols-[1.8fr_0.9fr_0.8fr_0.9fr_0.7fr_0.8fr_0.9fr_0.8fr_auto] gap-3 px-5 py-4 border-b border-beige-200 hover:bg-beige-100 transition-colors items-center"
+              >
+                {/* Promotion */}
+                <div className="flex items-center gap-3 min-w-0">
+                  {promo.image ? (
+                    <img src={promo.image} alt={promo.nom} className="w-9 h-9 rounded-xl object-cover border border-beige-300 flex-shrink-0" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-xl bg-beige-200 flex items-center justify-center text-[10px] font-bold text-muted flex-shrink-0">
+                      {promo.code ? promo.code.slice(0, 2).toUpperCase() : 'PR'}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-ink truncate">{promo.nom}</p>
+                    {promo.code && (
+                      <span className="text-[10px] font-mono text-muted bg-beige-200 px-1.5 py-0.5 rounded">{promo.code}</span>
+                    )}
+                  </div>
                 </div>
+                {/* Type / Valeur */}
                 <div>
-                  <p className="text-sm font-semibold text-ink">{promo.nom}</p>
-                  <p className="text-xs text-muted">{promo.code ?? 'Sans code'}</p>
+                  <p className="text-[11px] text-muted">{promo.type_label ?? promo.type_promotion}</p>
+                  <p className="text-sm font-bold text-ink">{promo.valeur_formatted ?? promo.valeur}</p>
+                </div>
+                {/* Cible */}
+                <div>
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-beige-200 text-ink">
+                    {CIBLE_LABELS[promo.cible_client ?? ''] ?? promo.cible_client ?? 'Tous'}
+                  </span>
+                </div>
+                {/* Éligibilité */}
+                <div className="flex flex-col gap-1">
+                  {catsCount > 0 && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] font-semibold bg-sky-50 text-sky-600">
+                      <Layers className="w-3 h-3" />{catsCount} catég.
+                    </span>
+                  )}
+                  {prodsCount > 0 && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] font-semibold bg-violet-50 text-violet-600">
+                      <ShoppingBag className="w-3 h-3" />{prodsCount} prod.
+                    </span>
+                  )}
+                  {catsCount === 0 && prodsCount === 0 && (
+                    <span className="text-[11px] text-muted">Tous</span>
+                  )}
+                </div>
+                {/* Jours */}
+                <div>
+                  {joursCount === 0 ? (
+                    <span className="text-[11px] text-muted">Tous</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] font-semibold bg-amber-50 text-amber-600">
+                      <CalendarDays className="w-3 h-3" />{joursCount}j
+                    </span>
+                  )}
+                </div>
+                {/* Utilisations */}
+                <div>
+                  <p className="text-sm font-semibold text-ink">{promo.nombre_utilisations ?? 0}</p>
+                  {promo.utilisation_maximum ? (
+                    <p className="text-[10px] text-muted">/{promo.utilisation_maximum}</p>
+                  ) : (
+                    <p className="text-[10px] text-muted">illimité</p>
+                  )}
+                </div>
+                {/* Période */}
+                <div>
+                  <p className="text-[11px] text-muted">{promo.date_debut}</p>
+                  <p className="text-[11px] text-muted">{promo.date_fin}</p>
+                </div>
+                {/* Statut */}
+                <div>
+                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${statusBadge(promo)}`}>
+                    {promo.statut_label ?? promo.statut}
+                  </span>
+                </div>
+                {/* Actions */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => openView(promo.id)}
+                    disabled={viewLoading}
+                    className="p-2 rounded-xl border border-beige-300 hover:bg-beige-200 transition-colors disabled:opacity-40"
+                    title="Voir le détail"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-muted" strokeWidth={1.5} />
+                  </button>
+                  <button
+                    onClick={() => openEdit(promo.id)}
+                    className="p-2 rounded-xl border border-beige-300 hover:bg-beige-200 transition-colors"
+                    title="Modifier"
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-muted" strokeWidth={1.5} />
+                  </button>
+                  <button
+                    onClick={() => handleToggleStatus(promo)}
+                    className="p-2 rounded-xl border border-beige-300 hover:bg-beige-200 transition-colors"
+                    title="Activer / Désactiver"
+                  >
+                    <Power className="w-3.5 h-3.5 text-muted" strokeWidth={1.5} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(promo)}
+                    disabled={deleteLoadingId === promo.id}
+                    className="p-2 rounded-xl border border-blush/50 hover:bg-blush/20 transition-colors disabled:opacity-50"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-500" strokeWidth={1.5} />
+                  </button>
                 </div>
               </div>
-              <div className="text-xs text-muted">{promo.type_label ?? promo.type_promotion}</div>
-              <div className="text-xs text-muted">{promo.nombre_commandes} commandes</div>
-              <div className="text-sm font-semibold text-ink">{promo.valeur_formatted ?? promo.valeur}</div>
-              <div className="text-xs text-muted">{promo.date_debut} → {promo.date_fin}</div>
-              <div>
-                <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusBadge(promo)}`}>
-                  {promo.statut_label ?? promo.statut}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => openEdit(promo.id)}
-                  className="p-2 rounded-xl border border-beige-300 hover:bg-beige-200 transition-colors"
-                  title="Modifier"
-                >
-                  <Pencil className="w-3.5 h-3.5 text-muted" strokeWidth={1.5} />
-                </button>
-                <button
-                  onClick={() => handleToggleStatus(promo)}
-                  className="p-2 rounded-xl border border-beige-300 hover:bg-beige-200 transition-colors"
-                  title="Activer / Desactiver"
-                >
-                  <Power className="w-3.5 h-3.5 text-muted" strokeWidth={1.5} />
-                </button>
-                <button
-                  onClick={() => handleDelete(promo)}
-                  disabled={deleteLoadingId === promo.id}
-                  className="p-2 rounded-xl border border-blush/50 hover:bg-blush/20 transition-colors disabled:opacity-50"
-                  title="Supprimer"
-                >
-                  <Trash2 className="w-3.5 h-3.5 text-rose-500" strokeWidth={1.5} />
-                </button>
-              </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
 
@@ -844,30 +1143,83 @@ export default function PromotionsPage() {
           Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="h-32 bg-beige-200 rounded-2xl animate-pulse" />
           ))
-        ) : promotions.map((promo) => (
-          <div key={promo.id} className="bg-beige-50 border border-beige-300 rounded-2xl p-4 shadow-beige">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-semibold text-ink">{promo.nom}</p>
-                <p className="text-xs text-muted">{promo.code ?? 'Sans code'}</p>
+        ) : promotions.map((promo) => {
+          const joursCount = promo.jours_semaine_valides?.length ?? 0
+          const catsCount = promo.categories_eligibles?.length ?? 0
+          const prodsCount = promo.produits_eligibles?.length ?? 0
+          return (
+            <div key={promo.id} className="bg-beige-50 border border-beige-300 rounded-2xl p-4 shadow-beige">
+              <div className="flex items-start gap-3">
+                {promo.image ? (
+                  <img src={promo.image} alt={promo.nom} className="w-12 h-12 rounded-xl object-cover border border-beige-300 flex-shrink-0" />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-beige-200 flex items-center justify-center text-xs font-bold text-muted flex-shrink-0">
+                    {promo.code ? promo.code.slice(0, 2).toUpperCase() : 'PR'}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-ink truncate">{promo.nom}</p>
+                      {promo.code && <p className="text-[10px] font-mono text-muted">{promo.code}</p>}
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold flex-shrink-0 ${statusBadge(promo)}`}>
+                      {promo.statut_label ?? promo.statut}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    <span className="px-1.5 py-0.5 bg-beige-200 rounded text-[10px] text-muted">{promo.type_label ?? promo.type_promotion}</span>
+                    <span className="px-1.5 py-0.5 bg-beige-500 text-white rounded text-[10px] font-semibold">{promo.valeur_formatted ?? promo.valeur}</span>
+                    <span className="px-1.5 py-0.5 bg-beige-200 rounded text-[10px] text-muted">
+                      {CIBLE_LABELS[promo.cible_client ?? ''] ?? 'Tous'}
+                    </span>
+                    {catsCount > 0 && (
+                      <span className="px-1.5 py-0.5 bg-sky-50 text-sky-600 rounded text-[10px] font-semibold">{catsCount} catég.</span>
+                    )}
+                    {prodsCount > 0 && (
+                      <span className="px-1.5 py-0.5 bg-violet-50 text-violet-600 rounded text-[10px] font-semibold">{prodsCount} prod.</span>
+                    )}
+                    {joursCount > 0 && (
+                      <span className="px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded text-[10px] font-semibold">{joursCount}j/sem</span>
+                    )}
+                  </div>
+                </div>
               </div>
-              <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusBadge(promo)}`}>
-                {promo.statut_label ?? promo.statut}
-              </span>
+              <div className="mt-3 flex items-center justify-between text-xs text-muted">
+                <span>{promo.nombre_utilisations ?? 0} utilisations</span>
+                <span>{promo.date_debut} → {promo.date_fin}</span>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={() => openView(promo.id)}
+                  disabled={viewLoading}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-beige-300 text-xs font-semibold text-muted hover:bg-beige-200 transition-colors disabled:opacity-40"
+                >
+                  <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />Voir
+                </button>
+                <button
+                  onClick={() => openEdit(promo.id)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-beige-500 text-white text-xs font-semibold hover:bg-beige-400 transition-colors"
+                >
+                  <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />Modifier
+                </button>
+                <button
+                  onClick={() => handleToggleStatus(promo)}
+                  className="p-2 rounded-xl border border-beige-300 hover:bg-beige-200 transition-colors"
+                >
+                  <Power className="w-3.5 h-3.5 text-muted" strokeWidth={1.5} />
+                </button>
+                <button
+                  onClick={() => handleDelete(promo)}
+                  disabled={deleteLoadingId === promo.id}
+                  className="p-2 rounded-xl border border-blush/50 hover:bg-blush/20 transition-colors disabled:opacity-50"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-500" strokeWidth={1.5} />
+                </button>
+              </div>
             </div>
-            <div className="mt-2 text-xs text-muted">{promo.type_label ?? promo.type_promotion}</div>
-            <div className="mt-3 flex items-center justify-between">
-              <span className="text-sm font-semibold text-ink">{promo.valeur_formatted ?? promo.valeur}</span>
-              <span className="text-xs text-muted">{promo.date_debut} → {promo.date_fin}</span>
-            </div>
-            <button
-              onClick={() => openEdit(promo.id)}
-              className="mt-3 w-full px-3 py-2 rounded-xl bg-beige-500 text-white text-xs font-semibold hover:bg-beige-400 transition-colors"
-            >
-              Modifier
-            </button>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {lastPage > 1 && (
@@ -906,6 +1258,19 @@ export default function PromotionsPage() {
             <ChevronRight className="w-4 h-4 text-muted" strokeWidth={1.5} />
           </button>
         </div>
+      )}
+
+      {viewTarget && (
+        <DetailDrawer
+          promotion={viewTarget}
+          options={options}
+          onClose={() => setViewTarget(null)}
+          onEdit={() => {
+            const id = viewTarget.id
+            setViewTarget(null)
+            openEdit(id)
+          }}
+        />
       )}
 
       {formMode && (

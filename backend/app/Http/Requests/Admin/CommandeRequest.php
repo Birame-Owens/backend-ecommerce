@@ -261,7 +261,7 @@ class CommandeRequest extends FormRequest
             'articles.*.prix_unitaire.numeric' => 'Le prix unitaire doit être un nombre.',
             'articles.*.prix_unitaire.min' => 'Le prix ne peut pas être négatif.',
             
-            'articles.*.taille.in' => 'La taille doit être : XS, S, M, L, XL, XXL ou XXXL.',
+            'articles.*.taille.max' => 'La taille/pointure ne peut pas dépasser 50 caractères.',
             'articles.*.couleur.max' => 'La couleur ne peut pas dépasser 50 caractères.',
             
             // Mesures

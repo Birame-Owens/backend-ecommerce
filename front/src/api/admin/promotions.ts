@@ -48,12 +48,14 @@ export const promotionsAdminApi = {
       { headers: { 'Content-Type': 'multipart/form-data' } },
     ),
 
-  update: (id: number, payload: FormData) =>
-    api.post<{ success: boolean; message: string; data: { promotion: AdminPromotionDetail } }>(
-      `/api/admin/promotions/${id}?_method=PUT`,
+  update: (id: number, payload: FormData) => {
+    payload.append('_method', 'PUT')
+    return api.post<{ success: boolean; message: string; data: { promotion: AdminPromotionDetail } }>(
+      `/api/admin/promotions/${id}`,
       payload,
       { headers: { 'Content-Type': 'multipart/form-data' } },
-    ),
+    )
+  },
 
   toggleStatus: (id: number) =>
     api.post<{ success: boolean; message: string; data: { promotion: AdminPromotionListItem } }>(

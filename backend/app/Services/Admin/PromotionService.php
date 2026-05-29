@@ -41,17 +41,18 @@ class PromotionService
             // Valider les dates
             $this->validateDates($data);
 
-            // Encoder les tableaux JSON
-            $data['categories_eligibles'] = isset($data['categories_eligibles']) 
-                ? json_encode($data['categories_eligibles']) 
-                : null;
-            
-            $data['produits_eligibles'] = isset($data['produits_eligibles']) 
-                ? json_encode($data['produits_eligibles']) 
+            // Encoder les tableaux JSON (toujours présents grâce à prepareForValidation)
+            // Vide = null (la promo s'applique à tout), non-vide = JSON d'entiers
+            $data['categories_eligibles'] = !empty($data['categories_eligibles'])
+                ? json_encode(array_values(array_map('intval', $data['categories_eligibles'])))
                 : null;
 
-            $data['jours_semaine_valides'] = isset($data['jours_semaine_valides']) 
-                ? json_encode($data['jours_semaine_valides']) 
+            $data['produits_eligibles'] = !empty($data['produits_eligibles'])
+                ? json_encode(array_values(array_map('intval', $data['produits_eligibles'])))
+                : null;
+
+            $data['jours_semaine_valides'] = !empty($data['jours_semaine_valides'])
+                ? json_encode(array_values(array_map('intval', $data['jours_semaine_valides'])))
                 : null;
 
             $promotion = Promotion::create($data);
@@ -98,18 +99,18 @@ class PromotionService
             // Valider les dates
             $this->validateDates($data);
 
-            // Encoder les tableaux JSON
-            if (isset($data['categories_eligibles'])) {
-                $data['categories_eligibles'] = json_encode($data['categories_eligibles']);
-            }
-            
-            if (isset($data['produits_eligibles'])) {
-                $data['produits_eligibles'] = json_encode($data['produits_eligibles']);
-            }
+            // Toujours mettre à jour ces champs (même si vide = suppression des restrictions)
+            $data['categories_eligibles'] = !empty($data['categories_eligibles'])
+                ? json_encode(array_values(array_map('intval', $data['categories_eligibles'])))
+                : null;
 
-            if (isset($data['jours_semaine_valides'])) {
-                $data['jours_semaine_valides'] = json_encode($data['jours_semaine_valides']);
-            }
+            $data['produits_eligibles'] = !empty($data['produits_eligibles'])
+                ? json_encode(array_values(array_map('intval', $data['produits_eligibles'])))
+                : null;
+
+            $data['jours_semaine_valides'] = !empty($data['jours_semaine_valides'])
+                ? json_encode(array_values(array_map('intval', $data['jours_semaine_valides'])))
+                : null;
 
             $promotion->update($data);
 

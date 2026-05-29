@@ -411,7 +411,7 @@ class CommandeService
                 } elseif (is_array($stockMapRaw)) {
                     $stockMap = $stockMapRaw;
                 }
-                if (is_array($stockMap)) {
+                if (is_array($stockMap) && count($stockMap) > 0) {
                     $norm = function (string $value): string {
                         $value = trim($value);
                         return function_exists('mb_strtolower') ? mb_strtolower($value) : strtolower($value);

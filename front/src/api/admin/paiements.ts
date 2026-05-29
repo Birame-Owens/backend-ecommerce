@@ -32,6 +32,11 @@ export const paiementsAdminApi = {
   paymentMethods: () =>
     api.get<{ success: boolean; data: AdminPaymentMethod[] }>('/api/admin/paiements/payment-methods'),
 
+  togglePaymentMethod: (method: string) =>
+    api.post<{ success: boolean; message: string; data: { method: string; active: boolean } }>(
+      `/api/admin/paiements/payment-methods/${method}/toggle`,
+    ),
+
   show: (id: number) =>
     api.get<{ success: boolean; data: { paiement: AdminPaymentDetail } }>(`/api/admin/paiements/${id}`),
 

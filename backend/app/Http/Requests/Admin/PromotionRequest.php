@@ -66,11 +66,11 @@ class PromotionRequest extends FormRequest
             'min:0',
             'max:10000000'
         ],
-        'date_debut' => [
+        'date_debut' => array_filter([
             'required',
             'date',
-            'after_or_equal:today'
-        ],
+            $this->isMethod('POST') && !$this->route('promotion') ? 'after_or_equal:today' : null,
+        ]),
         'date_fin' => [
             'required',
             'date',
@@ -276,6 +276,15 @@ public function messages(): array
         if ($this->has('utilisation_par_client')) {
             $this->merge(['utilisation_par_client' => (int) $this->input('utilisation_par_client', 1)]);
         }
+
+        // Toujours normaliser les tableaux d'IDs en entiers (même vides)
+        // Cela garantit que des strings "3" deviennent des entiers 3,
+        // et que la suppression de toutes les valeurs envoie un tableau vide.
+        $this->merge([
+            'jours_semaine_valides' => array_map('intval', (array) $this->input('jours_semaine_valides', [])),
+            'categories_eligibles'  => array_map('intval', (array) $this->input('categories_eligibles', [])),
+            'produits_eligibles'    => array_map('intval', (array) $this->input('produits_eligibles', [])),
+        ]);
     }
 
     /**
