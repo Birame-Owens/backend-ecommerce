@@ -6,14 +6,16 @@ RUN apk add --no-cache \
     libzip-dev \
     icu-dev \
     linux-headers \
+    libpng-dev libjpeg-turbo-dev freetype-dev \
     autoconf g++ make \
     zip unzip git
 
 RUN pecl install redis \
     && docker-php-ext-enable redis \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
         pdo pdo_pgsql pgsql \
-        zip opcache pcntl bcmath intl
+        zip opcache pcntl bcmath intl gd exif
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
@@ -34,13 +36,15 @@ RUN apk add --no-cache \
     libzip-dev \
     icu-dev \
     linux-headers \
+    libpng-dev libjpeg-turbo-dev freetype-dev \
     autoconf g++ make
 
 RUN pecl install redis \
     && docker-php-ext-enable redis \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
         pdo pdo_pgsql pgsql \
-        zip opcache pcntl bcmath intl
+        zip opcache pcntl bcmath intl gd exif
 
 WORKDIR /app
 
