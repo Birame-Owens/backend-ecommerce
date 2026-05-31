@@ -11,7 +11,7 @@ COPY . .
 ARG VITE_API_URL=https://api.nd-world.site
 ENV VITE_API_URL=$VITE_API_URL
 
-RUN npm run build
+RUN npx vite build
 
 # ─── Stage 2 : Nginx serving static files ────────────────────────────────────
 FROM nginx:1.25-alpine AS production
