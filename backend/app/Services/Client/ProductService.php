@@ -29,7 +29,9 @@ class ProductService
 
             // Filtres
             if (isset($filters['category'])) {
-                $query->where('categorie_id', $filters['category']);
+                $subcategoryIds = Category::where('parent_id', $filters['category'])->pluck('id');
+                $categoryIds = $subcategoryIds->prepend($filters['category']);
+                $query->whereIn('categorie_id', $categoryIds);
             }
 
             if (isset($filters['search'])) {
