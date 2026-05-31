@@ -85,7 +85,7 @@ export const NProductCard = memo(function NProductCard({ product }: { product: P
           <img
             src={product.image_principale}
             alt={product.nom}
-            loading="lazy"
+            loading="eager"
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
