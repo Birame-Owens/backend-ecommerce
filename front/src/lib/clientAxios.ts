@@ -12,4 +12,15 @@ clientApi.interceptors.request.use((config) => {
   return config
 })
 
+// Convertit les URLs absolues du backend en chemins relatifs
+// pour que le proxy Vite les serve quel que soit l'appareil (mobile, etc.)
+clientApi.interceptors.response.use((response) => {
+  try {
+    const raw = JSON.stringify(response.data)
+    const cleaned = raw.replace(/https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/g, '')
+    response.data = JSON.parse(cleaned)
+  } catch { /* ne pas bloquer si JSON non sérialisable */ }
+  return response
+})
+
 export default clientApi

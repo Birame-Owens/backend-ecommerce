@@ -11,6 +11,7 @@ export interface CategoryPreview {
   produits_count: number
   est_populaire: boolean
   url: string
+  subcategories?: CategoryPreview[]
 }
 
 export interface ProductClient {
@@ -25,10 +26,12 @@ export interface ProductClient {
   image_principale: string | null
   categorie: { nom: string; slug: string } | null
   stock_status: { status: string; label: string; color: string }
+  stock_disponible?: number | null
   est_populaire: boolean
   est_nouveaute: boolean
   note_moyenne: number | null
   nombre_avis: number
+  type_variante?: 'vetement' | 'chaussure' | 'parfum' | 'aucun'
 }
 
 export interface ShopStats {

@@ -42,6 +42,7 @@ export interface ProductDetail {
   couleur_tailles_stock: Record<string, Record<string, number>> | null
   stock_disponible: number | null
   en_stock: boolean
+  stock_status: { status: 'in_stock' | 'low_stock' | 'out_of_stock' | 'unlimited'; label: string; color: string } | null
   fait_sur_mesure: boolean
   delai_production_jours: number | null
   note_moyenne: number | null
@@ -49,6 +50,7 @@ export interface ProductDetail {
   tags: string[]
   est_nouveaute: boolean
   est_populaire: boolean
+  type_variante: 'vetement' | 'chaussure' | 'parfum' | 'aucun'
 }
 
 export interface ProductPageData {

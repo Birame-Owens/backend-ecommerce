@@ -7,6 +7,7 @@ use App\Services\Client\CheckoutService;
 use App\Services\Client\NabooPayService;
 use App\Models\Commande;
 use App\Models\Paiement;
+use App\Models\Promotion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -80,7 +81,11 @@ class CheckoutController extends Controller
         }
 
         try {
-            $commande = Commande::where('numero_commande', $orderNumber)->firstOrFail();
+            $query = Commande::where('numero_commande', $orderNumber);
+            if (auth()->check() && ($client = auth()->user()->client)) {
+                $query->where('client_id', $client->id);
+            }
+            $commande = $query->firstOrFail();
 
             if ($commande->statut !== 'en_attente') {
                 return response()->json([
@@ -182,7 +187,11 @@ class CheckoutController extends Controller
                 ], 400);
             }
 
-            $commande = Commande::where('numero_commande', $orderNumber)->firstOrFail();
+            $query = Commande::where('numero_commande', $orderNumber);
+            if (auth()->check() && ($client = auth()->user()->client)) {
+                $query->where('client_id', $client->id);
+            }
+            $commande = $query->firstOrFail();
 
             return response()->json([
                 'success' => true,
@@ -208,7 +217,11 @@ class CheckoutController extends Controller
         try {
             $this->syncNabooPayStatus($orderNumber);
 
-            $commande = Commande::where('numero_commande', $orderNumber)
+            $query = Commande::where('numero_commande', $orderNumber);
+            if (auth()->check() && ($client = auth()->user()->client)) {
+                $query->where('client_id', $client->id);
+            }
+            $commande = $query
                 ->with(['articles.produit.images_produits', 'client', 'paiements'])
                 ->firstOrFail();
 
@@ -275,8 +288,12 @@ class CheckoutController extends Controller
             $this->syncNabooPayStatus($orderNumber);
 
             \Log::info('🔍 getOrderByNumber appelé', ['numero_commande' => $orderNumber]);
-            
-            $commande = Commande::where('numero_commande', $orderNumber)
+
+            $query = Commande::where('numero_commande', $orderNumber);
+            if (auth()->check() && ($client = auth()->user()->client)) {
+                $query->where('client_id', $client->id);
+            }
+            $commande = $query
                 ->with(['articles.produit.images_produits', 'client', 'paiements'])
                 ->firstOrFail();
 
@@ -303,6 +320,58 @@ class CheckoutController extends Controller
                 'message' => 'Commande non trouvée'
             ], 404);
         }
+    }
+
+    /**
+     * Valider un code promo (endpoint public)
+     */
+    public function validateCoupon(Request $request)
+    {
+        $request->validate([
+            'code'             => 'required|string',
+            'montant_commande' => 'required|numeric|min:0',
+        ]);
+
+        $promotion = Promotion::whereRaw('lower(code) = ?', [strtolower(trim($request->code))])
+            ->where('est_active', true)
+            ->where('date_debut', '<=', now())
+            ->where('date_fin', '>=', now())
+            ->first();
+
+        if (!$promotion) {
+            return response()->json(['success' => false, 'message' => 'Code promo invalide ou expiré'], 404);
+        }
+
+        $montant = (float) $request->montant_commande;
+
+        if ($promotion->montant_minimum && $montant < $promotion->montant_minimum) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Montant minimum requis : ' . number_format($promotion->montant_minimum, 0, ',', ' ') . ' F',
+            ], 400);
+        }
+
+        $discount = 0;
+        if ($promotion->type_promotion === 'pourcentage') {
+            $discount = ($montant * $promotion->valeur) / 100;
+            if ($promotion->reduction_maximum) {
+                $discount = min($discount, $promotion->reduction_maximum);
+            }
+        } elseif ($promotion->type_promotion === 'montant_fixe') {
+            $discount = min($promotion->valeur, $montant);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'code'         => strtoupper($promotion->code),
+                'nom'          => $promotion->nom,
+                'type'         => $promotion->type_promotion,
+                'valeur'       => $promotion->valeur,
+                'discount'     => round($discount),
+                'nouveau_total' => round($montant - $discount),
+            ],
+        ]);
     }
 
     private function syncNabooPayStatus(string $orderNumber): void

@@ -356,6 +356,10 @@ Route::prefix('client')->middleware('throttle.api:180,1')->group(function () {
     Route::post('/reviews', [\App\Http\Controllers\Api\Client\AvisClientController::class, 'store'])
         ->middleware(['auth:sanctum', 'throttle.api:10,1']);
 
+    // =================== PROMOTIONS (PUBLIC) ===================
+    Route::post('/promotions/validate-code', [\App\Http\Controllers\Api\Client\CheckoutController::class, 'validateCoupon'])
+        ->middleware('throttle.api:20,1');
+
     // =================== CHECKOUT & PAIEMENT ===================
     Route::prefix('checkout')->group(function () {
         Route::post('/create-order', [\App\Http\Controllers\Api\Client\CheckoutController::class, 'createOrder']);

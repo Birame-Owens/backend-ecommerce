@@ -93,6 +93,8 @@ class AdminProductsAndCategoriesSeeder extends Seeder
             Category::create($subCatData);
         }
 
+        $defaultImage = 'produits/default-product.jpg';
+
         // Créer les produits de test
         $produits = [
             [
@@ -102,6 +104,7 @@ class AdminProductsAndCategoriesSeeder extends Seeder
                 'description_courte' => 'Costume bazin bleu royal brodé',
                 'prix' => 85000,
                 'prix_promo' => 75000,
+                'image_principale' => $defaultImage,
                 'categorie_id' => $createdCategories[0]->id,
                 'stock_disponible' => 15,
                 'seuil_alerte' => 5,
@@ -112,7 +115,7 @@ class AdminProductsAndCategoriesSeeder extends Seeder
                 'est_populaire' => true,
                 'est_nouveaute' => true,
                 'ordre_affichage' => 1,
-                'tags' => 'bazin,costume,traditionnel,sénégal',
+                'tags' => json_encode(['bazin', 'costume', 'traditionnel', 'sénégal']),
             ],
             [
                 'nom' => 'Robe Boubou Jaune Soleil',
@@ -121,6 +124,7 @@ class AdminProductsAndCategoriesSeeder extends Seeder
                 'description_courte' => 'Boubou jaune avec broderies',
                 'prix' => 65000,
                 'prix_promo' => null,
+                'image_principale' => $defaultImage,
                 'categorie_id' => $createdCategories[1]->id,
                 'stock_disponible' => 8,
                 'seuil_alerte' => 3,
@@ -131,7 +135,7 @@ class AdminProductsAndCategoriesSeeder extends Seeder
                 'est_populaire' => true,
                 'est_nouveaute' => false,
                 'ordre_affichage' => 1,
-                'tags' => 'boubou,robe,traditionnel,femme',
+                'tags' => json_encode(['boubou', 'robe', 'traditionnel', 'femme']),
             ],
             [
                 'nom' => 'Montre OWENS Prestige Noir',
@@ -140,6 +144,7 @@ class AdminProductsAndCategoriesSeeder extends Seeder
                 'description_courte' => 'Montre OWENS prestige',
                 'prix' => 250000,
                 'prix_promo' => 220000,
+                'image_principale' => $defaultImage,
                 'categorie_id' => $createdCategories[2]->id,
                 'stock_disponible' => 5,
                 'seuil_alerte' => 2,
@@ -149,7 +154,7 @@ class AdminProductsAndCategoriesSeeder extends Seeder
                 'est_populaire' => true,
                 'est_nouveaute' => true,
                 'ordre_affichage' => 1,
-                'tags' => 'montre,luxe,OWENS,prestige',
+                'tags' => json_encode(['montre', 'luxe', 'OWENS', 'prestige']),
             ],
             [
                 'nom' => 'Costume Caché Traditionnel',
@@ -158,16 +163,17 @@ class AdminProductsAndCategoriesSeeder extends Seeder
                 'description_courte' => 'Costume test - caché',
                 'prix' => 50000,
                 'prix_promo' => null,
+                'image_principale' => $defaultImage,
                 'categorie_id' => $createdCategories[0]->id,
                 'stock_disponible' => 2,
                 'seuil_alerte' => 1,
                 'gestion_stock' => true,
                 'fait_sur_mesure' => false,
-                'est_visible' => false, // Caché
+                'est_visible' => false,
                 'est_populaire' => false,
                 'est_nouveaute' => false,
                 'ordre_affichage' => 2,
-                'tags' => 'costume,test,caché',
+                'tags' => json_encode(['costume', 'test', 'caché']),
             ],
         ];
 

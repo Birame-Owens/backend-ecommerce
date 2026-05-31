@@ -68,59 +68,7 @@ class ProduitController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'produits' => $produits->map(function ($produit) {
-                        $image = $produit->images_produits->first();
-                        
-                       return [
-    'id' => $produit->id,
-    'nom' => $produit->nom,
-    'slug' => $produit->slug,
-    'description' => $produit->description, // MANQUANT
-    'description_courte' => $produit->description_courte,
-    'prix' => $produit->prix,
-    'prix_promo' => $produit->prix_promo,
-    'debut_promo' => $produit->debut_promo, // MANQUANT
-    'fin_promo' => $produit->fin_promo, // MANQUANT
-    'prix_actuel' => $produit->prix_promo ?: $produit->prix,
-    'en_promo' => $produit->prix_promo !== null,
-    'image_principale' => $image
-        ? asset('storage/' . ($image->chemin_miniature ?: $image->chemin_moyen ?: $image->chemin_original))
-        : ($produit->image_principale ? asset('storage/' . $produit->image_principale) : null),
-    'categorie' => $produit->category ? [
-        'id' => $produit->category->id,
-        'nom' => $produit->category->nom
-    ] : null,
-    'stock_disponible' => $this->resolveStockTotal($produit),
-    'seuil_alerte' => $produit->seuil_alerte,
-    'gestion_stock' => $produit->gestion_stock, // MANQUANT
-    'stock_status' => $this->getStockStatus($produit),
-    'fait_sur_mesure' => $produit->fait_sur_mesure,
-    'delai_production_jours' => $produit->delai_production_jours, // MANQUANT
-    'cout_production' => $produit->cout_production, // MANQUANT
-    
-    // Arrays à décoder depuis JSON
-    'tailles_disponibles' => $produit->tailles_disponibles ? json_decode($produit->tailles_disponibles, true) : [],
-    'couleurs_disponibles' => $produit->couleurs_disponibles ? json_decode($produit->couleurs_disponibles, true) : [],
-    'materiaux_necessaires' => $produit->materiaux_necessaires ? json_decode($produit->materiaux_necessaires, true) : [],
-    'couleur_tailles_stock' => $produit->couleur_tailles_stock,
-    
-    'est_visible' => $produit->est_visible,
-    'est_populaire' => $produit->est_populaire,
-    'est_nouveaute' => $produit->est_nouveaute,
-    'ordre_affichage' => $produit->ordre_affichage, // MANQUANT
-    'nombre_ventes' => $produit->nombre_ventes,
-    'note_moyenne' => $produit->note_moyenne,
-    'nombre_avis' => $produit->nombre_avis,
-    
-    // Champs SEO
-    'meta_titre' => $produit->meta_titre, // MANQUANT
-    'meta_description' => $produit->meta_description, // MANQUANT
-    'tags' => $produit->tags, // MANQUANT
-    
-    'created_at' => $produit->created_at->format('d/m/Y H:i'),
-    'updated_at' => $produit->updated_at->format('d/m/Y H:i'),
-];
-                    }),
+                    'produits' => $produits->map(fn ($produit) => $this->formatProduitResponse($produit)),
                     'pagination' => [
                         'current_page' => $produits->currentPage(),
                         'per_page' => $produits->perPage(),
@@ -500,6 +448,8 @@ class ProduitController extends Controller
             // Vérifier si la catégorie est visible côté client
             $categoryActive = $produit->category && $produit->category->est_active;
             $seraVisibleClient = $produit->est_visible && $categoryActive;
+
+            $this->clearClientProductCaches($produit->slug);
 
             Log::info("Produit {$status}", [
                 'produit_id' => $produit->id,
