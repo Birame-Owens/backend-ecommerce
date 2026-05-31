@@ -12,8 +12,7 @@ php artisan storage:link 2>/dev/null || true
 echo "==> Caching configuration for production..."
 php artisan config:cache
 php artisan route:cache
-php artisan view:cache 2>/dev/null || true
-php artisan optimize
+php artisan optimize 2>/dev/null || true
 
 echo "==> Starting supervisord..."
 exec /usr/bin/supervisord -c /etc/supervisord.conf
