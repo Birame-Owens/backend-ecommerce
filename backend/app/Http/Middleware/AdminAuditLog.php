@@ -16,6 +16,8 @@ class AdminAuditLog
         'api/admin/dashboard/stats',
     ];
 
+    private array $pendingLog = [];
+
     public function handle(Request $request, Closure $next): Response
     {
         $startTime = microtime(true);
@@ -25,37 +27,46 @@ class AdminAuditLog
             return $response;
         }
 
-        try {
-            $user = $request->user();
-            $durationMs = (int) ((microtime(true) - $startTime) * 1000);
+        $user = $request->user();
+        $durationMs = (int) ((microtime(true) - $startTime) * 1000);
 
-            $requestData = null;
-            if (in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'])) {
-                $data = $request->except(['password', 'password_confirmation', 'current_password']);
-                if (!empty($data)) {
-                    $requestData = json_encode($data);
-                }
+        $requestData = null;
+        if (in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'])) {
+            $data = $request->except(['password', 'password_confirmation', 'current_password']);
+            if (!empty($data)) {
+                $requestData = json_encode($data);
             }
+        }
 
-            DB::table('admin_audit_logs')->insert([
-                'admin_id'        => $user?->id,
-                'admin_email'     => $user?->email,
-                'method'          => $request->method(),
-                'url'             => substr($request->fullUrl(), 0, 500),
-                'action'          => $this->resolveAction($request),
-                'request_data'    => $requestData,
-                'response_status' => $response->getStatusCode(),
-                'ip_address'      => $request->ip(),
-                'user_agent'      => substr($request->userAgent() ?? '', 0, 500),
-                'duration_ms'     => $durationMs,
-                'created_at'      => now(),
-                'updated_at'      => now(),
-            ]);
+        $this->pendingLog = [
+            'admin_id'        => $user?->id,
+            'admin_email'     => $user?->email,
+            'method'          => $request->method(),
+            'url'             => substr($request->fullUrl(), 0, 500),
+            'action'          => $this->resolveAction($request),
+            'request_data'    => $requestData,
+            'response_status' => $response->getStatusCode(),
+            'ip_address'      => $request->ip(),
+            'user_agent'      => substr($request->userAgent() ?? '', 0, 500),
+            'duration_ms'     => $durationMs,
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ];
+
+        return $response;
+    }
+
+    public function terminate(Request $request, Response $response): void
+    {
+        if (empty($this->pendingLog)) {
+            return;
+        }
+
+        try {
+            DB::table('admin_audit_logs')->insert($this->pendingLog);
         } catch (\Throwable $e) {
             Log::error('AdminAuditLog failed', ['error' => $e->getMessage()]);
         }
-
-        return $response;
     }
 
     private function shouldSkip(Request $request): bool

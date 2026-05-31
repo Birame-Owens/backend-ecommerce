@@ -285,6 +285,7 @@ class ProductService
             json_decode($product->couleur_tailles_seuil, true) : null,
         'stock_disponible' => $product->gestion_stock ? $this->resolveStockTotal($product) : null,
         'en_stock' => !$product->gestion_stock || $this->resolveStockTotal($product) > 0,
+        'stock_status' => $this->getStockStatus($product),
         'fait_sur_mesure' => $product->fait_sur_mesure,
         'delai_production_jours' => $product->delai_production_jours,
         'note_moyenne' => $product->note_moyenne,
@@ -312,6 +313,22 @@ class ProductService
             return $total;
         }
         return (int) ($product->stock_disponible ?? 0);
+    }
+
+    private function getStockStatus($product): ?array
+    {
+        if (!$product->gestion_stock) {
+            return ['status' => 'unlimited', 'label' => 'Non limité', 'color' => 'blue'];
+        }
+        $stockTotal = $this->resolveStockTotal($product);
+        if ($stockTotal <= 0) {
+            return ['status' => 'out_of_stock', 'label' => 'Rupture de stock', 'color' => 'red'];
+        }
+        $seuil = (int) ($product->seuil_alerte ?? 5);
+        if ($stockTotal <= $seuil) {
+            return ['status' => 'low_stock', 'label' => 'Stock limité', 'color' => 'orange'];
+        }
+        return ['status' => 'in_stock', 'label' => 'En stock', 'color' => 'green'];
     }
 
     private function formatProductCard(Produit $product): array

@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Http\Requests\Admin\CategoryRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -204,6 +205,8 @@ class CategoryController extends Controller
 
             $category = Category::create($validatedData);
 
+            $this->clearApiResponseCache();
+
             Log::info('Nouvelle catégorie créée', [
                 'category_id' => $category->id,
                 'nom' => $category->nom,
@@ -363,6 +366,8 @@ class CategoryController extends Controller
 
             $category->update($validatedData);
 
+            $this->clearApiResponseCache();
+
             Log::info('Catégorie mise à jour', [
                 'category_id' => $category->id,
                 'nom' => $category->nom,
@@ -436,6 +441,8 @@ class CategoryController extends Controller
             $categoryName = $category->nom;
             $category->delete();
 
+            $this->clearApiResponseCache();
+
             Log::info('Catégorie supprimée', [
                 'category_name' => $categoryName,
                 'user_id' => auth()->id()
@@ -500,6 +507,8 @@ class CategoryController extends Controller
             $produitsVisibles = $category->produits()->where('est_visible', true)->count();
             $seraVisibleClient = $category->est_active && $produitsVisibles > 0;
 
+            $this->clearApiResponseCache();
+
             Log::info("Catégorie {$status}", [
                 'category_id' => $category->id,
                 'nom' => $category->nom,
@@ -533,6 +542,17 @@ class CategoryController extends Controller
                 'success' => false,
                 'message' => 'Erreur lors du changement de statut'
             ], 500);
+        }
+    }
+
+    private function clearApiResponseCache(): void
+    {
+        Cache::forget('client_home_data');
+        Cache::forget('home:categories_preview');
+        try {
+            Cache::tags(['api_responses'])->flush();
+        } catch (\Throwable $e) {
+            Log::debug('API response cache tags not flushed', ['error' => $e->getMessage()]);
         }
     }
 

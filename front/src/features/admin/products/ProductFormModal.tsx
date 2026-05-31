@@ -1,53 +1,33 @@
 import { useState, useRef } from 'react'
 import { X, AlertTriangle, ImageIcon, Plus, Trash2, Check } from 'lucide-react'
 import { produitsAdminApi, type ProduitDetail } from '@/api/admin/products'
+import { COLOR_PALETTE } from '@/lib/colorPalette'
 
-const COLOR_PALETTE = [
-  { name: 'Noir', hex: '#1A1A1A' },
-  { name: 'Blanc', hex: '#FAFAFA' },
-  { name: 'Crème', hex: '#F5F0E8' },
-  { name: 'Beige', hex: '#D4B896' },
-  { name: 'Camel', hex: '#C19A6B' },
-  { name: 'Marron', hex: '#795548' },
-  { name: 'Chocolat', hex: '#4E342E' },
-  { name: 'Taupe', hex: '#8D7B68' },
-  { name: 'Gris clair', hex: '#D4D4D4' },
-  { name: 'Gris', hex: '#9E9E9E' },
-  { name: 'Gris foncé', hex: '#616161' },
-  { name: 'Anthracite', hex: '#424242' },
-  { name: 'Rouge', hex: '#E53935' },
-  { name: 'Bordeaux', hex: '#8B1A1A' },
-  { name: 'Rose', hex: '#F48FB1' },
-  { name: 'Rose poudré', hex: '#FFCCD5' },
-  { name: 'Corail', hex: '#FF7043' },
-  { name: 'Saumon', hex: '#FFAB91' },
-  { name: 'Orange', hex: '#FB8C00' },
-  { name: 'Jaune', hex: '#FDD835' },
-  { name: 'Vert', hex: '#43A047' },
-  { name: 'Vert sauge', hex: '#8FBC8F' },
-  { name: 'Kaki', hex: '#6B7C45' },
-  { name: 'Émeraude', hex: '#00897B' },
-  { name: 'Turquoise', hex: '#00ACC1' },
-  { name: 'Bleu ciel', hex: '#64B5F6' },
-  { name: 'Bleu', hex: '#1E88E5' },
-  { name: 'Marine', hex: '#1A237E' },
-  { name: 'Indigo', hex: '#3949AB' },
-  { name: 'Violet', hex: '#7B1FA2' },
-  { name: 'Lavande', hex: '#CE93D8' },
-  { name: 'Or', hex: '#D4AF37' },
-  { name: 'Argent', hex: '#C0C0C0' },
-  { name: 'Bronze', hex: '#CD7F32' },
-]
 
-const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '2A', '4A', '6A', '8A', '10A', '12A', '14A', '16A', 'Taille unique']
+const ALL_VETEMENT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2A', '4A', '6A', '8A', '10A', '12A', '14A', '16A', 'Taille unique']
+const ALL_CHAUSSURE_SIZES = ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', 'Pointure unique']
 
-const SIZE_PRESETS: Record<string, string[]> = {
+const VETEMENT_PRESETS: Record<string, string[]> = {
   'Prêt-à-porter': ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
-  'Chaussures F': ['35', '36', '37', '38', '39', '40', '41'],
-  'Chaussures H': ['39', '40', '41', '42', '43', '44', '45'],
   'Enfants': ['2A', '4A', '6A', '8A', '10A', '12A', '14A', '16A'],
   'Unique': ['Taille unique'],
 }
+const CHAUSSURE_PRESETS: Record<string, string[]> = {
+  'Femme': ['35', '36', '37', '38', '39', '40', '41'],
+  'Homme': ['39', '40', '41', '42', '43', '44', '45'],
+  'Unique': ['Pointure unique'],
+}
+
+const ALL_CONTENANCES = ['5ml', '10ml', '15ml', '30ml', '50ml', '75ml', '100ml', '125ml', '150ml', '200ml', '250ml', '500ml', 'Contenance unique']
+
+const CONTENANCE_PRESETS: Record<string, string[]> = {
+  'Petites': ['15ml', '30ml', '50ml'],
+  'Standards': ['75ml', '100ml', '125ml'],
+  'Grandes': ['150ml', '200ml', '250ml', '500ml'],
+  'Unique': ['Contenance unique'],
+}
+
+type TypeVariante = 'vetement' | 'chaussure' | 'parfum' | 'aucun'
 
 export interface CategoryOption { id: number; nom: string; parent_id: number | null }
 
@@ -108,6 +88,12 @@ export function ProductFormModal({ produit, categories, onClose, onSuccess }: Pr
   const [mainImagePreview, setMainImagePreview] = useState<string | null>(produit?.image_principale ?? null)
   const mainImageRef = useRef<HTMLInputElement>(null)
 
+  // Type de variante
+  const [typeVariante, setTypeVariante] = useState<TypeVariante>(produit?.type_variante ?? 'vetement')
+  const [newSenteur, setNewSenteur] = useState('')
+  const [stockGlobal, setStockGlobal] = useState(String(produit?.stock_disponible ?? 0))
+  const [seuilGlobal, setSeuilGlobal] = useState(String(produit?.seuil_alerte ?? 5))
+
   // Variantes
   const [variants, setVariants] = useState<ColorVariant[]>(() => {
     if (!produit?.couleur_tailles) return []
@@ -155,6 +141,21 @@ export function ProductFormModal({ produit, categories, onClose, onSuccess }: Pr
 
   const parents = categories.filter(c => !c.parent_id)
   const childrenOf = (pid: number) => categories.filter(c => c.parent_id === pid)
+
+  // Labels dynamiques selon le type
+  const isParfum = typeVariante === 'parfum'
+  const isChaussure = typeVariante === 'chaussure'
+  const axis1Label = isParfum ? 'Senteurs' : 'Couleurs'
+  const axis2Label = isParfum ? 'Contenances' : isChaussure ? 'Pointures' : 'Tailles'
+  const allSizes = isParfum ? ALL_CONTENANCES : isChaussure ? ALL_CHAUSSURE_SIZES : ALL_VETEMENT_SIZES
+  const sizePresets = isParfum ? CONTENANCE_PRESETS : isChaussure ? CHAUSSURE_PRESETS : VETEMENT_PRESETS
+
+  const addSenteur = () => {
+    const name = newSenteur.trim()
+    if (!name || variants.some(v => v.colorName === name)) return
+    setVariants(prev => [...prev, { colorName: name, colorHex: '#C19A6B', sizes: [], stock: {}, seuil: {}, imageFiles: [], imagePreviews: [], existingImages: [] }])
+    setNewSenteur('')
+  }
 
   const addColor = (name: string, hex: string) => {
     if (variants.some(v => v.colorName === name)) return
@@ -233,6 +234,11 @@ export function ProductFormModal({ produit, categories, onClose, onSuccess }: Pr
     if (prixPromo) fd.append('prix_promo', prixPromo)
     if (debutPromo) fd.append('debut_promo', debutPromo)
     if (finPromo) fd.append('fin_promo', finPromo)
+    fd.append('type_variante', typeVariante)
+    if (typeVariante === 'aucun') {
+      fd.append('stock_disponible', stockGlobal || '0')
+      fd.append('seuil_alerte', seuilGlobal || '0')
+    }
     fd.append('est_visible', estVisible ? '1' : '0')
     fd.append('est_populaire', estPopulaire ? '1' : '0')
     fd.append('est_nouveaute', estNouveaute ? '1' : '0')
@@ -249,11 +255,17 @@ export function ProductFormModal({ produit, categories, onClose, onSuccess }: Pr
 
     // Variantes : tailles + stock
     variants.forEach(v => {
-      v.sizes.forEach((size, idx) => {
-        fd.append(`couleur_tailles[${v.colorName}][${idx}]`, size)
-        fd.append(`couleur_tailles_stock[${v.colorName}][${size}]`, String(v.stock[size] ?? 0))
-        if (v.seuil[size] != null) fd.append(`couleur_tailles_seuil[${v.colorName}][${size}]`, String(v.seuil[size]))
-      })
+      if (v.sizes.length > 0) {
+        v.sizes.forEach((size, idx) => {
+          fd.append(`couleur_tailles[${v.colorName}][${idx}]`, size)
+          fd.append(`couleur_tailles_stock[${v.colorName}][${size}]`, String(v.stock[size] ?? 0))
+          if (v.seuil[size] != null) fd.append(`couleur_tailles_seuil[${v.colorName}][${size}]`, String(v.seuil[size]))
+        })
+      } else {
+        // Couleur sans taille : stock global de cette couleur sous la clé '_'
+        fd.append(`couleur_tailles_stock[${v.colorName}][_]`, String(v.stock['_'] ?? 0))
+        if (v.seuil['_'] != null) fd.append(`couleur_tailles_seuil[${v.colorName}][_]`, String(v.seuil['_']))
+      }
     })
 
     // Photos couleur : images[] + image_couleurs[idx] = nom couleur
@@ -306,9 +318,10 @@ export function ProductFormModal({ produit, categories, onClose, onSuccess }: Pr
     }
   }
 
+  const varianteTabLabel = typeVariante === 'parfum' ? 'Senteurs & Contenances' : typeVariante === 'aucun' ? 'Stock' : typeVariante === 'chaussure' ? 'Couleurs & Pointures' : 'Couleurs & Tailles'
   const TABS: { key: Tab; label: string }[] = [
     { key: 'infos', label: 'Infos' },
-    { key: 'variantes', label: 'Couleurs & Tailles' },
+    { key: 'variantes', label: varianteTabLabel },
     { key: 'options', label: 'Options' },
     { key: 'seo', label: 'SEO' },
   ]
@@ -455,46 +468,141 @@ export function ProductFormModal({ produit, categories, onClose, onSuccess }: Pr
             {/* ── Variantes ── */}
             {tab === 'variantes' && (
               <>
+                {/* Sélecteur de type de variante */}
                 <div>
-                  <Label>Palette de couleurs</Label>
-                  <div className="flex flex-wrap gap-2 p-4 bg-beige-100 rounded-2xl border border-beige-300">
-                    {COLOR_PALETTE.map(color => {
-                      const selected = variants.some(v => v.colorName === color.name)
-                      return (
-                        <button
-                          key={color.name}
-                          type="button"
-                          title={color.name}
-                          onClick={() => selected ? removeColor(color.name) : addColor(color.name, color.hex)}
-                          className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-transform hover:scale-110 ${
-                            selected ? 'border-beige-500 scale-110' : 'border-transparent hover:border-beige-300'
-                          }`}
-                          style={{ backgroundColor: color.hex }}
-                        >
-                          {selected && (
-                            <Check
-                              className="w-3.5 h-3.5 drop-shadow"
-                              strokeWidth={3}
-                              style={{ color: ['#FAFAFA','#F5F0E8','#D4B896','#C19A6B','#D4D4D4','#9E9E9E','#FFCCD5','#FFAB91','#FDD835','#CE93D8','#D4AF37','#C0C0C0'].includes(color.hex) ? '#1A1A1A' : '#ffffff' }}
-                            />
-                          )}
-                        </button>
-                      )
-                    })}
+                  <Label>Type de produit</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      { value: 'vetement',  label: 'Vêtement / Mode', icon: '👗', desc: 'Couleurs & tailles' },
+                      { value: 'chaussure', label: 'Chaussures',       icon: '👟', desc: 'Couleurs & pointures' },
+                      { value: 'parfum',    label: 'Parfum / Huile',   icon: '🌸', desc: 'Senteurs & contenances' },
+                      { value: 'aucun',     label: 'Sans variante',    icon: '📦', desc: 'Stock global uniquement' },
+                    ] as { value: TypeVariante; label: string; icon: string; desc: string }[]).map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => { setTypeVariante(opt.value); if (opt.value !== typeVariante) setVariants([]) }}
+                        className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center ${
+                          typeVariante === opt.value
+                            ? 'border-beige-500 bg-beige-100 shadow-beige'
+                            : 'border-beige-300 bg-beige-50 hover:bg-beige-100'
+                        }`}
+                      >
+                        <span className="text-xl">{opt.icon}</span>
+                        <span className="text-[11px] font-bold text-ink leading-tight">{opt.label}</span>
+                        <span className="text-[10px] text-muted">{opt.desc}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                {variants.length === 0 ? (
-                  <div className="bg-beige-100 rounded-2xl border border-dashed border-beige-400 p-8 text-center">
-                    <p className="text-sm text-muted">Sélectionnez des couleurs dans la palette pour créer des variantes.</p>
+                {/* ── Type: aucun → stock global ── */}
+                {typeVariante === 'aucun' && (
+                  <div className="bg-beige-100 rounded-2xl border border-beige-300 p-4 space-y-3">
+                    <p className="text-xs text-muted">Ce produit n'a pas de variantes. Définissez le stock global ci-dessous.</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-1.5">Stock disponible</p>
+                        <input type="number" min="0" value={stockGlobal} onChange={e => setStockGlobal(e.target.value)}
+                          placeholder="0" className={inputCls} />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-1.5">Seuil d'alerte</p>
+                        <input type="number" min="0" value={seuilGlobal} onChange={e => setSeuilGlobal(e.target.value)}
+                          placeholder="5" className={inputCls} />
+                      </div>
+                    </div>
                   </div>
-                ) : (
+                )}
+
+                {/* ── Type: parfum → ajout senteurs ── */}
+                {typeVariante === 'parfum' && (
+                  <div>
+                    <Label>Senteurs disponibles</Label>
+                    <div className="p-4 bg-beige-100 rounded-2xl border border-beige-300 space-y-3">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newSenteur}
+                          onChange={e => setNewSenteur(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSenteur() } }}
+                          placeholder="Ex: Rose, Jasmin, Oud, Musc…"
+                          className={`${inputCls} flex-1`}
+                        />
+                        <button type="button" onClick={addSenteur}
+                          className="px-4 py-3 bg-beige-500 text-white rounded-xl text-sm font-semibold hover:bg-beige-400 transition-colors flex-shrink-0">
+                          <Plus className="w-4 h-4" strokeWidth={2.5} />
+                        </button>
+                      </div>
+                      {variants.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {variants.map(v => (
+                            <span key={v.colorName}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-beige-300 rounded-full text-xs font-semibold text-ink shadow-sm">
+                              🌸 {v.colorName}
+                              <button type="button" onClick={() => removeColor(v.colorName)}>
+                                <X className="w-3 h-3 text-muted hover:text-rose-400" strokeWidth={2} />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted/70 text-center py-1">Ajoutez les senteurs disponibles pour ce produit.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Type: vetement / chaussure → palette couleurs ── */}
+                {(typeVariante === 'vetement' || typeVariante === 'chaussure') && (
+                  <div>
+                    <Label>Palette de couleurs</Label>
+                    <div className="flex flex-wrap gap-2 p-4 bg-beige-100 rounded-2xl border border-beige-300">
+                      {COLOR_PALETTE.map(color => {
+                        const selected = variants.some(v => v.colorName === color.name)
+                        return (
+                          <button
+                            key={color.name}
+                            type="button"
+                            title={color.name}
+                            onClick={() => selected ? removeColor(color.name) : addColor(color.name, color.hex)}
+                            className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-transform hover:scale-110 ${
+                              selected ? 'border-beige-500 scale-110' : 'border-transparent hover:border-beige-300'
+                            }`}
+                            style={{ backgroundColor: color.hex }}
+                          >
+                            {selected && (
+                              <Check
+                                className="w-3.5 h-3.5 drop-shadow"
+                                strokeWidth={3}
+                                style={{ color: ['#FAFAFA','#F5F0E8','#D4B896','#C19A6B','#D4D4D4','#9E9E9E','#FFCCD5','#FFAB91','#FDD835','#CE93D8','#D4AF37','#C0C0C0'].includes(color.hex) ? '#1A1A1A' : '#ffffff' }}
+                              />
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Variantes construites (commun vetement + parfum) */}
+                {typeVariante !== 'aucun' && variants.length === 0 ? (
+                  <div className="bg-beige-100 rounded-2xl border border-dashed border-beige-400 p-8 text-center">
+                    <p className="text-sm text-muted">
+                      {isParfum ? 'Ajoutez des senteurs ci-dessus pour créer des variantes.' : 'Sélectionnez des couleurs dans la palette pour créer des variantes.'}
+                    </p>
+                  </div>
+                ) : typeVariante !== 'aucun' && (
                   <div className="space-y-4">
                     {variants.map(variant => (
                       <div key={variant.colorName} className="border border-beige-300 rounded-2xl p-4 space-y-3 bg-beige-50">
-                        {/* Color header */}
+                        {/* Header */}
                         <div className="flex items-center gap-3">
-                          <span className="w-5 h-5 rounded-full border border-beige-300 flex-shrink-0" style={{ backgroundColor: variant.colorHex }} />
+                          {isParfum ? (
+                            <span className="text-lg flex-shrink-0">🌸</span>
+                          ) : (
+                            <span className="w-5 h-5 rounded-full border border-beige-300 flex-shrink-0" style={{ backgroundColor: variant.colorHex }} />
+                          )}
                           <span className="font-semibold text-sm text-ink flex-1">{variant.colorName}</span>
                           <button type="button" onClick={() => removeColor(variant.colorName)}
                             className="p-1.5 rounded-lg hover:bg-blush/30 transition-colors">
@@ -504,9 +612,11 @@ export function ProductFormModal({ produit, categories, onClose, onSuccess }: Pr
 
                         {/* Presets */}
                         <div>
-                          <p className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-2">Ajouter par groupe</p>
+                          <p className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-2">
+                            {isParfum ? 'Ajouter des contenances' : 'Ajouter par groupe'}
+                          </p>
                           <div className="flex flex-wrap gap-2 mb-3">
-                            {Object.entries(SIZE_PRESETS).map(([presetName, sizes]) => (
+                            {Object.entries(sizePresets).map(([presetName, sizes]) => (
                               <button
                                 key={presetName}
                                 type="button"
@@ -518,9 +628,9 @@ export function ProductFormModal({ produit, categories, onClose, onSuccess }: Pr
                             ))}
                           </div>
 
-                          {/* Individual sizes */}
+                          {/* Individual sizes / contenances */}
                           <div className="flex flex-wrap gap-1.5">
-                            {ALL_SIZES.map(size => {
+                            {allSizes.map(size => {
                               const active = variant.sizes.includes(size)
                               return (
                                 <button
@@ -545,16 +655,18 @@ export function ProductFormModal({ produit, categories, onClose, onSuccess }: Pr
                                 const val = customSize[variant.colorName]?.trim()
                                 if (val) { addSize(variant.colorName, val); setCustomSize(prev => ({ ...prev, [variant.colorName]: '' })) }
                               }}
-                              placeholder="Autre…"
-                              className="w-20 px-2 py-1 rounded-lg bg-beige-100 border border-beige-300 text-[11px] text-ink placeholder:text-muted/50 focus:outline-none focus:border-beige-400"
+                              placeholder={isParfum ? 'Ex: 75ml…' : isChaussure ? 'Ex: 46…' : 'Autre…'}
+                              className="w-24 px-2 py-1 rounded-lg bg-beige-100 border border-beige-300 text-[11px] text-ink placeholder:text-muted/50 focus:outline-none focus:border-beige-400"
                             />
                           </div>
                         </div>
 
                         {/* Stock grid */}
-                        {variant.sizes.length > 0 && (
+                        {variant.sizes.length > 0 ? (
                           <div>
-                            <p className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-2">Stock & Seuil alerte par taille</p>
+                            <p className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-2">
+                              Stock & Seuil alerte par {axis2Label.toLowerCase().replace('s', '').trim()}
+                            </p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                               {variant.sizes.map(size => (
                                 <div key={size} className="bg-beige-100 rounded-xl p-2.5">
@@ -577,12 +689,38 @@ export function ProductFormModal({ produit, categories, onClose, onSuccess }: Pr
                               ))}
                             </div>
                           </div>
+                        ) : (
+                          <div>
+                            <p className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-2">Stock & Seuil alerte</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="bg-beige-100 rounded-xl p-2.5">
+                                <p className="text-[11px] font-bold text-ink mb-1.5">Quantité en stock</p>
+                                <input
+                                  type="number" min="0"
+                                  value={variant.stock['_'] ?? ''}
+                                  onChange={e => updateStock(variant.colorName, '_', e.target.value)}
+                                  placeholder="Stock"
+                                  className="w-full px-2 py-1 bg-beige-50 border border-beige-300 rounded-lg text-xs text-ink focus:outline-none focus:border-beige-400"
+                                />
+                              </div>
+                              <div className="bg-beige-100 rounded-xl p-2.5">
+                                <p className="text-[11px] font-bold text-ink mb-1.5">Seuil alerte</p>
+                                <input
+                                  type="number" min="0"
+                                  value={variant.seuil['_'] ?? ''}
+                                  onChange={e => updateSeuil(variant.colorName, '_', e.target.value)}
+                                  placeholder="Seuil"
+                                  className="w-full px-2 py-1 bg-beige-50 border border-beige-300 rounded-lg text-xs text-muted focus:outline-none focus:border-beige-400"
+                                />
+                              </div>
+                            </div>
+                          </div>
                         )}
 
-                        {/* Color images — multi-photos */}
+                        {/* Images par senteur/couleur */}
                         <div>
                           <p className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-2">
-                            Photos pour cette couleur
+                            Photos pour {isParfum ? 'cette senteur' : 'cette couleur'}
                             <span className="ml-1 font-normal normal-case text-muted/70">
                               ({variant.existingImages.length + variant.imagePreviews.length} photo{variant.existingImages.length + variant.imagePreviews.length !== 1 ? 's' : ''})
                             </span>

@@ -59,6 +59,7 @@ export interface ProduitDetail extends ProduitListItem {
   meta_titre: string | null
   meta_description: string | null
   tags: string | null
+  type_variante: 'vetement' | 'chaussure' | 'parfum' | 'aucun'
 }
 
 export interface ProduitPagination {

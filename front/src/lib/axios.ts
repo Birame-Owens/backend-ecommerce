@@ -7,7 +7,14 @@ const api = axios.create({
 })
 
 api.interceptors.response.use(
-  (res) => res,
+  (response) => {
+    try {
+      const raw = JSON.stringify(response.data)
+      const cleaned = raw.replace(/https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/g, '')
+      response.data = JSON.parse(cleaned)
+    } catch { /* ignore non-serializable responses */ }
+    return response
+  },
   (error) => {
     if (error.response?.status === 401) {
       window.location.href = '/admin/login'

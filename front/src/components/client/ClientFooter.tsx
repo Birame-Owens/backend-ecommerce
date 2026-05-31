@@ -60,7 +60,7 @@ export function ClientFooter() {
 
         <div className="border-t border-white/10 mt-8 pt-5 text-xs text-white/45 flex items-center justify-between">
           <span>© 2026 Rokia Shop. Tous droits reserves.</span>
-          <span>NDEYA SHOP</span>
+          <span>ND WORLD</span>
         </div>
       </div>
     </footer>
