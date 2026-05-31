@@ -16,7 +16,7 @@ return [
 
     'allowed_origins' => array_filter(array_map(
         'trim',
-        explode(',', env('CORS_ALLOWED_ORIGINS', 'https://ndeyashop.sn'))
+        explode(',', env('CORS_ALLOWED_ORIGINS', 'https://nd-world.site,http://localhost:5173,http://localhost:3000'))
     )),
 
     'allowed_origins_patterns' => [],

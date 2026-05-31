@@ -26,8 +26,8 @@ class SecurityHeaders
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
 
-        // Strict Transport Security (HTTPS only)
-        if ($request->secure()) {
+        // Strict Transport Security — actif en production (Traefik gère le SSL)
+        if (app()->environment('production')) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 

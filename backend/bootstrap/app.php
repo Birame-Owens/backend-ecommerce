@@ -12,9 +12,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Faire confiance au proxy Coolify/Traefik (SSL termination)
+        $middleware->trustProxies(at: '*');
+
         $middleware->validateCsrfTokens(except: [
             'api/*',
         ]);
+
+        // Headers sécurité sur toutes les réponses
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
         // Middleware CORS
         $middleware->api(prepend: [
