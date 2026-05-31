@@ -273,12 +273,15 @@ class ProductService
             ]]),
         'images_par_couleur' => $this->groupImagesByColor($product),
         'couleur_par_defaut' => $this->getDefaultColor($product),
-        'tailles_disponibles' => $product->tailles_disponibles ?
-            json_decode($product->tailles_disponibles, true) : [],
-        'couleurs_disponibles' => $product->couleurs_disponibles ?
-            json_decode($product->couleurs_disponibles, true) : [],
+        'type_variante' => $product->type_variante ?? 'vetement',
         'couleur_tailles' => $product->couleur_tailles ?
             json_decode($product->couleur_tailles, true) : null,
+        'couleurs_disponibles' => $product->couleurs_disponibles
+            ? json_decode($product->couleurs_disponibles, true)
+            : ($product->couleur_tailles ? array_keys(json_decode($product->couleur_tailles, true) ?? []) : []),
+        'tailles_disponibles' => $product->tailles_disponibles
+            ? json_decode($product->tailles_disponibles, true)
+            : ($product->couleur_tailles ? array_unique(array_merge(...array_values(json_decode($product->couleur_tailles, true) ?? [[]]))) : []),
         'couleur_tailles_stock' => $product->couleur_tailles_stock ?
             json_decode($product->couleur_tailles_stock, true) : null,
         'couleur_tailles_seuil' => $product->couleur_tailles_seuil ?

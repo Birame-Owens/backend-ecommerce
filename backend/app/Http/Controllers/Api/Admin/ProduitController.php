@@ -150,7 +150,13 @@ class ProduitController extends Controller
             }
 
             if (isset($validatedData['couleur_tailles']) && is_array($validatedData['couleur_tailles'])) {
-                $validatedData['couleur_tailles'] = json_encode($validatedData['couleur_tailles']);
+                $ctArray = $validatedData['couleur_tailles'];
+                $validatedData['couleur_tailles'] = json_encode($ctArray);
+                if (!empty($ctArray)) {
+                    $validatedData['couleurs_disponibles'] = json_encode(array_values(array_keys($ctArray)));
+                    $allSizes = array_unique(array_merge(...array_values($ctArray)));
+                    $validatedData['tailles_disponibles'] = json_encode(array_values($allSizes));
+                }
             }
 
             if (isset($validatedData['couleur_tailles_stock']) && is_array($validatedData['couleur_tailles_stock'])) {
@@ -282,7 +288,13 @@ class ProduitController extends Controller
             }
 
             if (isset($validatedData['couleur_tailles']) && is_array($validatedData['couleur_tailles'])) {
-                $validatedData['couleur_tailles'] = json_encode($validatedData['couleur_tailles']);
+                $ctArray = $validatedData['couleur_tailles'];
+                $validatedData['couleur_tailles'] = json_encode($ctArray);
+                if (!empty($ctArray)) {
+                    $validatedData['couleurs_disponibles'] = json_encode(array_values(array_keys($ctArray)));
+                    $allSizes = array_unique(array_merge(...array_values($ctArray)));
+                    $validatedData['tailles_disponibles'] = json_encode(array_values($allSizes));
+                }
             }
 
             if (isset($validatedData['couleur_tailles_stock']) && is_array($validatedData['couleur_tailles_stock'])) {
@@ -741,6 +753,7 @@ class ProduitController extends Controller
             'fait_sur_mesure' => $produit->fait_sur_mesure,
             'delai_production_jours' => $produit->delai_production_jours,
             'cout_production' => $produit->cout_production,
+            'type_variante' => $produit->type_variante ?? 'vetement',
             'tailles_disponibles' => $produit->tailles_disponibles ? json_decode($produit->tailles_disponibles) : [],
             'couleurs_disponibles' => $produit->couleurs_disponibles ? json_decode($produit->couleurs_disponibles) : [],
             'couleur_tailles' => $produit->couleur_tailles ? json_decode($produit->couleur_tailles, true) : null,

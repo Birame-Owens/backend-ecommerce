@@ -17,6 +17,7 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
+      localStorage.removeItem('ndeya-admin-auth')
       window.location.href = '/admin/login'
     }
     return Promise.reject(error)

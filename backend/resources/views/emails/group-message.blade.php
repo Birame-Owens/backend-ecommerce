@@ -51,7 +51,7 @@
                     {{-- CTA --}}
                     <tr>
                         <td align="center" style="padding: 0 40px 40px 40px;">
-                            <a href="{{ config('app.url') }}" style="background-color: #000000; color: #FFFFFF; display: inline-block; padding: 16px 40px; text-decoration: none; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; font-weight: bold; border-radius: 0;">
+                            <a href="{{ config('services.frontend_url') }}" style="background-color: #000000; color: #FFFFFF; display: inline-block; padding: 16px 40px; text-decoration: none; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; font-weight: bold; border-radius: 0;">
                                 Visiter la Boutique
                             </a>
                         </td>

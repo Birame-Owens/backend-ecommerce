@@ -81,14 +81,14 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($commande->articles as $article)
+                                    @foreach($commande->articles_commandes as $article)
                                     <tr>
                                         <td align="left" style="padding: 15px 0; border-bottom: 1px solid #F5F5F5;">
-                                            <p style="margin: 0; font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">{{ $article->produit->nom }}</p>
+                                            <p style="margin: 0; font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">{{ $article->nom_produit }}</p>
                                             <p style="margin: 5px 0 0 0; font-size: 12px; color: #888888;">
-                                                Qté: {{ $article->quantite }} 
-                                                @if($article->taille) | Taille: {{ $article->taille }} @endif
-                                                @if($article->couleur) | Couleur: {{ $article->couleur }} @endif
+                                                Qté: {{ $article->quantite }}
+                                                @if($article->taille_choisie) | Taille: {{ $article->taille_choisie }} @endif
+                                                @if($article->couleur_choisie) | Couleur: {{ $article->couleur_choisie }} @endif
                                             </p>
                                         </td>
                                         <td align="right" style="padding: 15px 0; border-bottom: 1px solid #F5F5F5; font-size: 14px;">
@@ -109,10 +109,10 @@
                                     <td align="right" style="padding-top: 15px; font-size: 12px; width: 120px;">{{ number_format($commande->montant_total - $commande->frais_livraison, 0, ',', ' ') }} FCFA</td>
                                 </tr>
                                 
-                                @if($commande->montant_remise > 0)
+                                @if($commande->remise > 0)
                                 <tr>
                                     <td align="right" style="padding-top: 10px; font-size: 12px; color: #10b981; text-transform: uppercase; letter-spacing: 1px;">Remise</td>
-                                    <td align="right" style="padding-top: 10px; font-size: 12px; color: #10b981;">- {{ number_format($commande->montant_remise, 0, ',', ' ') }} FCFA</td>
+                                    <td align="right" style="padding-top: 10px; font-size: 12px; color: #10b981;">- {{ number_format($commande->remise, 0, ',', ' ') }} FCFA</td>
                                 </tr>
                                 @endif
 
@@ -163,7 +163,7 @@
                                             ⚠️ Changez ce mot de passe dès votre première connexion
                                         </p>
 
-                                        <a href="{{ config('app.url') }}/login" style="background-color: #10b981; color: #FFFFFF; display: inline-block; padding: 12px 30px; text-decoration: none; text-transform: uppercase; font-size: 11px; letter-spacing: 2px; font-weight: bold;">
+                                        <a href="{{ config('services.frontend_url') }}/login" style="background-color: #10b981; color: #FFFFFF; display: inline-block; padding: 12px 30px; text-decoration: none; text-transform: uppercase; font-size: 11px; letter-spacing: 2px; font-weight: bold;">
                                             Se Connecter Maintenant
                                         </a>
                                     </td>
@@ -199,7 +199,7 @@
 
                     <tr>
                         <td align="center" style="padding: 40px;">
-                            <a href="{{ config('app.url') }}/account/orders/{{ $commande->id }}" style="background-color: #000000; color: #FFFFFF; display: inline-block; padding: 16px 40px; text-decoration: none; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; font-weight: bold; border-radius: 0;">
+                            <a href="{{ config('services.frontend_url') }}/account/orders/{{ $commande->numero_commande }}" style="background-color: #000000; color: #FFFFFF; display: inline-block; padding: 16px 40px; text-decoration: none; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; font-weight: bold; border-radius: 0;">
                                 Suivre ma commande
                             </a>
                         </td>
