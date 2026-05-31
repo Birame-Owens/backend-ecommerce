@@ -59,8 +59,9 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 COPY docker/start.sh        /start.sh
 
 RUN chmod +x /start.sh \
-    && mkdir -p /run/nginx \
-    && chown -R www-data:www-data /app/storage /app/bootstrap/cache \
+    && mkdir -p /run/nginx /var/lib/nginx/tmp/client_body \
+    && chmod 755 /var/lib/nginx \
+    && chown -R www-data:www-data /app/storage /app/bootstrap/cache /var/lib/nginx/tmp \
     && chmod -R 775 /app/storage /app/bootstrap/cache
 
 EXPOSE 80
