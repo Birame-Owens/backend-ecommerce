@@ -3,6 +3,9 @@ set -e
 
 cd /app
 
+echo "==> Ensuring storage directories exist..."
+mkdir -p storage/framework/views storage/framework/cache storage/framework/sessions storage/logs bootstrap/cache
+
 echo "==> Running database migrations..."
 php artisan migrate --force
 
