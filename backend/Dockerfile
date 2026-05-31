@@ -25,7 +25,8 @@ COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction --ignore-platform-req=php
 
 COPY . .
-RUN composer dump-autoload --optimize --no-interaction --ignore-platform-req=php
+RUN mkdir -p bootstrap/cache storage/logs \
+    && composer dump-autoload --optimize --no-interaction --ignore-platform-req=php
 
 # ─── Stage 2 : image de production ───────────────────────────────────────────
 FROM php:8.3-fpm-alpine AS production
