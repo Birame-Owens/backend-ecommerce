@@ -6,6 +6,7 @@ RUN apk add --no-cache \
     libzip-dev \
     icu-dev \
     linux-headers \
+    autoconf g++ make \
     zip unzip git
 
 RUN pecl install redis \
@@ -32,7 +33,8 @@ RUN apk add --no-cache \
     postgresql-dev \
     libzip-dev \
     icu-dev \
-    linux-headers
+    linux-headers \
+    autoconf g++ make
 
 RUN pecl install redis \
     && docker-php-ext-enable redis \
