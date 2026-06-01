@@ -111,12 +111,19 @@ class Commande extends Model
 		'est_cadeau',
 		'message_cadeau',
 		'note_satisfaction',
-		'commentaire_satisfaction'
+		'commentaire_satisfaction',
+		'delivery_zone_id',
+		'zone_livraison_nom',
 	];
 
 	public function client()
 	{
 		return $this->belongsTo(Client::class);
+	}
+
+	public function deliveryZone()
+	{
+		return $this->belongsTo(DeliveryZone::class, 'delivery_zone_id');
 	}
 
 	public function articles_commandes()

@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import axios from 'axios'
 import { NIcon } from '@/components/client/NIcon'
-import { useCartStore, cartSubtotal, cartTotal, cartCount } from '@/store/cartStore'
-import { checkoutApi } from '@/api/client/checkout'
+import { useCartStore, cartSubtotal, cartCount } from '@/store/cartStore'
+import { checkoutApi, type DeliveryZone } from '@/api/client/checkout'
 import { useToastStore } from '@/store/toastStore'
 import { useClientAuthStore } from '@/store/clientAuthStore'
 
@@ -73,6 +73,41 @@ function PaymentCard({
   )
 }
 
+/* ─── Zone card ─────────────────────────────────────────────────── */
+function ZoneCard({
+  zone, selected, onSelect,
+}: {
+  zone: DeliveryZone
+  selected: boolean
+  onSelect: (z: DeliveryZone) => void
+}) {
+  return (
+    <label
+      className={`flex items-center gap-3 px-4 py-3 rounded-[12px] border-2 cursor-pointer transition-all
+        ${selected ? 'border-accent bg-accent/5' : 'border-line bg-white hover:border-accent/40'}`}
+    >
+      <input
+        type="radio"
+        name="delivery_zone"
+        value={zone.id}
+        checked={selected}
+        onChange={() => onSelect(zone)}
+        className="sr-only"
+      />
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] font-semibold text-ink">{zone.nom}</p>
+      </div>
+      <span className={`text-[13px] font-bold tabular-nums flex-shrink-0 ${zone.prix === 0 ? 'text-ok' : 'text-ink'}`}>
+        {zone.prix === 0 ? 'Gratuit' : fmt(zone.prix)}
+      </span>
+      <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center
+        ${selected ? 'border-accent bg-accent' : 'border-line'}`}>
+        {selected && <div className="w-2 h-2 rounded-full bg-white" />}
+      </div>
+    </label>
+  )
+}
+
 /* ─── Page ─────────────────────────────────────────────────────── */
 export function CheckoutPage() {
   const navigate = useNavigate()
@@ -81,14 +116,33 @@ export function CheckoutPage() {
   const { user, isAuthenticated } = useClientAuthStore()
 
   const subtotal = cartSubtotal(items)
-  const total = cartTotal(items, coupon)
+  const discount = coupon?.discount ?? 0
   const count = cartCount(items)
 
   const [payMethod, setPayMethod] = useState<PaymentMethod>('wave')
   const [processing, setProcessing] = useState(false)
   const [serverError, setServerError] = useState('')
 
+  const [zones, setZones] = useState<DeliveryZone[]>([])
+  const [selectedZone, setSelectedZone] = useState<DeliveryZone | null>(null)
+  const [zonesLoading, setZonesLoading] = useState(true)
+
+  const shippingCost = selectedZone?.prix ?? 0
+  const total = subtotal - discount + shippingCost
+
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<CheckoutForm>()
+
+  useEffect(() => {
+    checkoutApi.getDeliveryZones()
+      .then((res) => {
+        if (res.data.success && res.data.data.length > 0) {
+          setZones(res.data.data)
+          setSelectedZone(res.data.data[0])
+        }
+      })
+      .catch(() => {})
+      .finally(() => setZonesLoading(false))
+  }, [])
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -135,6 +189,7 @@ export function CheckoutPage() {
         })),
         coupon_code: coupon?.code,
         notes: data.notes,
+        delivery_zone_id: selectedZone?.id ?? null,
       }
 
       const orderRes = await checkoutApi.createOrder(orderPayload)
@@ -256,11 +311,11 @@ export function CheckoutPage() {
               </Field>
             </section>
 
-            {/* 2. Livraison */}
+            {/* 2. Adresse */}
             <section className="bg-white rounded-[18px] border border-line shadow-sm p-5 sm:p-6 space-y-4">
               <div className="flex items-center gap-2.5 pb-3 border-b border-line">
                 <NIcon name="pin" size={18} strokeWidth={1.8} className="text-accent" aria-hidden="true" />
-                <h2 className="font-serif font-semibold text-[17px] text-ink">Livraison</h2>
+                <h2 className="font-serif font-semibold text-[17px] text-ink">Adresse de livraison</h2>
               </div>
 
               <Field id="co-adresse" label="Adresse complète" error={errors.adresse?.message}>
@@ -284,7 +339,34 @@ export function CheckoutPage() {
               </Field>
             </section>
 
-            {/* 3. Méthode de paiement */}
+            {/* 3. Zone de livraison */}
+            <section className="bg-white rounded-[18px] border border-line shadow-sm p-5 sm:p-6 space-y-4">
+              <div className="flex items-center gap-2.5 pb-3 border-b border-line">
+                <NIcon name="truck" size={18} strokeWidth={1.8} className="text-accent" aria-hidden="true" />
+                <h2 className="font-serif font-semibold text-[17px] text-ink">Zone de livraison</h2>
+              </div>
+
+              {zonesLoading ? (
+                <div className="flex justify-center py-4">
+                  <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : zones.length > 0 ? (
+                <div className="space-y-2">
+                  {zones.map((zone) => (
+                    <ZoneCard
+                      key={zone.id}
+                      zone={zone}
+                      selected={selectedZone?.id === zone.id}
+                      onSelect={setSelectedZone}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[13px] text-muted text-center py-2">Les frais de livraison seront communiqués par notre équipe.</p>
+              )}
+            </section>
+
+            {/* 4. Méthode de paiement */}
             <section className="bg-white rounded-[18px] border border-line shadow-sm p-5 sm:p-6 space-y-4">
               <div className="flex items-center gap-2.5 pb-3 border-b border-line">
                 <NIcon name="card" size={18} strokeWidth={1.8} className="text-accent" />
@@ -378,12 +460,21 @@ export function CheckoutPage() {
                 {coupon && (
                   <div className="flex justify-between text-[13px] text-ok font-medium">
                     <span>Réduction ({coupon.code})</span>
-                    <span className="tabular-nums">-{fmt(coupon.discount)}</span>
+                    <span className="tabular-nums">-{fmt(discount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-[13px] text-muted">
-                  <span>Livraison</span>
-                  <span className="font-medium text-ok">À confirmer</span>
+                  <span>
+                    Livraison
+                    {selectedZone ? <span className="text-[11px] ml-1 text-muted/70">({selectedZone.nom})</span> : null}
+                  </span>
+                  {selectedZone ? (
+                    <span className={`tabular-nums font-medium ${selectedZone.prix === 0 ? 'text-ok' : ''}`}>
+                      {selectedZone.prix === 0 ? 'Gratuit' : fmt(selectedZone.prix)}
+                    </span>
+                  ) : (
+                    <span className="text-muted italic text-[11px]">Choisir une zone</span>
+                  )}
                 </div>
               </div>
 

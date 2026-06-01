@@ -1,31 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { NIcon } from '@/components/client/NIcon'
-import { checkoutApi } from '@/api/client/checkout'
+import { checkoutApi, type OrderDetail } from '@/api/client/checkout'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
-interface OrderData {
-  numero_commande: string
-  statut: string
-  montant_total: number
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  en_attente: 'En attente de paiement',
-  confirmee: 'Confirmée',
-  en_preparation: 'En préparation',
-  prete: 'Prête',
-  en_livraison: 'En livraison',
-  livree: 'Livrée',
-  annulee: 'Annulée',
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 export function CheckoutSuccessPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const orderNumber = params.get('order')
-  const [order, setOrder] = useState<OrderData | null>(null)
+  const [order, setOrder] = useState<OrderDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(false)
 
@@ -34,12 +22,17 @@ export function CheckoutSuccessPage() {
     setFetchError(false)
     setLoading(true)
     checkoutApi.getOrder(orderNumber)
-      .then((res) => { if (res.data.success) setOrder(res.data.data as OrderData) })
+      .then((res) => { if (res.data.success) setOrder(res.data.data) })
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false))
   }
 
   useEffect(() => { fetchOrder() }, [orderNumber])
+
+  const articles = order?.articles_commandes ?? order?.articles ?? []
+  const prenom = order?.client?.prenom ?? ''
+  const nom = order?.client?.nom ?? ''
+  const clientName = [prenom, nom].filter(Boolean).join(' ')
 
   return (
     <>
@@ -50,63 +43,113 @@ export function CheckoutSuccessPage() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-10 md:py-16 text-center">
-        {/* Success icon */}
-        <div className="w-20 h-20 rounded-full bg-ok/15 flex items-center justify-center mx-auto mb-6" aria-hidden="true">
-          <NIcon name="shield" size={38} strokeWidth={1.5} className="text-ok" />
+      <main className="max-w-xl mx-auto px-4 py-10 md:py-16">
+
+        {/* Success icon + heading */}
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 rounded-full bg-ok/15 flex items-center justify-center mx-auto mb-5" aria-hidden="true">
+            <NIcon name="shield" size={38} strokeWidth={1.5} className="text-ok" />
+          </div>
+          <h1 className="font-serif font-bold text-[26px] md:text-[32px] text-ink mb-2">
+            {clientName ? `Merci ${clientName} !` : 'Merci pour votre commande !'}
+          </h1>
+          <p className="text-[14px] text-muted max-w-sm mx-auto leading-relaxed">
+            Votre commande a été confirmée. Notre équipe vous contactera pour la livraison.
+          </p>
         </div>
 
-        <h1 className="font-serif font-bold text-[28px] md:text-[34px] text-ink mb-2">
-          Merci pour votre commande !
-        </h1>
-        <p className="text-[14px] text-muted mb-2 max-w-sm mx-auto leading-relaxed">
-          Votre commande a bien été enregistrée. Notre équipe vous contactera rapidement pour confirmer la livraison.
-        </p>
-        <p className="text-[12.5px] text-muted mb-8 max-w-sm mx-auto">
-          Un récapitulatif vous sera envoyé par WhatsApp ou email.
-        </p>
-
-        {/* Order card */}
+        {/* Order content */}
         {loading ? (
-          <div className="flex justify-center mb-8" role="status" aria-label="Chargement de la commande">
-            <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+          <div className="flex justify-center py-8" role="status" aria-label="Chargement">
+            <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
           </div>
         ) : fetchError ? (
-          <div className="bg-white rounded-[18px] border border-line shadow-sm p-5 mb-8" role="alert">
-            {orderNumber && (
-              <p className="text-[14px] font-bold text-ink font-mono mb-2">#{orderNumber}</p>
-            )}
-            <p className="text-[12px] text-muted mb-3">Impossible de charger les détails de la commande.</p>
-            <button
-              onClick={fetchOrder}
-              className="text-[12px] font-semibold text-accent underline hover:no-underline"
-            >
+          <div className="bg-white rounded-[18px] border border-line p-5 mb-8 text-center" role="alert">
+            {orderNumber && <p className="text-[14px] font-bold text-ink font-mono mb-2">#{orderNumber}</p>}
+            <p className="text-[12px] text-muted mb-3">Impossible de charger les détails.</p>
+            <button onClick={fetchOrder} className="text-[12px] font-semibold text-accent underline hover:no-underline">
               Réessayer
             </button>
           </div>
         ) : order ? (
-          <div className="bg-white rounded-[18px] border border-line shadow-sm p-5 mb-8 text-left space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-[12px] font-semibold uppercase tracking-widest text-muted">Commande</span>
-              <span className="text-[13px] font-bold text-ink font-mono">#{order.numero_commande}</span>
+          <div className="bg-white rounded-[18px] border border-line shadow-sm overflow-hidden mb-6">
+
+            {/* Order header */}
+            <div className="px-5 py-4 border-b border-line flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted mb-0.5">Commande</p>
+                <p className="text-[16px] font-bold text-ink font-mono">#{order.numero_commande}</p>
+              </div>
+              {order.created_at && (
+                <p className="text-[12px] text-muted">{fmtDate(order.created_at)}</p>
+              )}
             </div>
-            <div className="flex justify-between items-center border-t border-line pt-3">
-              <span className="text-[12px] text-muted">Statut</span>
-              <span className="text-[12px] font-semibold text-ok">
-                {STATUS_LABEL[order.statut] ?? order.statut}
-              </span>
-            </div>
-            {order.montant_total > 0 && (
-              <div className="flex justify-between items-center border-t border-line pt-3">
-                <span className="text-[12px] text-muted">Total payé</span>
-                <span className="text-[15px] font-bold text-ink tabular-nums">{fmt(order.montant_total)}</span>
+
+            {/* Articles */}
+            {articles.length > 0 && (
+              <div className="px-5 py-4 border-b border-line space-y-3">
+                {articles.map((article) => {
+                  const imgUrl = article.produit?.images_produits?.[0]?.url
+                  return (
+                    <div key={article.id} className="flex gap-3 items-start">
+                      <div className="w-12 h-14 flex-shrink-0 rounded-[8px] overflow-hidden bg-sand">
+                        {imgUrl
+                          ? <img src={imgUrl} alt={article.nom_produit} className="w-full h-full object-cover" />
+                          : <div className="w-full h-full bg-gradient-to-br from-sand to-camel/20" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-ink leading-snug line-clamp-2">{article.nom_produit}</p>
+                        <p className="text-[11px] text-muted mt-0.5">
+                          Qté {article.quantite}
+                          {article.couleur_choisie ? ` · ${article.couleur_choisie}` : ''}
+                          {article.taille_choisie ? ` · ${article.taille_choisie}` : ''}
+                        </p>
+                        <p className="text-[12px] font-semibold text-ink mt-0.5 tabular-nums">
+                          {fmt(article.prix_unitaire)} × {article.quantite}
+                        </p>
+                      </div>
+                      <span className="text-[13px] font-bold text-ink tabular-nums flex-shrink-0">
+                        {fmt(article.prix_total_article)}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
             )}
+
+            {/* Totals */}
+            <div className="px-5 py-4 space-y-2">
+              <div className="flex justify-between text-[13px] text-muted">
+                <span>Sous-total</span>
+                <span className="tabular-nums">{fmt(order.sous_total)}</span>
+              </div>
+              {order.remise > 0 && (
+                <div className="flex justify-between text-[13px] text-ok font-medium">
+                  <span>Réduction</span>
+                  <span className="tabular-nums">-{fmt(order.remise)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-[13px] text-muted">
+                <span>
+                  Livraison
+                  {order.zone_livraison_nom
+                    ? <span className="text-[11px] ml-1 text-muted/70">({order.zone_livraison_nom})</span>
+                    : null}
+                </span>
+                <span className={`tabular-nums font-medium ${order.frais_livraison === 0 ? 'text-ok' : ''}`}>
+                  {order.frais_livraison === 0 ? 'Gratuit' : fmt(order.frais_livraison)}
+                </span>
+              </div>
+              <div className="flex justify-between items-baseline border-t border-line pt-3 mt-1">
+                <span className="font-bold text-[15px] text-ink">Total</span>
+                <span className="font-bold text-[22px] text-accent tabular-nums">{fmt(order.montant_total)}</span>
+              </div>
+            </div>
           </div>
         ) : orderNumber ? (
-          <div className="bg-white rounded-[18px] border border-line shadow-sm p-5 mb-8">
+          <div className="bg-white rounded-[18px] border border-line p-5 mb-6 text-center">
             <p className="text-[14px] font-bold text-ink font-mono">#{orderNumber}</p>
-            <p className="text-[12px] text-muted mt-1">Commande enregistrée avec succès</p>
+            <p className="text-[12px] text-muted mt-1">Commande enregistrée</p>
           </div>
         ) : null}
 
@@ -117,6 +160,7 @@ export function CheckoutSuccessPage() {
             className="flex-1 flex items-center justify-center gap-2 h-12 rounded-[10px]
               bg-accent text-white text-[13px] font-semibold hover:bg-accent-dark transition-colors"
           >
+            <NIcon name="home" size={16} strokeWidth={2} aria-hidden="true" />
             Retour à l'accueil
           </button>
           <button
@@ -128,12 +172,6 @@ export function CheckoutSuccessPage() {
             Voir mes commandes
           </button>
         </div>
-        <button
-          onClick={() => navigate('/categories')}
-          className="mt-3 text-[12px] text-muted hover:text-ink underline transition-colors"
-        >
-          Continuer mes achats
-        </button>
       </main>
     </>
   )

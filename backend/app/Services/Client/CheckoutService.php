@@ -156,7 +156,7 @@ class CheckoutService
             $validatedItems = $this->validateCartItems($data['items']);
 
             // 3. Calculer les totaux
-            $totals = $this->calculateTotals($validatedItems, $data['coupon_code'] ?? null);
+            $totals = $this->calculateTotals($validatedItems, $data['coupon_code'] ?? null, $data['delivery_zone_id'] ?? null);
 
             // 4. Créer la commande
             $commande = $this->createCommande($client, $data, $totals, $idempotencyKey);
@@ -248,7 +248,7 @@ class CheckoutService
     /**
      * Calculer les totaux (subtotal, remise, livraison, total)
      */
-    private function calculateTotals(array $items, $couponCode = null)
+    private function calculateTotals(array $items, $couponCode = null, $deliveryZoneId = null)
     {
         $subtotal = 0;
 
@@ -294,16 +294,27 @@ class CheckoutService
             }
         }
 
-        // Frais de livraison - Utiliser les paramètres de la base de données
-        $shippingSettings = \App\Models\ShippingSetting::getSettings();
-        
+        // Frais de livraison - Zone sélectionnée ou fallback sur ShippingSetting
         $shippingCost = 0;
-        if ($shippingSettings->is_enabled) {
-            $freeShippingThreshold = $shippingSettings->free_threshold;
-            $shippingCost = ($subtotal - $discount) >= $freeShippingThreshold ? 0 : $shippingSettings->default_cost;
+        $deliveryZone = null;
+
+        if ($deliveryZoneId) {
+            $deliveryZone = \App\Models\DeliveryZone::where('id', $deliveryZoneId)
+                ->where('est_active', true)
+                ->first();
         }
-        
-        // Appliquer livraison gratuite si c'est le type de promotion
+
+        if ($deliveryZone) {
+            $shippingCost = (float) $deliveryZone->prix;
+        } else {
+            $shippingSettings = \App\Models\ShippingSetting::getSettings();
+            if ($shippingSettings->is_enabled) {
+                $freeShippingThreshold = $shippingSettings->free_threshold;
+                $shippingCost = ($subtotal - $discount) >= $freeShippingThreshold ? 0 : $shippingSettings->default_cost;
+            }
+        }
+
+        // Livraison gratuite via promo
         if ($promotion && $promotion->type_promotion === 'livraison_gratuite') {
             $shippingCost = 0;
         }
@@ -311,11 +322,12 @@ class CheckoutService
         $total = $subtotal - $discount + $shippingCost;
 
         return [
-            'subtotal' => $subtotal,
-            'discount' => $discount,
-            'shipping' => $shippingCost,
-            'total' => $total,
-            'promotion' => $promotion,
+            'subtotal'      => $subtotal,
+            'discount'      => $discount,
+            'shipping'      => $shippingCost,
+            'total'         => $total,
+            'promotion'     => $promotion,
+            'delivery_zone' => $deliveryZone,
         ];
     }
 
@@ -327,19 +339,21 @@ class CheckoutService
         $nomComplet = trim(($data['customer']['prenom'] ?? '') . ' ' . ($data['customer']['nom'] ?? ''));
         
         return Commande::create([
-            'client_id' => $client->id,
-            'numero_commande' => $this->generateOrderNumber(),
-            'idempotency_key' => $idempotencyKey,
-            'statut' => 'en_attente',
-            'sous_total' => $totals['subtotal'],
-            'montant_total' => $totals['total'],
-            'remise' => $totals['discount'] ?? 0,
-            'code_promo' => $totals['promotion']?->code,
-            'frais_livraison' => $totals['shipping'],
-            'adresse_livraison' => $data['customer']['adresse_livraison'],
-            'telephone_livraison' => $data['customer']['telephone'],
-            'nom_destinataire' => $nomComplet ?: 'Client',
-            'notes_client' => $data['notes'] ?? null,
+            'client_id'          => $client->id,
+            'numero_commande'    => $this->generateOrderNumber(),
+            'idempotency_key'    => $idempotencyKey,
+            'statut'             => 'en_attente',
+            'sous_total'         => $totals['subtotal'],
+            'montant_total'      => $totals['total'],
+            'remise'             => $totals['discount'] ?? 0,
+            'code_promo'         => $totals['promotion']?->code,
+            'frais_livraison'    => $totals['shipping'],
+            'delivery_zone_id'   => $totals['delivery_zone']?->id,
+            'zone_livraison_nom' => $totals['delivery_zone']?->nom,
+            'adresse_livraison'  => $data['customer']['adresse_livraison'],
+            'telephone_livraison'=> $data['customer']['telephone'],
+            'nom_destinataire'   => $nomComplet ?: 'Client',
+            'notes_client'       => $data['notes'] ?? null,
         ]);
     }
 

@@ -9,6 +9,13 @@ export interface CouponData {
   nouveau_total: number
 }
 
+export interface DeliveryZone {
+  id: number
+  nom: string
+  prix: number
+  ordre_affichage: number
+}
+
 export interface OrderCustomer {
   nom: string
   prenom: string
@@ -30,6 +37,7 @@ export interface CreateOrderPayload {
   items: OrderItem[]
   coupon_code?: string
   notes?: string
+  delivery_zone_id?: number | null
 }
 
 export interface PaymentPayload {
@@ -39,7 +47,37 @@ export interface PaymentPayload {
   last_name?: string
 }
 
+export interface OrderArticle {
+  id: number
+  nom_produit: string
+  prix_unitaire: number
+  quantite: number
+  prix_total_article: number
+  taille_choisie?: string | null
+  couleur_choisie?: string | null
+  produit?: { images_produits?: Array<{ url: string }> }
+}
+
+export interface OrderDetail {
+  numero_commande: string
+  statut: string
+  montant_total: number
+  sous_total: number
+  frais_livraison: number
+  remise: number
+  zone_livraison_nom?: string | null
+  created_at: string
+  client?: { prenom: string; nom: string; email: string }
+  articles_commandes?: OrderArticle[]
+  articles?: OrderArticle[]
+}
+
 export const checkoutApi = {
+  getDeliveryZones: () =>
+    clientApi.get<{ success: boolean; data: DeliveryZone[] }>(
+      '/api/client/delivery-zones'
+    ),
+
   validateCoupon: (code: string, montant_commande: number) =>
     clientApi.post<{ success: boolean; data: CouponData; message?: string }>(
       '/api/client/promotions/validate-code',
@@ -59,7 +97,7 @@ export const checkoutApi = {
     ),
 
   getOrder: (orderNumber: string) =>
-    clientApi.get<{ success: boolean; data: { numero_commande: string; statut: string; montant_total: number } }>(
+    clientApi.get<{ success: boolean; data: OrderDetail }>(
       `/api/client/commandes/${orderNumber}`
     ),
 

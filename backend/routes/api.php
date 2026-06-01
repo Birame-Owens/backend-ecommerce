@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\Admin\RapportController;
 use App\Http\Controllers\Api\Admin\MessageGroupeController;
 use App\Http\Controllers\Api\Admin\SyncController;
 use App\Http\Controllers\Api\Admin\ShopSettingController;
+use App\Http\Controllers\Api\Admin\DeliveryZoneController as AdminDeliveryZoneController;
 use App\Http\Controllers\Api\Client\HomeController;
 
 use App\Http\Controllers\Api\Client\HomeController as ClientHomeController;
@@ -212,6 +213,10 @@ Route::prefix('admin')->group(function () {
         Route::post('/shipping-settings/disable', [\App\Http\Controllers\Api\Admin\ShippingSettingsController::class, 'disable']);
         Route::post('/shipping-settings/enable', [\App\Http\Controllers\Api\Admin\ShippingSettingsController::class, 'enable']);
 
+        // Zones de livraison
+        Route::post('/delivery-zones/{deliveryZone}/toggle-status', [AdminDeliveryZoneController::class, 'toggleStatus']);
+        Route::apiResource('delivery-zones', AdminDeliveryZoneController::class);
+
         // Avis Clients
         Route::get('/avis-clients/stats', [AvisClientController::class, 'stats']);
         Route::get('/avis-clients/options', [AvisClientController::class, 'options']);
@@ -359,6 +364,9 @@ Route::prefix('client')->middleware('throttle.api:180,1')->group(function () {
     // =================== PROMOTIONS (PUBLIC) ===================
     Route::post('/promotions/validate-code', [\App\Http\Controllers\Api\Client\CheckoutController::class, 'validateCoupon'])
         ->middleware('throttle.api:20,1');
+
+    // =================== ZONES DE LIVRAISON ===================
+    Route::get('/delivery-zones', [\App\Http\Controllers\Api\Client\DeliveryZoneController::class, 'index']);
 
     // =================== CHECKOUT & PAIEMENT ===================
     Route::prefix('checkout')->group(function () {

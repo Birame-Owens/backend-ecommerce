@@ -34,6 +34,7 @@ const ClientsPage    = lazy_(() => import('@/features/admin/clients/ClientsPage'
 const PromotionsPage = lazy_(() => import('@/features/admin/promotions/PromotionsPage'))
 const PaymentsPage   = lazy_(() => import('@/features/admin/payments/PaymentsPage'))
 const ShippingPage   = lazy_(() => import('@/features/admin/shipping/ShippingPage'))
+const DeliveryZonesPage = lazy_(() => import('@/features/admin/deliveryZones/DeliveryZonesPage'))
 const ReviewsPage    = lazy_(() => import('@/features/admin/reviews/ReviewsPage'))
 const ReportsPage    = lazy_(() => import('@/features/admin/reports/ReportsPage'))
 const MessagesPage   = lazy_(() => import('@/features/admin/messages/MessagesPage'))
@@ -76,6 +77,7 @@ export const router = createBrowserRouter(
                 { path: 'paiements',    element: <PaymentsPage /> },
                 { path: 'promotions',   element: <PromotionsPage /> },
                 { path: 'livraison',    element: <ShippingPage /> },
+                { path: 'zones-livraison', element: <DeliveryZonesPage /> },
                 { path: 'avis-clients', element: <ReviewsPage /> },
                 { path: 'messages',     element: <MessagesPage /> },
                 { path: 'rapports',     element: <ReportsPage /> },
