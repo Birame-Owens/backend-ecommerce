@@ -1,23 +1,19 @@
 import { useEffect, useState } from 'react'
 import {
-  Settings, Store, CreditCard, Truck, Bell, Shield, Users, Palette,
+  Settings, Store, CreditCard, Bell, Shield, Users, Palette,
   Search, Upload, KeyRound, Save, RefreshCw,
 } from 'lucide-react'
-import { shippingAdminApi } from '@/api/admin/shipping'
 import { paiementsAdminApi } from '@/api/admin/paiements'
 import { shopSettingsApi } from '@/api/admin/settings'
 import type {
   AdminPaymentMethod,
-  AdminShippingSettings,
   AdminShopSettings,
 } from '@/types/admin'
-import { fmtMoney } from '@/features/admin/orders/orderHelpers'
 
 const sections = [
   { id: 'general',       label: 'Général',          icon: Settings  },
   { id: 'boutique',      label: 'Boutique',          icon: Store     },
   { id: 'paiements',     label: 'Paiements',         icon: CreditCard },
-  { id: 'livraisons',    label: 'Livraisons',        icon: Truck     },
   { id: 'notifications', label: 'Notifications',     icon: Bell      },
   { id: 'securite',      label: 'Sécurité',          icon: Shield    },
   { id: 'utilisateurs',  label: 'Utilisateurs',      icon: Users     },
@@ -39,7 +35,6 @@ function Toast({ message, type }: { message: string; type: ToastType }) {
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState('general')
-  const [shipping, setShipping]           = useState<AdminShippingSettings | null>(null)
   const [paymentMethods, setPaymentMethods] = useState<AdminPaymentMethod[]>([])
   const [shopSettings, setShopSettings]   = useState<AdminShopSettings | null>(null)
   const [loading, setLoading]             = useState(true)
@@ -76,12 +71,6 @@ export default function SettingsPage() {
     boutique_description: '', boutique_ville: '', boutique_pays: '', boutique_horaires: '',
   })
 
-  // Formulaire livraisons
-  const [shippingForm, setShippingForm] = useState({
-    default_cost: '', free_threshold: '', is_enabled: true,
-  })
-  const [shippingSaving, setShippingSaving] = useState(false)
-
   // Toggle paiements
   const [toggleLoadingId, setToggleLoadingId] = useState<string | null>(null)
 
@@ -100,18 +89,10 @@ export default function SettingsPage() {
     const load = async () => {
       setLoading(true)
       try {
-        const [shippingRes, methodsRes, settingsRes] = await Promise.all([
-          shippingAdminApi.getSettings(),
+        const [methodsRes, settingsRes] = await Promise.all([
           paiementsAdminApi.paymentMethods(),
           shopSettingsApi.getAll(),
         ])
-        const ship = shippingRes.data.data
-        setShipping(ship)
-        setShippingForm({
-          default_cost:   String(ship.default_cost),
-          free_threshold: String(ship.free_threshold),
-          is_enabled:     ship.is_enabled,
-        })
         setPaymentMethods(methodsRes.data.data)
         const s = settingsRes.data.data
         setShopSettings(s)
@@ -172,23 +153,6 @@ export default function SettingsPage() {
   })
 
   const handleSaveBoutique = () => saveSettings(boutiqueForm)
-
-  const handleSaveShipping = async () => {
-    setShippingSaving(true)
-    try {
-      const res = await shippingAdminApi.updateSettings({
-        default_cost:   Number(shippingForm.default_cost)   || 0,
-        free_threshold: Number(shippingForm.free_threshold) || 0,
-        is_enabled:     shippingForm.is_enabled,
-      })
-      setShipping(res.data.data)
-      showToast('Paramètres de livraison enregistrés.')
-    } catch {
-      showToast('Erreur lors de la sauvegarde.', 'error')
-    } finally {
-      setShippingSaving(false)
-    }
-  }
 
   const handleTogglePayment = async (method: string) => {
     setToggleLoadingId(method)
@@ -404,74 +368,6 @@ export default function SettingsPage() {
                     <p className="text-xs text-muted">Aucune méthode disponible.</p>
                   )}
                 </div>
-              </section>
-            )}
-
-            {/* ── Livraisons ── */}
-            {activeSection === 'livraisons' && (
-              <section className="bg-beige-50 border border-beige-300 rounded-2xl p-5 shadow-beige">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-xs text-muted uppercase tracking-widest">Livraisons</p>
-                    <h2 className="text-lg font-serif font-semibold text-ink">Paramètres de livraison</h2>
-                  </div>
-                  <Truck className="w-4 h-4 text-beige-500" strokeWidth={1.5} />
-                </div>
-                <div className="space-y-4 mb-4">
-                  <label className="flex items-center justify-between bg-beige-100 border border-beige-300 rounded-2xl px-4 py-3 cursor-pointer">
-                    <div>
-                      <p className="text-sm font-semibold text-ink">Livraison activée</p>
-                      <p className="text-xs text-muted">Proposer la livraison aux clients</p>
-                    </div>
-                    <div
-                      onClick={() => setShippingForm(prev => ({ ...prev, is_enabled: !prev.is_enabled }))}
-                      className={`relative w-10 h-5 rounded-full cursor-pointer transition-colors ${shippingForm.is_enabled ? 'bg-beige-500' : 'bg-beige-300'}`}
-                    >
-                      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${shippingForm.is_enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                    </div>
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">Frais standard (FCFA)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        className={`w-full ${inputCls}`}
-                        value={shippingForm.default_cost}
-                        onChange={(e) => setShippingForm(prev => ({ ...prev, default_cost: e.target.value }))}
-                        placeholder="2000"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">Gratuite dès (FCFA)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        className={`w-full ${inputCls}`}
-                        value={shippingForm.free_threshold}
-                        onChange={(e) => setShippingForm(prev => ({ ...prev, free_threshold: e.target.value }))}
-                        placeholder="50000"
-                      />
-                      <p className="text-[10px] text-muted mt-1">0 = livraison gratuite toujours offerte si désactivé</p>
-                    </div>
-                  </div>
-                  {shipping && (
-                    <div className="flex gap-3">
-                      <div className="flex-1 bg-beige-100 border border-beige-300 rounded-xl p-3 text-center">
-                        <p className="text-[10px] text-muted uppercase tracking-widest">Actuel frais</p>
-                        <p className="text-base font-bold text-ink">{fmtMoney(shipping.default_cost)} F</p>
-                      </div>
-                      <div className="flex-1 bg-beige-100 border border-beige-300 rounded-xl p-3 text-center">
-                        <p className="text-[10px] text-muted uppercase tracking-widest">Actuel seuil</p>
-                        <p className="text-base font-bold text-ink">{fmtMoney(shipping.free_threshold)} F</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <button onClick={handleSaveShipping} disabled={shippingSaving} className={saveBtnCls}>
-                  <Save className="w-3.5 h-3.5" strokeWidth={1.5} />
-                  {shippingSaving ? 'Enregistrement…' : 'Enregistrer la livraison'}
-                </button>
               </section>
             )}
 

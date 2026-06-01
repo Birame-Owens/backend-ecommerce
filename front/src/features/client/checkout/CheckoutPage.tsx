@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import axios from 'axios'
@@ -17,10 +17,11 @@ interface CheckoutForm {
   prenom: string
   email: string
   telephone: string
-  adresse: string
-  ville: string
+  indication?: string
   notes?: string
 }
+
+const isPickup = (zone: DeliveryZone | null) => zone?.prix === 0 && zone?.ordre_affichage === 0
 
 /* ─── Breadcrumb ───────────────────────────────────────────────── */
 function Breadcrumb() {
@@ -52,14 +53,8 @@ function PaymentCard({
       className={`flex items-center gap-4 p-4 rounded-[12px] border-2 cursor-pointer transition-all
         ${selected ? 'border-accent bg-accent/5' : 'border-line bg-white hover:border-accent/40'}`}
     >
-      <input
-        type="radio"
-        name="payment"
-        value={value}
-        checked={selected}
-        onChange={() => onSelect(value)}
-        className="sr-only"
-      />
+      <input type="radio" name="payment" value={value} checked={selected}
+        onChange={() => onSelect(value)} className="sr-only" />
       <img src={logo} alt={label} className="h-9 w-16 object-contain rounded-[6px] flex-shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-[13px] font-bold text-ink">{label}</p>
@@ -74,26 +69,16 @@ function PaymentCard({
 }
 
 /* ─── Zone card ─────────────────────────────────────────────────── */
-function ZoneCard({
-  zone, selected, onSelect,
-}: {
-  zone: DeliveryZone
-  selected: boolean
-  onSelect: (z: DeliveryZone) => void
+function ZoneCard({ zone, selected, onSelect }: {
+  zone: DeliveryZone; selected: boolean; onSelect: (z: DeliveryZone) => void
 }) {
   return (
     <label
       className={`flex items-center gap-3 px-4 py-3 rounded-[12px] border-2 cursor-pointer transition-all
         ${selected ? 'border-accent bg-accent/5' : 'border-line bg-white hover:border-accent/40'}`}
     >
-      <input
-        type="radio"
-        name="delivery_zone"
-        value={zone.id}
-        checked={selected}
-        onChange={() => onSelect(zone)}
-        className="sr-only"
-      />
+      <input type="radio" name="delivery_zone" value={zone.id}
+        checked={selected} onChange={() => onSelect(zone)} className="sr-only" />
       <div className="flex-1 min-w-0">
         <p className="text-[13px] font-semibold text-ink">{zone.nom}</p>
       </div>
@@ -126,9 +111,18 @@ export function CheckoutPage() {
   const [zones, setZones] = useState<DeliveryZone[]>([])
   const [selectedZone, setSelectedZone] = useState<DeliveryZone | null>(null)
   const [zonesLoading, setZonesLoading] = useState(true)
+  const [zoneSearch, setZoneSearch] = useState('')
 
   const shippingCost = selectedZone?.prix ?? 0
   const total = subtotal - discount + shippingCost
+  const pickup = isPickup(selectedZone)
+
+  const filteredZones = useMemo(() =>
+    zoneSearch.trim()
+      ? zones.filter((z) => z.nom.toLowerCase().includes(zoneSearch.toLowerCase()))
+      : zones,
+    [zones, zoneSearch]
+  )
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<CheckoutForm>()
 
@@ -151,7 +145,6 @@ export function CheckoutPage() {
       setValue('nom', parts.slice(1).join(' ') ?? '')
       setValue('email', user.email ?? '')
       setValue('telephone', user.telephone ?? '')
-      setValue('ville', user.ville ?? '')
     }
   }, [isAuthenticated, user, setValue])
 
@@ -172,14 +165,19 @@ export function CheckoutPage() {
     setProcessing(true)
     setServerError('')
     try {
+      // Adresse = indication saisie ou nom de la zone (retrait sur place si pickup)
+      const adresseLivraison = pickup
+        ? 'Retrait sur place'
+        : (data.indication?.trim() || selectedZone?.nom || 'À confirmer')
+
       const orderPayload = {
         customer: {
           nom: data.nom,
           prenom: data.prenom,
           email: data.email,
           telephone: data.telephone,
-          adresse_livraison: data.adresse,
-          ville: data.ville,
+          adresse_livraison: adresseLivraison,
+          ville: selectedZone?.nom ?? 'Dakar',
           pays: 'Sénégal',
         },
         items: items.map((i) => ({
@@ -243,7 +241,6 @@ export function CheckoutPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
-        {/* Desktop heading + breadcrumb */}
         <div className="hidden md:block mb-8">
           <Breadcrumb />
           <h1 className="font-serif font-bold text-[34px] text-ink leading-none">Validation de commande</h1>
@@ -257,36 +254,29 @@ export function CheckoutPage() {
             {/* Server error */}
             {serverError && (
               <div role="alert" className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-[12px]">
-                <NIcon name="close" size={16} strokeWidth={2} className="text-red-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                <div className="flex-1">
-                  <p className="text-[13px] font-semibold text-red-700">{serverError}</p>
-                </div>
-                <button type="button" onClick={() => setServerError('')} aria-label="Fermer l'erreur"
-                  className="text-red-300 hover:text-red-500">
+                <NIcon name="close" size={16} strokeWidth={2} className="text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="flex-1 text-[13px] font-semibold text-red-700">{serverError}</p>
+                <button type="button" onClick={() => setServerError('')} className="text-red-300 hover:text-red-500">
                   <NIcon name="close" size={14} strokeWidth={2} />
                 </button>
               </div>
             )}
 
-            {/* 1. Informations personnelles */}
+            {/* 1. Informations */}
             <section className="bg-white rounded-[18px] border border-line shadow-sm p-5 sm:p-6 space-y-4">
               <div className="flex items-center gap-2.5 pb-3 border-b border-line">
-                <NIcon name="user" size={18} strokeWidth={1.8} className="text-accent" aria-hidden="true" />
+                <NIcon name="user" size={18} strokeWidth={1.8} className="text-accent" />
                 <h2 className="font-serif font-semibold text-[17px] text-ink">Informations</h2>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field id="co-nom" label="Nom" error={errors.nom?.message}>
                   <input id="co-nom" {...register('nom', { required: 'Requis' })}
-                    placeholder="DIOP" autoComplete="family-name"
-                    aria-invalid={!!errors.nom} aria-describedby={errors.nom ? 'co-nom-err' : undefined}
-                    className={inputCls(!!errors.nom)} />
+                    placeholder="DIOP" autoComplete="family-name" className={inputCls(!!errors.nom)} />
                 </Field>
                 <Field id="co-prenom" label="Prénom" error={errors.prenom?.message}>
                   <input id="co-prenom" {...register('prenom', { required: 'Requis' })}
-                    placeholder="Amadou" autoComplete="given-name"
-                    aria-invalid={!!errors.prenom} aria-describedby={errors.prenom ? 'co-prenom-err' : undefined}
-                    className={inputCls(!!errors.prenom)} />
+                    placeholder="Amadou" autoComplete="given-name" className={inputCls(!!errors.prenom)} />
                 </Field>
               </div>
 
@@ -294,55 +284,21 @@ export function CheckoutPage() {
                 <input id="co-email" {...register('email', {
                   required: 'Requis',
                   pattern: { value: /^\S+@\S+\.\S+$/, message: 'Email invalide' }
-                })}
-                  type="email" placeholder="email@exemple.com" autoComplete="email"
-                  aria-invalid={!!errors.email} aria-describedby={errors.email ? 'co-email-err' : undefined}
-                  className={inputCls(!!errors.email)} />
+                })} type="email" placeholder="email@exemple.com" autoComplete="email" className={inputCls(!!errors.email)} />
               </Field>
 
               <Field id="co-tel" label="Téléphone" error={errors.telephone?.message}>
                 <input id="co-tel" {...register('telephone', {
                   required: 'Requis',
                   pattern: { value: /^[0-9+\s]{9,15}$/, message: 'Format invalide (ex: 77 000 00 00)' }
-                })}
-                  type="tel" placeholder="77 000 00 00" autoComplete="tel"
-                  aria-invalid={!!errors.telephone} aria-describedby={errors.telephone ? 'co-tel-err' : undefined}
-                  className={inputCls(!!errors.telephone)} />
+                })} type="tel" placeholder="77 000 00 00" autoComplete="tel" className={inputCls(!!errors.telephone)} />
               </Field>
             </section>
 
-            {/* 2. Adresse */}
+            {/* 2. Zone de livraison */}
             <section className="bg-white rounded-[18px] border border-line shadow-sm p-5 sm:p-6 space-y-4">
               <div className="flex items-center gap-2.5 pb-3 border-b border-line">
-                <NIcon name="pin" size={18} strokeWidth={1.8} className="text-accent" aria-hidden="true" />
-                <h2 className="font-serif font-semibold text-[17px] text-ink">Adresse de livraison</h2>
-              </div>
-
-              <Field id="co-adresse" label="Adresse complète" error={errors.adresse?.message}>
-                <textarea id="co-adresse" {...register('adresse', { required: 'Requis' })}
-                  rows={2} placeholder="Quartier, rue, numéro de porte..."
-                  aria-invalid={!!errors.adresse} aria-describedby={errors.adresse ? 'co-adresse-err' : undefined}
-                  className={`${inputCls(!!errors.adresse)} resize-none`} />
-              </Field>
-
-              <Field id="co-ville" label="Ville" error={errors.ville?.message}>
-                <input id="co-ville" {...register('ville', { required: 'Requis' })}
-                  placeholder="Dakar" autoComplete="address-level2"
-                  aria-invalid={!!errors.ville} aria-describedby={errors.ville ? 'co-ville-err' : undefined}
-                  className={inputCls(!!errors.ville)} />
-              </Field>
-
-              <Field id="co-notes" label="Notes (optionnel)">
-                <textarea id="co-notes" {...register('notes')}
-                  rows={2} placeholder="Instructions particulières pour la livraison..."
-                  className={`${inputCls(false)} resize-none`} />
-              </Field>
-            </section>
-
-            {/* 3. Zone de livraison */}
-            <section className="bg-white rounded-[18px] border border-line shadow-sm p-5 sm:p-6 space-y-4">
-              <div className="flex items-center gap-2.5 pb-3 border-b border-line">
-                <NIcon name="truck" size={18} strokeWidth={1.8} className="text-accent" aria-hidden="true" />
+                <NIcon name="truck" size={18} strokeWidth={1.8} className="text-accent" />
                 <h2 className="font-serif font-semibold text-[17px] text-ink">Zone de livraison</h2>
               </div>
 
@@ -351,20 +307,71 @@ export function CheckoutPage() {
                   <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : zones.length > 0 ? (
-                <div className="space-y-2">
-                  {zones.map((zone) => (
-                    <ZoneCard
-                      key={zone.id}
-                      zone={zone}
-                      selected={selectedZone?.id === zone.id}
-                      onSelect={setSelectedZone}
-                    />
-                  ))}
-                </div>
+                <>
+                  {/* Recherche visible si plus de 5 zones */}
+                  {zones.length > 5 && (
+                    <div className="relative">
+                      <NIcon name="search" size={15} strokeWidth={1.8}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+                      <input
+                        value={zoneSearch}
+                        onChange={(e) => setZoneSearch(e.target.value)}
+                        placeholder="Rechercher une zone..."
+                        className="w-full h-10 pl-9 pr-4 rounded-[10px] border border-line text-[13px]
+                          focus:outline-none focus:border-accent bg-white"
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    {filteredZones.map((zone) => (
+                      <ZoneCard key={zone.id} zone={zone}
+                        selected={selectedZone?.id === zone.id} onSelect={setSelectedZone} />
+                    ))}
+                    {filteredZones.length === 0 && (
+                      <p className="text-[12px] text-muted text-center py-3">Aucune zone trouvée.</p>
+                    )}
+                  </div>
+                </>
               ) : (
-                <p className="text-[13px] text-muted text-center py-2">Les frais de livraison seront communiqués par notre équipe.</p>
+                <p className="text-[13px] text-muted text-center py-2">
+                  Les frais seront communiqués par notre équipe.
+                </p>
               )}
             </section>
+
+            {/* 3. Indication livraison (cachée si retrait sur place) */}
+            {!pickup && (
+              <section className="bg-white rounded-[18px] border border-line shadow-sm p-5 sm:p-6 space-y-4">
+                <div className="flex items-center gap-2.5 pb-3 border-b border-line">
+                  <NIcon name="pin" size={18} strokeWidth={1.8} className="text-accent" />
+                  <h2 className="font-serif font-semibold text-[17px] text-ink">Indication de livraison</h2>
+                </div>
+                <Field id="co-indication" label="Quartier / numéro de porte (optionnel)">
+                  <textarea id="co-indication" {...register('indication')}
+                    rows={2}
+                    placeholder="Ex: Cité Keur Gorgui, villa 12, derrière la mosquée..."
+                    className={`${inputCls(false)} resize-none`} />
+                </Field>
+                <Field id="co-notes" label="Notes (optionnel)">
+                  <textarea id="co-notes" {...register('notes')}
+                    rows={2} placeholder="Instructions particulières..."
+                    className={`${inputCls(false)} resize-none`} />
+                </Field>
+              </section>
+            )}
+
+            {/* Retrait sur place : message */}
+            {pickup && (
+              <div className="flex items-center gap-3 p-4 bg-ok/8 border border-ok/25 rounded-[14px]">
+                <NIcon name="shield" size={20} strokeWidth={1.5} className="text-ok flex-shrink-0" />
+                <div>
+                  <p className="text-[13px] font-semibold text-ink">Retrait sur place</p>
+                  <p className="text-[12px] text-muted mt-0.5">
+                    Notre équipe vous contactera pour fixer le rendez-vous de retrait.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* 4. Méthode de paiement */}
             <section className="bg-white rounded-[18px] border border-line shadow-sm p-5 sm:p-6 space-y-4">
@@ -372,35 +379,20 @@ export function CheckoutPage() {
                 <NIcon name="card" size={18} strokeWidth={1.8} className="text-accent" />
                 <h2 className="font-serif font-semibold text-[17px] text-ink">Paiement</h2>
               </div>
-
               <div className="space-y-3">
-                <PaymentCard
-                  value="wave"
-                  selected={payMethod === 'wave'}
-                  onSelect={setPayMethod}
-                  logo="/wave-senegal.png"
-                  label="Wave"
-                  description="Paiement mobile instantané via Wave"
-                />
-                <PaymentCard
-                  value="orange_money"
-                  selected={payMethod === 'orange_money'}
-                  onSelect={setPayMethod}
-                  logo="/2017-09-Ligne14.Argent.OrangeMoney.png"
-                  label="Orange Money"
-                  description="Paiement sécurisé via Orange Money"
-                />
+                <PaymentCard value="wave" selected={payMethod === 'wave'} onSelect={setPayMethod}
+                  logo="/wave-senegal.png" label="Wave" description="Paiement mobile instantané via Wave" />
+                <PaymentCard value="orange_money" selected={payMethod === 'orange_money'} onSelect={setPayMethod}
+                  logo="/2017-09-Ligne14.Argent.OrangeMoney.png" label="Orange Money"
+                  description="Paiement sécurisé via Orange Money" />
               </div>
             </section>
 
             {/* Submit */}
-            <button
-              type="submit"
-              disabled={processing}
+            <button type="submit" disabled={processing}
               className="w-full flex items-center justify-center gap-2.5 h-14 rounded-[12px]
                 bg-accent text-white text-[14px] font-bold tracking-wide
-                hover:bg-accent-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
+                hover:bg-accent-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
               {processing ? (
                 <>
                   <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -466,7 +458,9 @@ export function CheckoutPage() {
                 <div className="flex justify-between text-[13px] text-muted">
                   <span>
                     Livraison
-                    {selectedZone ? <span className="text-[11px] ml-1 text-muted/70">({selectedZone.nom})</span> : null}
+                    {selectedZone
+                      ? <span className="text-[11px] ml-1 text-muted/60">({selectedZone.nom})</span>
+                      : null}
                   </span>
                   {selectedZone ? (
                     <span className={`tabular-nums font-medium ${selectedZone.prix === 0 ? 'text-ok' : ''}`}>
@@ -484,18 +478,14 @@ export function CheckoutPage() {
               </div>
             </div>
 
-            {/* Modify cart link */}
-            <button
-              onClick={() => navigate('/panier')}
+            <button onClick={() => navigate('/panier')}
               className="w-full flex items-center justify-center gap-2 h-10 rounded-[10px]
                 border border-line text-[12px] font-semibold text-muted
-                hover:text-ink hover:border-ink transition-colors"
-            >
+                hover:text-ink hover:border-ink transition-colors">
               <NIcon name="back" size={14} strokeWidth={2} />
               Modifier le panier
             </button>
 
-            {/* Reassurance */}
             <div className="grid grid-cols-3 gap-2">
               {[
                 { icon: 'shield', label: 'Paiement sécurisé' },
@@ -524,10 +514,7 @@ function inputCls(hasError: boolean) {
 }
 
 function Field({ id, label, error, children }: {
-  id: string
-  label: string
-  error?: string
-  children: React.ReactNode
+  id: string; label: string; error?: string; children: React.ReactNode
 }) {
   return (
     <div className="space-y-1.5">
