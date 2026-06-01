@@ -53,6 +53,14 @@ class ProductService
                 $query->whereNotNull('prix_promo');
             }
 
+            if (isset($filters['est_nouveaute']) && $filters['est_nouveaute']) {
+                $query->where('est_nouveaute', true);
+            }
+
+            if (isset($filters['est_populaire']) && $filters['est_populaire']) {
+                $query->where('est_populaire', true);
+            }
+
             // Tri
             $sort = $filters['sort'] ?? 'recent';
             

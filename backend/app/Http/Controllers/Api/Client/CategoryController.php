@@ -115,7 +115,7 @@ class CategoryController extends Controller
                 return response()->json(['success' => false, 'message' => 'Catégorie non trouvée'], 404);
             }
 
-            $filters = $request->only(['search', 'min_price', 'max_price', 'on_sale', 'sort', 'direction', 'per_page']);
+            $filters = $request->only(['search', 'min_price', 'max_price', 'on_sale', 'sort', 'direction', 'per_page', 'est_nouveaute', 'est_populaire', 'page']);
             $filters['category'] = $category->id;
 
             $result = $this->productService->getProducts($filters);
