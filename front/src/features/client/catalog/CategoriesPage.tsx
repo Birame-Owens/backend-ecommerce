@@ -7,27 +7,17 @@ import { NIcon } from '@/components/client/NIcon'
 
 /* ── Mobile header ── */
 function PageHeader({ title, onBack }: { title: string; onBack?: () => void }) {
-  const navigate = useNavigate()
   return (
     <header className="md:hidden sticky top-0 z-30 bg-paper/95 backdrop-blur-xl border-b border-line">
       <div className="flex items-center h-14 px-4 gap-3">
-        {onBack ? (
+        {onBack && (
           <button onClick={onBack} className="w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors">
             <NIcon name="back" size={20} strokeWidth={1.8} />
           </button>
-        ) : (
-          <div className="flex flex-col leading-none">
-            <span className="text-[8.5px] font-semibold tracking-[.22em] uppercase text-accent">NDEYA</span>
-            <span className="text-[15px] font-serif font-bold text-ink leading-none">SHOP</span>
-          </div>
         )}
         <span className="font-serif font-semibold text-[17px] text-ink flex-1">
           {onBack ? title : 'Catégories'}
         </span>
-        <button onClick={() => navigate('/recherche')}
-          className="w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors text-ink-2">
-          <NIcon name="search" size={19} strokeWidth={1.7} />
-        </button>
       </div>
     </header>
   )

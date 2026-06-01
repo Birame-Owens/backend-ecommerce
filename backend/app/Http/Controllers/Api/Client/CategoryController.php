@@ -24,8 +24,17 @@ class CategoryController extends Controller
                 ->withCount('produits')
                 ->orderBy('parent_id')
                 ->orderBy('ordre_affichage')
-                ->get()
-                ->map(function ($category) {
+                ->get();
+
+            // Calcul des produits des sous-catégories pour chaque parent
+            $subProductCounts = [];
+            foreach ($categories as $cat) {
+                if ($cat->parent_id) {
+                    $subProductCounts[$cat->parent_id] = ($subProductCounts[$cat->parent_id] ?? 0) + $cat->produits_count;
+                }
+            }
+
+            $result = $categories->map(function ($category) use ($subProductCounts) {
                     return [
                         'id'             => $category->id,
                         'parent_id'      => $category->parent_id,
@@ -34,13 +43,13 @@ class CategoryController extends Controller
                         'description'    => $category->description,
                         'image'          => $category->image ? asset('storage/' . $category->image) : null,
                         'couleur_theme'  => $category->couleur_theme ?? null,
-                        'produits_count' => $category->produits_count,
+                        'produits_count' => $category->produits_count + ($subProductCounts[$category->id] ?? 0),
                         'est_populaire'  => $category->est_populaire ?? false,
                         'url'            => "/categories/{$category->slug}",
                     ];
                 });
 
-            return response()->json(['success' => true, 'data' => $categories]);
+            return response()->json(['success' => true, 'data' => $result]);
 
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Erreur lors du chargement des catégories'], 500);
