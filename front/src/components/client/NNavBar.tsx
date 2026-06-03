@@ -10,7 +10,6 @@ import type { ProductClient } from '@/api/client/home'
 const LINKS = [
   { label: 'Accueil', path: '/' },
   { label: 'Catégories', path: '/categories' },
-  { label: 'Nouveautés', path: '/produits' },
 ]
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }

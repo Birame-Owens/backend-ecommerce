@@ -7,7 +7,7 @@ import { NProductCard } from '@/components/client/NProductCard'
 import { NImage } from '@/components/client/NImage'
 import { NIcon, Stars, WAGlyph } from '@/components/client/NIcon'
 import { useWishlistStore } from '@/store/wishlistStore'
-import { useCartStore } from '@/store/cartStore'
+import { useCartStore, cartCount } from '@/store/cartStore'
 import { useToastStore } from '@/store/toastStore'
 import { useShopStore, buildWaUrl } from '@/store/shopStore'
 
@@ -23,6 +23,8 @@ export function ProductDetailPage() {
   const navigate = useNavigate()
   const { has, toggle } = useWishlistStore()
   const addItem = useCartStore((s) => s.addItem)
+  const cartItems = useCartStore((s) => s.items)
+  const cnt = cartCount(cartItems)
   const toast = useToastStore((s) => s.show)
   const waNumber = useShopStore((s) => s.waNumber)
 
@@ -72,7 +74,6 @@ export function ProductDetailPage() {
     return product.stock_disponible
   }, [product, color, size])
 
-  const cartItems = useCartStore((s) => s.items)
   const cartKey = product ? `${product.id}-${color ?? 'nc'}-${size ?? 'nc'}` : ''
   const cartQtyForVariant = cartItems.find((i) => i.key === cartKey)?.qty ?? 0
 
@@ -275,12 +276,20 @@ export function ProductDetailPage() {
           <button
             onClick={() => toggle({ id: product.id, nom: product.nom, slug: product.slug, prix: product.prix, prix_promo: product.prix_promo, image_principale: product.image_principale })}
             className="w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors"
-            style={{ color: liked ? '#B76E4D' : '#1E1E1E' }}>
+            style={{ color: liked ? '#B76E4D' : '#1E1E1E' }}
+            aria-label={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}>
             <NIcon name="heart" size={20} fill={liked} strokeWidth={1.7} />
           </button>
-          <button onClick={handleShare}
-            className="w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors text-ink-2">
-            <NIcon name="share" size={20} strokeWidth={1.7} />
+          <button
+            onClick={() => navigate('/panier')}
+            className="relative w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors text-ink"
+            aria-label="Mon panier">
+            <NIcon name="bag" size={21} strokeWidth={1.7} />
+            {cnt > 0 && (
+              <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-0.5 bg-accent text-white text-[9px] font-bold rounded-full grid place-items-center">
+                {cnt}
+              </span>
+            )}
           </button>
         </div>
       </header>
