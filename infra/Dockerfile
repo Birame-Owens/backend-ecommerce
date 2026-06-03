@@ -12,9 +12,12 @@ RUN apk add --no-cache \
     git curl zip unzip
 
 RUN docker-php-ext-configure gd --with-jpeg --with-freetype --with-webp \
-    && docker-php-ext-install pdo_pgsql bcmath mbstring xml gd exif zip
+    && docker-php-ext-install pdo_pgsql bcmath mbstring xml gd exif zip opcache
 
 RUN pecl install redis && docker-php-ext-enable redis
+
+# OPcache + JIT — sans ça PHP recompile chaque fichier à chaque requête
+COPY backend/docker/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

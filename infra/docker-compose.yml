@@ -10,6 +10,17 @@ services:
       POSTGRES_DB:       ${DB_DATABASE:-ndeya}
       POSTGRES_USER:     ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+    # Tuning PostgreSQL pour charge concurrente
+    command: >
+      postgres
+      -c max_connections=150
+      -c shared_buffers=256MB
+      -c effective_cache_size=512MB
+      -c work_mem=4MB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c random_page_cost=1.1
     ports:
       - "${DB_PORT:-5433}:5432"
     volumes:
@@ -27,6 +38,14 @@ services:
     image: redis:7-alpine
     container_name: ndeya_redis
     # Redis interne seulement — pas exposé à l'hôte
+    # maxmemory : évite que Redis sature la RAM sous charge
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --tcp-backlog 511
+      --timeout 0
+      --tcp-keepalive 300
     volumes:
       - redis_data:/data
     healthcheck:
@@ -103,6 +122,7 @@ services:
       - ndeya_network
 
   # ─── Worker Queue ────────────────────────────────────────────────────────────
+  # 2 workers en parallèle : un pour paiements/prioritaire, un pour emails/default
   queue:
     build:
       context: ..
@@ -146,8 +166,9 @@ services:
     volumes:
       - backend_storage:/app/storage
     command: >
-      sh -c "sleep 10 && php artisan config:clear && php artisan queue:work redis
-             --queue=payments,emails,default --sleep=3 --tries=3"
+      sh -c "sleep 10 && php artisan config:clear &&
+             php artisan queue:work redis --queue=payments,high --sleep=2 --tries=3 &
+             php artisan queue:work redis --queue=emails,default --sleep=3 --tries=3"
     networks:
       - ndeya_network
 
