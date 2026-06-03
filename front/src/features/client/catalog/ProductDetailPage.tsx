@@ -267,26 +267,31 @@ export function ProductDetailPage() {
     <>
       {/* ── Mobile header ── */}
       <header className="md:hidden sticky top-0 z-30 bg-paper/95 backdrop-blur-xl border-b border-line">
-        <div className="flex items-center h-14 px-4 gap-3">
+        <div className="flex items-center h-14 px-4 gap-2">
           <button onClick={() => navigate(-1)}
-            className="w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors">
+            className="w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors flex-shrink-0">
             <NIcon name="back" size={20} strokeWidth={1.8} />
           </button>
-          <span className="flex-1 font-medium text-[14px] text-ink truncate">{product.nom}</span>
+          <span className="flex-1 font-medium text-[14px] text-ink truncate min-w-0">{product.nom}</span>
           <button
             onClick={() => toggle({ id: product.id, nom: product.nom, slug: product.slug, prix: product.prix, prix_promo: product.prix_promo, image_principale: product.image_principale })}
-            className="w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors"
+            className="w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors flex-shrink-0"
             style={{ color: liked ? '#B76E4D' : '#1E1E1E' }}
             aria-label={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}>
             <NIcon name="heart" size={20} fill={liked} strokeWidth={1.7} />
           </button>
+          <button onClick={handleShare}
+            className="w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors text-ink-2 flex-shrink-0"
+            aria-label="Partager">
+            <NIcon name="share" size={20} strokeWidth={1.7} />
+          </button>
           <button
             onClick={() => navigate('/panier')}
-            className="relative w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors text-ink"
+            className="relative w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors text-ink flex-shrink-0"
             aria-label="Mon panier">
-            <NIcon name="bag" size={21} strokeWidth={1.7} />
+            <NIcon name="bag" size={20} strokeWidth={1.7} />
             {cnt > 0 && (
-              <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-0.5 bg-accent text-white text-[9px] font-bold rounded-full grid place-items-center">
+              <span className="absolute top-0.5 right-0.5 min-w-[15px] h-[15px] px-0.5 bg-accent text-white text-[8px] font-bold rounded-full grid place-items-center">
                 {cnt}
               </span>
             )}

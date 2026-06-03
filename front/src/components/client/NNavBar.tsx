@@ -23,6 +23,7 @@ export function NNavBar() {
   const waNumber = useShopStore((s) => s.waNumber)
   const { isAuthenticated, user } = useClientAuthStore()
 
+  const isProductDetail = /^\/produits\/.+/.test(pathname)
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
@@ -299,9 +300,9 @@ export function NNavBar() {
               </button>
             )}
 
-            {/* ── MOBILE CART ICON ── */}
+            {/* ── MOBILE CART ICON (masqué sur page produit car son header a le sien) ── */}
             <button onClick={() => navigate('/panier')}
-              className="md:hidden relative w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors text-ink flex-shrink-0">
+              className={`relative w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors text-ink flex-shrink-0 ${isProductDetail ? 'hidden' : 'md:hidden'}`}>
               <NIcon name="bag" size={21} strokeWidth={1.7} />
               {cnt > 0 && (
                 <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-0.5 bg-accent text-white text-[9px] font-bold rounded-full grid place-items-center">
