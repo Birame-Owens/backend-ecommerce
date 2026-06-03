@@ -9,6 +9,24 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendors React — chargés une fois, mis en cache longtemps
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          // State management
+          'vendor-state': ['zustand', '@tanstack/react-query'],
+          // UI / charts (admin only, lazy-loaded)
+          'vendor-ui': ['recharts', 'lucide-react'],
+          // Forms
+          'vendor-forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
+        },
+      },
+    },
+    // Alerter si un chunk dépasse 500 KB
+    chunkSizeWarningLimit: 500,
+  },
   test: {
     environment: 'jsdom',
     globals: true,

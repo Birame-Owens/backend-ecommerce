@@ -22,7 +22,7 @@ export function ProductCard({ product }: { product: ProductClient }) {
     >
       <div className="relative aspect-square bg-beige-200 overflow-hidden">
         {product.image_principale
-          ? <img src={product.image_principale} alt={product.nom} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          ? <img src={product.image_principale} alt={product.nom} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
           : <div className="w-full h-full flex items-center justify-center">
               <ImageIcon className="w-10 h-10 text-beige-400" strokeWidth={1} />
             </div>}

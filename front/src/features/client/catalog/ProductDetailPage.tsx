@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { catalogClientApi, type ProductDetail } from '@/api/client/catalog'
 import { colorHex, needsBorder } from '@/lib/colorPalette'
 import { NProductCard } from '@/components/client/NProductCard'
+import { NImage } from '@/components/client/NImage'
 import { NIcon, Stars, WAGlyph } from '@/components/client/NIcon'
 import { useWishlistStore } from '@/store/wishlistStore'
 import { useCartStore } from '@/store/cartStore'
@@ -291,9 +292,13 @@ export function ProductDetailPage() {
         {/* Image principale — format portrait 3/4 */}
         <div className="relative aspect-[3/4] bg-sand overflow-hidden">
           {activeImage?.medium ?? product.image_principale ? (
-            <img src={activeImage?.medium ?? product.image_principale ?? ''}
+            <NImage
+              src={activeImage?.medium ?? product.image_principale ?? ''}
               alt={activeImage?.alt_text ?? product.nom}
-              className="absolute inset-0 w-full h-full object-cover" />
+              priority
+              srcSets={activeImage ? { thumbnail: activeImage.thumbnail, medium: activeImage.medium, original: activeImage.original } : undefined}
+              className="absolute inset-0"
+            />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-sand to-line" />
           )}
@@ -331,7 +336,7 @@ export function ProductDetailPage() {
                 }}
                 className={`flex-shrink-0 w-16 h-20 rounded-[10px] overflow-hidden border-2 transition-all
                   ${i === activeIdx ? 'border-accent scale-105' : 'border-line-2 opacity-70'}`}>
-                <img src={img.thumbnail ?? img.medium} alt={img.alt_text} className="w-full h-full object-cover" />
+                <NImage src={img.thumbnail ?? img.medium} alt={img.alt_text} className="w-full h-full" />
               </button>
             ))}
           </div>
@@ -501,9 +506,13 @@ export function ProductDetailPage() {
           <section>
             <div className="relative aspect-[4/5] rounded-[18px] overflow-hidden bg-sand border border-line-2">
               {activeImage?.medium ?? product.image_principale ? (
-                <img src={activeImage?.medium ?? product.image_principale ?? ''}
+                <NImage
+                  src={activeImage?.medium ?? product.image_principale ?? ''}
                   alt={activeImage?.alt_text ?? product.nom}
-                  className="absolute inset-0 w-full h-full object-cover" />
+                  priority
+                  srcSets={activeImage ? { thumbnail: activeImage.thumbnail, medium: activeImage.medium, original: activeImage.original } : undefined}
+                  className="absolute inset-0 rounded-[18px]"
+                />
               ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-sand to-line" />
               )}
@@ -538,7 +547,7 @@ export function ProductDetailPage() {
                     }}
                     className={`flex-shrink-0 w-[72px] h-[90px] rounded-[10px] overflow-hidden border-2 transition-all
                       ${i === activeIdx ? 'border-accent' : 'border-line-2 hover:border-ink opacity-70 hover:opacity-100'}`}>
-                    <img src={img.thumbnail ?? img.medium} alt={img.alt_text} className="w-full h-full object-cover" />
+                    <NImage src={img.thumbnail ?? img.medium} alt={img.alt_text} className="w-full h-full" />
                   </button>
                 ))}
               </div>

@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { homeClientApi, type HomeData } from '@/api/client/home'
 import { NProductCard } from '@/components/client/NProductCard'
+import { NImage } from '@/components/client/NImage'
 import { NIcon, WAGlyph, Stars } from '@/components/client/NIcon'
-import { useWishlistStore } from '@/store/wishlistStore'
 import { useShopStore, buildWaUrl } from '@/store/shopStore'
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
@@ -104,7 +104,7 @@ function CatRow({ data }: { data: HomeData }) {
         style={{ width: size, height: size }}
       >
         {c.image
-          ? <img src={c.image} alt={c.nom} className="w-full h-full object-cover" />
+          ? <NImage src={c.image} alt={c.nom} className="w-full h-full" />
           : <div className="w-full h-full bg-gradient-to-br from-sand to-camel/40" />}
       </div>
       <span className="text-[11.5px] font-medium text-center leading-tight text-ink-2"
