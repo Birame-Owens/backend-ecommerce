@@ -68,7 +68,7 @@ function CartItemRow({ item, onRemoveRequest }: {
       {/* Image */}
       <div
         className="w-[80px] h-[100px] sm:w-[90px] sm:h-[112px] flex-shrink-0
-          rounded-[12px] overflow-hidden bg-sand cursor-pointer"
+          rounded-[12px] overflow-hidden cursor-pointer"
       >
         {item.image
           ? <img src={item.image} alt={item.nom} className="w-full h-full object-cover" />
