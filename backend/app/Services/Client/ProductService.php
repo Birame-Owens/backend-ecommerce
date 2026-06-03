@@ -303,7 +303,7 @@ class ProductService
         'delai_production_jours' => $product->delai_production_jours,
         'note_moyenne' => $product->note_moyenne,
         'nombre_avis' => $product->nombre_avis,
-        'tags' => $product->tags ? explode(',', $product->tags) : [],
+        'tags' => is_array($product->tags) ? $product->tags : ($product->tags ? explode(',', $product->tags) : []),
         'est_nouveaute' => $product->est_nouveaute,
         'est_populaire' => $product->est_populaire,
         'meta' => [
