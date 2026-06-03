@@ -491,6 +491,7 @@ class HomeService
             'est_populaire'    => $produit->est_populaire,
             'stock_quantite'   => $produit->gestion_stock ? $this->resolveStockTotal($produit) : 999,
             'en_stock'         => !$produit->gestion_stock || $this->resolveStockTotal($produit) > 0,
+            'type_variante'    => $produit->type_variante ?? 'aucun',
         ];
 
         if (!$isCompact) {
@@ -504,6 +505,7 @@ class HomeService
                 'nombre_avis'         => $produit->nombre_avis ?? 0,
                 'fait_sur_mesure'     => $produit->fait_sur_mesure,
                 'stock_disponible'    => $produit->gestion_stock ? $this->resolveStockTotal($produit) : null,
+                'stock_status'        => $this->getProductStockStatus($produit),
                 'tailles_disponibles' => $produit->tailles_disponibles
                     ? json_decode($produit->tailles_disponibles, true) : [],
                 'couleurs_disponibles' => $produit->couleurs_disponibles
@@ -524,6 +526,22 @@ class HomeService
     /**
      * Calcule le stock total réel d'un produit (variant ou simple)
      */
+    private function getProductStockStatus($produit): array
+    {
+        if (!$produit->gestion_stock) {
+            return ['status' => 'unlimited', 'label' => 'Non limité', 'color' => 'blue'];
+        }
+        $stockTotal = $this->resolveStockTotal($produit);
+        if ($stockTotal <= 0) {
+            return ['status' => 'out_of_stock', 'label' => 'Rupture de stock', 'color' => 'red'];
+        }
+        $seuil = (int) ($produit->seuil_alerte ?? 5);
+        if ($stockTotal <= $seuil) {
+            return ['status' => 'low_stock', 'label' => 'Stock limité', 'color' => 'orange'];
+        }
+        return ['status' => 'in_stock', 'label' => 'En stock', 'color' => 'green'];
+    }
+
     private function resolveStockTotal($produit): int
     {
         if ($produit->couleur_tailles_stock) {

@@ -389,6 +389,9 @@ class ProductService
         'nombre_avis' => $product->nombre_avis ?? 0,
         'est_nouveaute' => $product->est_nouveaute,
         'est_populaire' => $product->est_populaire,
+        'type_variante' => $product->type_variante ?? 'aucun',
+        'stock_disponible' => $product->gestion_stock ? $this->resolveStockTotal($product) : null,
+        'stock_status' => $this->getStockStatus($product),
         'url' => "/products/{$product->slug}",
         'badge' => $this->getProductBadge($product)
     ];
