@@ -491,7 +491,7 @@ class HomeService
             'est_populaire'    => $produit->est_populaire,
             'stock_quantite'   => $produit->gestion_stock ? $this->resolveStockTotal($produit) : 999,
             'en_stock'         => !$produit->gestion_stock || $this->resolveStockTotal($produit) > 0,
-            'type_variante'    => $produit->type_variante ?? 'aucun',
+            'type_variante'    => $produit->type_variante ?? 'vetement',
         ];
 
         if (!$isCompact) {
