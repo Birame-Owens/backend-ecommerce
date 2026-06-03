@@ -118,7 +118,8 @@ class Produit extends Model
 		'nombre_avis',
 		'meta_titre',
 		'meta_description',
-		'tags'
+		'tags',
+		'type_variante',
 	];
 
 	protected $appends = ['image', 'image_url'];

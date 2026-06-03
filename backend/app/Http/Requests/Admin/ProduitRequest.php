@@ -64,6 +64,11 @@ class ProduitRequest extends FormRequest
                 'integer',
                 'exists:categories,id'
             ],
+            'type_variante' => [
+                'nullable',
+                'string',
+                'in:vetement,chaussure,parfum,aucun',
+            ],
             'stock_disponible' => [
                 'nullable',
                 'integer',
