@@ -149,6 +149,13 @@ class ProduitController extends Controller
                 $validatedData['materiaux_necessaires'] = json_encode($validatedData['materiaux_necessaires']);
             }
 
+            // Convertir tags CSV → tableau (colonne json en base)
+            if (isset($validatedData['tags']) && is_string($validatedData['tags'])) {
+                $validatedData['tags'] = array_values(array_filter(
+                    array_map('trim', explode(',', $validatedData['tags']))
+                ));
+            }
+
             if (isset($validatedData['couleur_tailles']) && is_array($validatedData['couleur_tailles'])) {
                 $ctArray = $validatedData['couleur_tailles'];
                 $validatedData['couleur_tailles'] = json_encode($ctArray);
@@ -285,6 +292,13 @@ class ProduitController extends Controller
 
             if (isset($validatedData['materiaux_necessaires']) && is_array($validatedData['materiaux_necessaires'])) {
                 $validatedData['materiaux_necessaires'] = json_encode($validatedData['materiaux_necessaires']);
+            }
+
+            // Convertir tags CSV → tableau (colonne json en base)
+            if (isset($validatedData['tags']) && is_string($validatedData['tags'])) {
+                $validatedData['tags'] = array_values(array_filter(
+                    array_map('trim', explode(',', $validatedData['tags']))
+                ));
             }
 
             if (isset($validatedData['couleur_tailles']) && is_array($validatedData['couleur_tailles'])) {
@@ -770,7 +784,7 @@ class ProduitController extends Controller
             'nombre_avis' => $produit->nombre_avis,
             'meta_titre' => $produit->meta_titre,
             'meta_description' => $produit->meta_description,
-            'tags' => $produit->tags,
+            'tags' => is_array($produit->tags) ? implode(', ', $produit->tags) : ($produit->tags ?? ''),
             'created_at' => $produit->created_at->format('d/m/Y H:i'),
             'updated_at' => $produit->updated_at->format('d/m/Y H:i'),
         ];

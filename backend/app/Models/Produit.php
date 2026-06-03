@@ -82,7 +82,8 @@ class Produit extends Model
 		'nombre_vues' => 'int',
 		'nombre_ventes' => 'int',
 		'note_moyenne' => 'float',
-		'nombre_avis' => 'int'
+		'nombre_avis' => 'int',
+		'tags' => 'array',
 	];
 
 	protected $fillable = [
