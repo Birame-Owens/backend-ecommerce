@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+const CART_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 jours
+
 export interface CartItem {
   key: string
   id: number
@@ -25,6 +27,7 @@ export interface CartCoupon {
 interface CartState {
   items: CartItem[]
   coupon: CartCoupon | null
+  _savedAt: number
   addItem: (item: Omit<CartItem, 'key'>) => void
   removeItem: (key: string) => void
   updateQty: (key: string, delta: number) => void
@@ -33,11 +36,14 @@ interface CartState {
   removeCoupon: () => void
 }
 
+const now = () => Date.now()
+
 export const useCartStore = create<CartState>()(
   persist(
     (set) => ({
       items: [],
       coupon: null,
+      _savedAt: now(),
       addItem: (item) => {
         const key = `${item.id}-${item.couleur || 'nc'}-${item.taille || 'nc'}`
         set((s) => {
@@ -45,15 +51,16 @@ export const useCartStore = create<CartState>()(
           if (existing) {
             const newQty = existing.qty + item.qty
             const capped = (item.stock_max != null) ? Math.min(newQty, item.stock_max) : newQty
-            return { items: s.items.map((i) => i.key === key ? { ...i, qty: capped, stock_max: item.stock_max } : i) }
+            return { items: s.items.map((i) => i.key === key ? { ...i, qty: capped, stock_max: item.stock_max } : i), _savedAt: now() }
           }
           const initQty = (item.stock_max != null) ? Math.min(item.qty, item.stock_max) : item.qty
-          return { items: [...s.items, { ...item, key, qty: initQty }] }
+          return { items: [...s.items, { ...item, key, qty: initQty }], _savedAt: now() }
         })
       },
-      removeItem: (key) => set((s) => ({ items: s.items.filter((i) => i.key !== key) })),
+      removeItem: (key) => set((s) => ({ items: s.items.filter((i) => i.key !== key), _savedAt: now() })),
       updateQty: (key, delta) =>
         set((s) => ({
+          _savedAt: now(),
           items: s.items
             .map((i) => {
               if (i.key !== key) return i
@@ -63,11 +70,22 @@ export const useCartStore = create<CartState>()(
             })
             .filter((i) => i.qty > 0),
         })),
-      clearCart: () => set({ items: [], coupon: null }),
-      applyCoupon: (coupon) => set({ coupon }),
-      removeCoupon: () => set({ coupon: null }),
+      clearCart: () => set({ items: [], coupon: null, _savedAt: now() }),
+      applyCoupon: (coupon) => set({ coupon, _savedAt: now() }),
+      removeCoupon: () => set({ coupon: null, _savedAt: now() }),
     }),
-    { name: 'ndeya-cart' },
+    {
+      name: 'ndeya-cart',
+      onRehydrateStorage: () => (state) => {
+        if (!state) return
+        if (!state._savedAt || now() - state._savedAt > CART_TTL_MS) {
+          // Panier expiré : vider après la réhydratation
+          setTimeout(() => {
+            useCartStore.setState({ items: [], coupon: null, _savedAt: now() })
+          }, 0)
+        }
+      },
+    },
   ),
 )
 

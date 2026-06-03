@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { NIcon, WAGlyph } from './NIcon'
+import { NImage } from './NImage'
 import { useWishlistStore } from '@/store/wishlistStore'
 import { useCartStore } from '@/store/cartStore'
 import { useToastStore } from '@/store/toastStore'
@@ -82,11 +83,11 @@ export const NProductCard = memo(function NProductCard({ product }: { product: P
       {/* Image */}
       <div className="relative aspect-[3/4] rounded-[14px] overflow-hidden bg-sand">
         {product.image_principale ? (
-          <img
+          <NImage
             src={product.image_principale}
             alt={product.nom}
-            loading="eager"
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="absolute inset-0 rounded-[14px]"
+            imgClassName="transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-sand to-line" role="img" aria-label={product.nom} />

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { useCartStore, cartSubtotal, cartTotal, cartCount } from './cartStore'
+import { useCartStore, cartSubtotal, cartTotal, cartCount, type CartItem } from './cartStore'
 
 /* ────────────────────────────────────────────────────────────────────
    Helpers
@@ -8,7 +8,7 @@ function reset() {
   useCartStore.setState({ items: [], coupon: null })
 }
 
-function makeItem(overrides: Partial<Parameters<typeof useCartStore.getState>['0']['items'][0]> = {}) {
+function makeItem(overrides: Partial<Omit<CartItem, 'key'>> = {}) {
   return {
     id: 1,
     nom: 'T-shirt Noir',
