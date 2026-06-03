@@ -248,7 +248,7 @@ Route::prefix('admin')->group(function () {
 });
 
 
-Route::prefix('client')->middleware('throttle.api:180,1')->group(function () {
+Route::prefix('client')->group(function () {
     
     // =================== PAGE D'ACCUEIL ===================
     Route::get('/home', [HomeController::class, 'index']);
