@@ -83,12 +83,14 @@ export const NProductCard = memo(function NProductCard({ product }: { product: P
       {/* Image */}
       <div className="relative aspect-[3/4] rounded-[14px] overflow-hidden bg-sand">
         {product.image_principale ? (
-          <NImage
-            src={product.image_principale}
-            alt={product.nom}
-            className="absolute inset-0 rounded-[14px]"
-            imgClassName="transition-transform duration-500 group-hover:scale-105"
-          />
+          <div className="absolute inset-0">
+            <NImage
+              src={product.image_principale}
+              alt={product.nom}
+              className="w-full h-full"
+              imgClassName="transition-transform duration-500 group-hover:scale-105"
+            />
+          </div>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-sand to-line" role="img" aria-label={product.nom} />
         )}
