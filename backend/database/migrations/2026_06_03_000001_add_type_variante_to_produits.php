@@ -13,13 +13,10 @@ return new class extends Migration
             $table->string('type_variante', 20)->default('vetement')->after('tags');
         });
 
-        // Produits avec couleur_tailles renseigné = ont des variantes → 'vetement'
-        // Produits sans couleur_tailles = sans variante → 'aucun'
+        // Produits sans couleur_tailles en base = sans variante → 'aucun'
+        // Les autres gardent le défaut 'vetement' posé par la colonne
         DB::table('produits')
             ->whereNull('couleur_tailles')
-            ->orWhere('couleur_tailles', '')
-            ->orWhere('couleur_tailles', '[]')
-            ->orWhere('couleur_tailles', '{}')
             ->update(['type_variante' => 'aucun']);
     }
 
