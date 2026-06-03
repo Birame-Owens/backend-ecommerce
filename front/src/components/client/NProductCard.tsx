@@ -27,7 +27,9 @@ export const NProductCard = memo(function NProductCard({ product }: { product: P
     `Bonjour ND WORLD 👋, je suis intéressé(e) par *${product.nom}* (${fmt(displayPrice)} CFA).`
   )
 
-  const hasVariants = product.type_variante !== 'aucun' && product.type_variante !== undefined
+  // Rediriger vers la fiche produit si type_variante n'est pas explicitement 'aucun'
+  // (undefined inclus = on ne sait pas → on redirige par sécurité)
+  const hasVariants = product.type_variante !== 'aucun'
 
   function handleAddToCart(e: React.MouseEvent) {
     e.stopPropagation()
