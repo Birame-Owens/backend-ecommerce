@@ -20,3 +20,4 @@ infra/.env
 # OS
 .DS_Store
 Thumbs.db
+load-test/
