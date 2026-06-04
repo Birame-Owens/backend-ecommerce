@@ -2,6 +2,7 @@ import { useMemo, useState, useRef, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { catalogClientApi, type ProductDetail } from '@/api/client/catalog'
+import { reviewsClientApi } from '@/api/client/reviews'
 import { colorHex, needsBorder } from '@/lib/colorPalette'
 import { NProductCard } from '@/components/client/NProductCard'
 import { NImage } from '@/components/client/NImage'
@@ -16,6 +17,55 @@ function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 function firstSize(product: ProductDetail, color: string | null) {
   if (color && product.couleur_tailles?.[color]?.length) return product.couleur_tailles[color][0]
   return product.tailles_disponibles?.[0] ?? ''
+}
+
+/* ── Avis du produit (publics, approuvés) ── */
+function ProductReviews({ slug }: { slug: string }) {
+  const { data } = useQuery({
+    queryKey: ['product-reviews', slug],
+    queryFn: () => reviewsClientApi.forProduct(slug).then((r) => r.data.data),
+    enabled: !!slug,
+  })
+  const reviews = data?.reviews ?? []
+  if (!reviews.length) return null
+
+  return (
+    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-10 border-t border-line">
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <h2 className="font-serif font-bold text-[22px] md:text-[28px] text-ink">Avis clients</h2>
+        {data && data.note_moyenne > 0 && (
+          <span className="flex items-center gap-1.5 text-[13px] text-muted">
+            <Stars value={data.note_moyenne} size={15} />
+            <span className="font-semibold text-ink">{data.note_moyenne.toFixed(1)}</span>
+            <span>· {data.total} avis</span>
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+        {reviews.map((r) => (
+          <div key={r.id} className="bg-white border border-line rounded-[14px] p-4 md:p-5">
+            <div className="flex items-center justify-between mb-1.5">
+              <Stars value={r.note} size={14} />
+              {r.avis_verifie && (
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-green-600">Achat vérifié</span>
+              )}
+            </div>
+            {r.titre && <p className="text-[13.5px] font-semibold text-ink mb-1">{r.titre}</p>}
+            <p className="text-[13.5px] leading-relaxed text-ink-2">"{r.commentaire}"</p>
+            {r.photos?.length > 0 && (
+              <div className="flex gap-2 mt-2.5">
+                {r.photos.slice(0, 4).map((src, k) => (
+                  <img key={k} src={src} alt="" loading="lazy"
+                    className="w-16 h-16 rounded-lg object-cover border border-line" />
+                ))}
+              </div>
+            )}
+            <p className="text-[11.5px] text-muted mt-2.5">{r.nom_client} · {r.date}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
 }
 
 export function ProductDetailPage() {
@@ -767,6 +817,8 @@ export function ProductDetailPage() {
           </div>
         </section>
       )}
+
+      <ProductReviews slug={slug} />
     </>
   )
 }
