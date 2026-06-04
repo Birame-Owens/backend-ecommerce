@@ -46,19 +46,29 @@ export const useClientAuthStore = create<ClientAuthState>()(
       isAuthenticated: false,
 
       login: async (email, password) => {
-        const res = await clientApi.post('/api/client/auth/login', { email, password })
-        if (!res.data.success) throw new Error(res.data.message ?? 'Identifiants incorrects')
-        const { token, user } = res.data.data
-        setToken(token)
-        set({ token, user, isAuthenticated: true })
+        try {
+          const res = await clientApi.post('/api/client/auth/login', { email, password })
+          if (!res.data.success) throw new Error(res.data.message ?? 'Identifiants incorrects')
+          const { token, user } = res.data.data
+          setToken(token)
+          set({ token, user, isAuthenticated: true })
+        } catch (e: any) {
+          // Afficher le message du backend (ex: "Identifiants incorrects" sur un 401)
+          // plutôt que le brut "Request failed with status code 401".
+          throw new Error(e?.response?.data?.message ?? e?.message ?? 'Identifiants incorrects')
+        }
       },
 
       register: async (data) => {
-        const res = await clientApi.post('/api/client/auth/register', data)
-        if (!res.data.success) throw new Error(res.data.message ?? 'Erreur lors de l\'inscription')
-        const { token, user } = res.data.data
-        setToken(token)
-        set({ token, user, isAuthenticated: true })
+        try {
+          const res = await clientApi.post('/api/client/auth/register', data)
+          if (!res.data.success) throw new Error(res.data.message ?? 'Erreur lors de l\'inscription')
+          const { token, user } = res.data.data
+          setToken(token)
+          set({ token, user, isAuthenticated: true })
+        } catch (e: any) {
+          throw new Error(e?.response?.data?.message ?? e?.message ?? 'Erreur lors de l\'inscription')
+        }
       },
 
       logout: async () => {
