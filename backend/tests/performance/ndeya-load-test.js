@@ -4,7 +4,9 @@
  *
  * Profils disponibles via PROFILE= :
  *   smoke      — 5 VUs, vérification rapide
- *   realtime   — rampe jusqu'à 200 VUs, plateau 10 min  ← défaut
+ *   prod_safe  — test leger compatible prod, garde le site utilisable
+ *   load       — charge raisonnable pour serveur 2 vCPU / 4 GB  ← défaut
+ *   realtime   — rampe jusqu'à 200 VUs, plateau 10 min
  *   stress     — pousse jusqu'à 300 VUs pour trouver le point de rupture
  *   spike      — pic brutal à 200 VUs en 30 secondes
  *   soak       — 100 VUs pendant 30 min (endurance)
@@ -14,7 +16,8 @@
  *          -e PERF_TOKEN=<PERFORMANCE_TEST_BYPASS_TOKEN_du_serveur> \
  *          -e PRODUCT_SLUG=mon-produit \
  *          -e CATEGORY_SLUG=robes \
- *          -e PROFILE=realtime \
+ *          -e PROFILE=load \
+ *          -e MAX_RPS=20 \
  *          tests/performance/ndeya-load-test.js
  *
  * PERF_TOKEN est obligatoire — sans lui le rate limiting (180 req/min/IP)
@@ -22,16 +25,30 @@
  */
 
 import http from 'k6/http';
-import { check, group, sleep, fail } from 'k6';
+import { check, group, sleep } from 'k6';
 import { Counter, Rate, Trend, Gauge } from 'k6/metrics';
 
 // ─── Configuration ─────────────────────────────────────────────────────────
 const BASE_URL    = (__ENV.BASE_URL    || 'https://ndeya-shop.site').replace(/\/$/, '');
-const PROFILE     = __ENV.PROFILE     || 'realtime';
+const PROFILE     = __ENV.PROFILE     || 'load';
 const PERF_TOKEN  = __ENV.PERF_TOKEN  || '';
 const PRODUCT_SLUG   = __ENV.PRODUCT_SLUG   || 'boubou-homme-brodé';
 const CATEGORY_SLUG  = __ENV.CATEGORY_SLUG  || 'robes';
 const SEARCH_QUERY   = __ENV.SEARCH_QUERY   || 'robe';
+const MAX_RPS        = Number(__ENV.MAX_RPS || 0);
+const ALLOW_PROD_STRESS = __ENV.ALLOW_PROD_STRESS === '1';
+const PROD_LIKE = /^https:\/\/(www\.)?ndeya-shop\.site/i.test(BASE_URL);
+const DANGEROUS_PROFILES = ['realtime', 'stress', 'spike', 'soak'];
+
+if (PROD_LIKE && DANGEROUS_PROFILES.includes(PROFILE) && !ALLOW_PROD_STRESS) {
+  throw new Error(
+    `[NDEYA k6] Profil ${PROFILE} bloque sur la prod.\n` +
+    'Utilise PROFILE=prod_safe ou PROFILE=load pour garder le site utilisable.\n' +
+    'Pour forcer quand meme un test destructif: -e ALLOW_PROD_STRESS=1'
+  );
+}
+
+const EFFECTIVE_MAX_RPS = MAX_RPS > 0 ? MAX_RPS : (PROD_LIKE ? 20 : 0);
 
 // PERF_TOKEN est OBLIGATOIRE pour bypasser le rate limit (180 req/min/IP).
 // Sans lui, 200 VUs depuis une seule machine = 429 en masse des la 2eme minute.
@@ -63,6 +80,30 @@ const profiles = {
       { duration: '30s', target: 5  },
       { duration: '1m',  target: 5  },
       { duration: '30s', target: 0  },
+    ],
+  },
+
+  // Test leger, a utiliser sur la prod pendant les heures calmes.
+  // Objectif : verifier la stabilite sans monopoliser PHP-FPM/Postgres.
+  prod_safe: {
+    executor: 'ramping-vus',
+    stages: [
+      { duration: '30s', target: 5  },
+      { duration: '1m',  target: 10 },
+      { duration: '2m',  target: 15 },
+      { duration: '30s', target: 0  },
+    ],
+  },
+
+  // Load test raisonnable pour un serveur 2 vCPU / 4 GB.
+  // Ancien bug: PROFILE=load n'existait pas et retombait sur realtime (200 VUs).
+  load: {
+    executor: 'ramping-vus',
+    stages: [
+      { duration: '1m', target: 10 },
+      { duration: '2m', target: 25 },
+      { duration: '4m', target: 40 },
+      { duration: '2m', target: 0  },
     ],
   },
 
@@ -119,8 +160,9 @@ const profiles = {
 // ─── Options globales ──────────────────────────────────────────────────────
 export const options = {
   scenarios: {
-    ndeya_traffic: profiles[PROFILE] || profiles.realtime,
+    ndeya_traffic: profiles[PROFILE] || profiles.load,
   },
+  ...(EFFECTIVE_MAX_RPS > 0 ? { rps: EFFECTIVE_MAX_RPS } : {}),
   thresholds: {
     // Taux d'erreurs HTTP < 1 %
     http_req_failed:      ['rate<0.01'],

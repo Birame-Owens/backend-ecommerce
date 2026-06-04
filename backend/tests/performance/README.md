@@ -2,6 +2,8 @@
 
 Serveur cible actuel: 2 vCPU, 4 GB RAM. Le but est de trouver la limite propre du site sans casser la prod.
 
+Attention: ne lance pas `realtime`, `stress`, `spike` ou `soak` directement sur la prod pendant que des visiteurs utilisent le site. Ces profils peuvent saturer PHP-FPM/Postgres et rendre l'application indisponible. Sur `https://ndeya-shop.site`, le script bloque maintenant ces profils sauf si tu ajoutes explicitement `-e ALLOW_PROD_STRESS=1`.
+
 ## Installation k6
 
 Sur ton PC:
@@ -52,22 +54,44 @@ Sans ce token, les vrais visiteurs restent proteges normalement.
 k6 run tests/performance/ndeya-load-test.js -e PROFILE=smoke -e BASE_URL=https://ndeya-shop.site -e PERF_TOKEN=un-secret-long-et-aleatoire
 ```
 
-2. Load test, cible raisonnable pour ton serveur:
+2. Test prod-safe, pour verifier sans rendre le site inutilisable:
 
 ```bash
-k6 run tests/performance/ndeya-load-test.js -e PROFILE=load -e BASE_URL=https://ndeya-shop.site -e PERF_TOKEN=un-secret-long-et-aleatoire
+k6 run tests/performance/ndeya-load-test.js \
+  -e PROFILE=prod_safe \
+  -e BASE_URL=https://ndeya-shop.site \
+  -e PERF_TOKEN=un-secret-long-et-aleatoire \
+  -e MAX_RPS=10
 ```
 
-3. Stress test, pour trouver la limite:
+3. Load test, cible raisonnable pour ton serveur:
 
 ```bash
-k6 run tests/performance/ndeya-load-test.js -e PROFILE=stress -e BASE_URL=https://ndeya-shop.site -e PERF_TOKEN=un-secret-long-et-aleatoire
+k6 run tests/performance/ndeya-load-test.js \
+  -e PROFILE=load \
+  -e BASE_URL=https://ndeya-shop.site \
+  -e PERF_TOKEN=un-secret-long-et-aleatoire \
+  -e MAX_RPS=20
 ```
 
-4. Spike test, pour simuler un gros pic d'un coup:
+4. Stress test, pour trouver la limite. A lancer de preference sur staging, ou en prod seulement en maintenance:
 
 ```bash
-k6 run tests/performance/ndeya-load-test.js -e PROFILE=spike -e BASE_URL=https://ndeya-shop.site -e PERF_TOKEN=un-secret-long-et-aleatoire
+k6 run tests/performance/ndeya-load-test.js \
+  -e PROFILE=stress \
+  -e BASE_URL=https://ndeya-shop.site \
+  -e PERF_TOKEN=un-secret-long-et-aleatoire \
+  -e ALLOW_PROD_STRESS=1
+```
+
+5. Spike test, pour simuler un gros pic d'un coup:
+
+```bash
+k6 run tests/performance/ndeya-load-test.js \
+  -e PROFILE=spike \
+  -e BASE_URL=https://ndeya-shop.site \
+  -e PERF_TOKEN=un-secret-long-et-aleatoire \
+  -e ALLOW_PROD_STRESS=1
 ```
 
 ## Ajouter un produit/categorie reel
