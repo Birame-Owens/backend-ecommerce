@@ -102,7 +102,18 @@ export const checkoutApi = {
     ),
 
   getOrders: () =>
-    clientApi.get<{ success: boolean; data: Array<{ numero_commande: string; statut: string; montant_total: number; created_at: string; items_count?: number; articles?: unknown[] }> }>(
+    clientApi.get<{
+      success: boolean
+      data: Array<{
+        id: number
+        numero_commande: string
+        statut: string
+        montant_total: number
+        created_at: string
+        items_count?: number
+        articles?: Array<{ produit_id: number; nom_produit: string; quantite: number }>
+      }>
+    }>(
       // Liste des commandes du client connecté (route authentifiée).
       // /api/client/commandes (sans numéro) n'existe pas -> 404.
       '/api/client/account/orders'

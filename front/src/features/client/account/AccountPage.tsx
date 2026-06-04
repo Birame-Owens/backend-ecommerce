@@ -9,6 +9,7 @@ import { useClientAuthStore } from '@/store/clientAuthStore'
 import { useShopStore, buildWaUrl } from '@/store/shopStore'
 import { useToastStore } from '@/store/toastStore'
 import { checkoutApi } from '@/api/client/checkout'
+import { reviewsClientApi } from '@/api/client/reviews'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
@@ -32,7 +33,136 @@ const STATUS_COLOR: Record<string, string> = {
   annulee: 'text-red-500 bg-red-50',
 }
 
+// Statuts à partir desquels un client peut laisser un avis (aligné sur le backend)
+const REVIEWABLE = new Set(['confirmee', 'en_preparation', 'prete', 'en_livraison', 'livree'])
+
+type OrderItem = {
+  id: number
+  numero_commande: string
+  statut: string
+  montant_total: number
+  created_at: string
+  items_count?: number
+  articles?: Array<{ produit_id: number; nom_produit: string; quantite: number }>
+}
+
+/* ── Modale : laisser un avis sur un produit d'une commande ── */
+function ReviewModal({ order, onClose }: { order: OrderItem | null; onClose: () => void }) {
+  const toast = useToastStore((s) => s.show)
+  const articles = order?.articles ?? []
+  const [produitId, setProduitId] = useState<number | null>(null)
+  const [note, setNote] = useState(5)
+  const [commentaire, setCommentaire] = useState('')
+  const [photos, setPhotos] = useState<File[]>([])
+  const [submitting, setSubmitting] = useState(false)
+
+  if (!order) return null
+  const selected = produitId ?? articles[0]?.produit_id ?? null
+
+  async function submit() {
+    if (!order || !selected) return
+    if (commentaire.trim().length < 10) {
+      toast('Votre avis doit faire au moins 10 caractères.', 'close')
+      return
+    }
+    setSubmitting(true)
+    try {
+      const res = await reviewsClientApi.submit({
+        commande_id: order.id,
+        produit_id: selected,
+        note_globale: note,
+        commentaire: commentaire.trim(),
+        photos,
+      })
+      toast(res.data.message ?? 'Merci pour votre avis !', 'check')
+      onClose()
+    } catch (e: any) {
+      toast(e?.response?.data?.message ?? "Erreur lors de l'envoi de votre avis.", 'close')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 sm:p-4" role="dialog" aria-modal="true">
+      <div className="bg-white w-full sm:max-w-md rounded-t-[20px] sm:rounded-[18px] max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-line sticky top-0 bg-white">
+          <h3 className="font-serif font-semibold text-[16px] text-ink">Laisser un avis</h3>
+          <button onClick={onClose} aria-label="Fermer" className="text-muted hover:text-ink">
+            <NIcon name="close" size={20} strokeWidth={2} />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-4">
+          <div>
+            <label className="block text-[12px] font-semibold text-ink mb-1.5">Produit</label>
+            <select
+              value={selected ?? ''}
+              onChange={(e) => setProduitId(Number(e.target.value))}
+              className="w-full h-11 px-3 rounded-[10px] border border-line text-[13px] text-ink bg-paper"
+            >
+              {articles.map((a) => (
+                <option key={a.produit_id} value={a.produit_id}>{a.nom_produit}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[12px] font-semibold text-ink mb-1.5">Note</label>
+            <div className="flex gap-1.5">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button key={n} type="button" onClick={() => setNote(n)} aria-label={`${n} sur 5`}
+                  className={`text-[26px] leading-none ${n <= note ? 'text-amber-400' : 'text-line-2'}`}>★</button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[12px] font-semibold text-ink mb-1.5">Votre avis</label>
+            <textarea
+              value={commentaire}
+              onChange={(e) => setCommentaire(e.target.value)}
+              rows={4}
+              maxLength={1500}
+              placeholder="Partagez votre expérience sur ce produit…"
+              className="w-full px-3 py-2.5 rounded-[10px] border border-line text-[13px] text-ink bg-paper resize-none"
+            />
+            <p className="text-[11px] text-muted mt-1">{commentaire.trim().length}/1500 · minimum 10 caractères</p>
+          </div>
+
+          <div>
+            <label className="block text-[12px] font-semibold text-ink mb-1.5">Photos (optionnel, max 3)</label>
+            <input
+              type="file" accept="image/*" multiple
+              onChange={(e) => setPhotos(Array.from(e.target.files ?? []).slice(0, 3))}
+              className="block w-full text-[12px] text-muted file:mr-3 file:py-2 file:px-3 file:rounded-[8px] file:border-0 file:bg-accent/10 file:text-accent file:text-[12px] file:font-semibold"
+            />
+            {photos.length > 0 && (
+              <div className="flex gap-2 mt-2">
+                {photos.map((f, k) => (
+                  <img key={k} src={URL.createObjectURL(f)} alt="" className="w-14 h-14 rounded-lg object-cover border border-line" />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={submit}
+            disabled={submitting}
+            className="w-full h-12 rounded-[12px] bg-accent text-white text-[13px] font-semibold hover:bg-accent-dark transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {submitting && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />}
+            Envoyer mon avis
+          </button>
+          <p className="text-[11px] text-muted text-center">Votre avis sera publié après validation par la boutique.</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function OrderHistory() {
+  const [reviewOrder, setReviewOrder] = useState<OrderItem | null>(null)
   const { data, isLoading, isError } = useQuery({
     queryKey: ['client-orders'],
     queryFn: () => checkoutApi.getOrders().then((r) => r.data.data),
@@ -67,31 +197,49 @@ function OrderHistory() {
   }
 
   return (
-    <div className="space-y-2" role="list">
-      {data.slice(0, 5).map((order) => (
-        <div
-          key={order.numero_commande}
-          role="listitem"
-          className="flex items-center justify-between gap-3 px-4 py-3 bg-paper rounded-[12px] border border-line"
-        >
-          <div className="min-w-0">
-            <p className="text-[12.5px] font-bold text-ink font-mono truncate">#{order.numero_commande}</p>
-            <p className="text-[11px] text-muted mt-0.5">
-              {(order.items_count ?? order.articles?.length ?? 0)} article{(order.items_count ?? order.articles?.length ?? 0) > 1 ? 's' : ''}
-              {order.created_at && ` · ${new Date(order.created_at).toLocaleDateString('fr-FR')}`}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className={`text-[10.5px] font-semibold px-2.5 py-1 rounded-full ${STATUS_COLOR[order.statut] ?? 'text-muted bg-paper'}`}>
-              {STATUS_LABEL[order.statut] ?? order.statut}
-            </span>
-            {order.montant_total > 0 && (
-              <span className="text-[12px] font-bold text-ink tabular-nums">{fmt(order.montant_total)}</span>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
+    <>
+      <div className="space-y-2" role="list">
+        {data.slice(0, 5).map((order) => {
+          const itemsCount = order.items_count ?? order.articles?.length ?? 0
+          const canReview = REVIEWABLE.has(order.statut) && (order.articles?.length ?? 0) > 0
+          return (
+            <div
+              key={order.numero_commande}
+              role="listitem"
+              className="px-4 py-3 bg-paper rounded-[12px] border border-line"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[12.5px] font-bold text-ink font-mono truncate">#{order.numero_commande}</p>
+                  <p className="text-[11px] text-muted mt-0.5">
+                    {itemsCount} article{itemsCount > 1 ? 's' : ''}
+                    {order.created_at && ` · ${new Date(order.created_at).toLocaleDateString('fr-FR')}`}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className={`text-[10.5px] font-semibold px-2.5 py-1 rounded-full ${STATUS_COLOR[order.statut] ?? 'text-muted bg-paper'}`}>
+                    {STATUS_LABEL[order.statut] ?? order.statut}
+                  </span>
+                  {order.montant_total > 0 && (
+                    <span className="text-[12px] font-bold text-ink tabular-nums">{fmt(order.montant_total)}</span>
+                  )}
+                </div>
+              </div>
+              {canReview && (
+                <button
+                  onClick={() => setReviewOrder(order)}
+                  className="mt-2.5 inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-accent hover:underline"
+                >
+                  <span aria-hidden="true" className="text-amber-400">★</span> Laisser un avis
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      <ReviewModal order={reviewOrder} onClose={() => setReviewOrder(null)} />
+    </>
   )
 }
 
