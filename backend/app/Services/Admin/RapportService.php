@@ -26,15 +26,18 @@ class RapportService
             $finMoisPrecedent = $finMoisActuel->copy()->subMonth();
 
             // CA ce mois vs mois précédent
-            $caCeMois = DB::table('paiements')
-                ->where('statut', 'valide')
-                ->whereBetween('created_at', [$debutMoisActuel, $finMoisActuel])
-                ->sum('montant') ?? 0;
+            // CA = montant encaissé MOINS les frais de livraison (argent du livreur)
+            $caCeMois = (float) (DB::table('paiements as p')
+                ->join('commandes as c', 'p.commande_id', '=', 'c.id')
+                ->where('p.statut', 'valide')
+                ->whereBetween('p.created_at', [$debutMoisActuel, $finMoisActuel])
+                ->sum(DB::raw('p.montant - c.frais_livraison')) ?? 0);
 
-            $caMoisPrecedent = DB::table('paiements')
-                ->where('statut', 'valide')
-                ->whereBetween('created_at', [$debutMoisPrecedent, $finMoisPrecedent])
-                ->sum('montant') ?? 0;
+            $caMoisPrecedent = (float) (DB::table('paiements as p')
+                ->join('commandes as c', 'p.commande_id', '=', 'c.id')
+                ->where('p.statut', 'valide')
+                ->whereBetween('p.created_at', [$debutMoisPrecedent, $finMoisPrecedent])
+                ->sum(DB::raw('p.montant - c.frais_livraison')) ?? 0);
 
             // Commandes ce mois vs mois précédent
             $commandesCeMois = DB::table('commandes')
@@ -212,7 +215,7 @@ class RapportService
                 ->whereBetween('p.created_at', [$dateDebut, $dateFin])
                 ->select([
                     DB::raw("TO_CHAR(p.created_at, 'YYYY-MM') as periode"),
-                    DB::raw('SUM(p.montant) as chiffre_affaires'),
+                    DB::raw('SUM(p.montant - c.frais_livraison) as chiffre_affaires'),
                     DB::raw('COUNT(DISTINCT c.id) as nombre_commandes')
                 ])
                 ->groupBy(DB::raw("TO_CHAR(p.created_at, 'YYYY-MM')"))
@@ -252,8 +255,8 @@ class RapportService
                 ->select([
                     DB::raw("TO_CHAR(p.created_at, '{$dateFormat}') as periode"),
                     DB::raw('COUNT(DISTINCT c.id) as nombre_commandes'),
-                    DB::raw('SUM(p.montant) as chiffre_affaires'),
-                    DB::raw('AVG(p.montant) as panier_moyen'),
+                    DB::raw('SUM(p.montant - c.frais_livraison) as chiffre_affaires'),
+                    DB::raw('AVG(p.montant - c.frais_livraison) as panier_moyen'),
                     DB::raw('COUNT(DISTINCT c.client_id) as clients_uniques')
                 ])
                 ->groupBy(DB::raw("TO_CHAR(p.created_at, '{$dateFormat}')"))
@@ -403,7 +406,7 @@ class RapportService
                     'cl.ville',
                     DB::raw('COUNT(DISTINCT cl.id) as nombre_clients'),
                     DB::raw('COUNT(DISTINCT c.id) as nombre_commandes'),
-                    DB::raw('SUM(p.montant) as chiffre_affaires')
+                    DB::raw('SUM(p.montant - c.frais_livraison) as chiffre_affaires')
                 ])
                 ->groupBy('cl.ville')
                 ->orderBy('chiffre_affaires', 'desc')
@@ -455,16 +458,17 @@ class RapportService
                 ->orderBy('total_montant', 'desc')
                 ->get();
 
-            // Evolution quotidienne
-            $evolutionQuotidienne = DB::table('paiements')
-                ->where('statut', 'valide')
-                ->whereBetween('created_at', [$dateDebut, $dateFin])
+            // Evolution quotidienne — CA hors frais de livraison
+            $evolutionQuotidienne = DB::table('paiements as p')
+                ->join('commandes as c', 'p.commande_id', '=', 'c.id')
+                ->where('p.statut', 'valide')
+                ->whereBetween('p.created_at', [$dateDebut, $dateFin])
                 ->select([
-                    DB::raw("TO_CHAR(created_at, 'YYYY-MM-DD') as date"),
+                    DB::raw("TO_CHAR(p.created_at, 'YYYY-MM-DD') as date"),
                     DB::raw('COUNT(*) as nombre_paiements'),
-                    DB::raw('SUM(montant) as chiffre_affaires')
+                    DB::raw('SUM(p.montant - c.frais_livraison) as chiffre_affaires')
                 ])
-                ->groupBy(DB::raw("TO_CHAR(created_at, 'YYYY-MM-DD')"))
+                ->groupBy(DB::raw("TO_CHAR(p.created_at, 'YYYY-MM-DD')"))
                 ->orderBy('date')
                 ->get();
 

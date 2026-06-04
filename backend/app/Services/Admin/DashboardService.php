@@ -379,7 +379,9 @@ class DashboardService
                 $query->where('created_at', '<=', $endDate);
             }
 
-            return (float) $query->sum('montant');
+            // CA = montant encaissé MOINS les frais de livraison (argent du livreur).
+            return (float) $query->sum('montant')
+                - $this->fraisLivraisonPayes($startDate, $endDate);
 
         } catch (\Exception $e) {
             Log::warning('Erreur calcul revenue', ['error' => $e->getMessage()]);
@@ -393,14 +395,44 @@ class DashboardService
     private function getTodayRevenue(): float
     {
         try {
-            return (float) DB::table('paiements')
+            $gross = (float) DB::table('paiements')
                 ->where('statut', 'valide')
                 ->whereDate('created_at', Carbon::today())
                 ->sum('montant');
+
+            $fraisLivraison = (float) DB::table('commandes')
+                ->whereIn('commandes.id', function ($sub) {
+                    $sub->select('commande_id')->from('paiements')
+                        ->where('statut', 'valide')
+                        ->whereDate('created_at', Carbon::today());
+                })
+                ->sum('frais_livraison');
+
+            return $gross - $fraisLivraison;
 
         } catch (\Exception $e) {
             Log::warning('Erreur calcul today revenue', ['error' => $e->getMessage()]);
             return 0.0;
         }
+    }
+
+    /**
+     * Total des frais de livraison des commandes ayant au moins un paiement validé
+     * sur la période. Soustrait du CA : la livraison est l'argent du livreur, pas
+     * le chiffre d'affaires de la boutique. Compté une seule fois par commande
+     * (robuste même en cas d'acomptes / paiements multiples).
+     */
+    private function fraisLivraisonPayes(Carbon $startDate, Carbon $endDate = null): float
+    {
+        return (float) DB::table('commandes')
+            ->whereIn('commandes.id', function ($sub) use ($startDate, $endDate) {
+                $sub->select('commande_id')->from('paiements')
+                    ->where('statut', 'valide')
+                    ->where('created_at', '>=', $startDate);
+                if ($endDate) {
+                    $sub->where('created_at', '<=', $endDate);
+                }
+            })
+            ->sum('frais_livraison');
     }
 }
