@@ -285,7 +285,8 @@ Route::prefix('client')->group(function () use ($statelessPublic) {
     Route::get('/new-arrivals', [ClientProductController::class, 'newArrivals']);
     Route::get('/on-sale', [ClientProductController::class, 'onSale']);
     Route::get('/{slug}/page-data', [ClientProductController::class, 'getPageData']);
-    
+    Route::get('/{slug}/reviews', [ClientProductController::class, 'reviews']);
+
     Route::get('/{slug}', [ClientProductController::class, 'show']);
     Route::get('/{id}/images', [ClientProductController::class, 'getImages']);
     Route::get('/{id}/related', [ClientProductController::class, 'getRelated']);

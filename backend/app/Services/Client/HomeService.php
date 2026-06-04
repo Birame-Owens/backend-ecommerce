@@ -251,7 +251,10 @@ class HomeService
                 'produit_nom' => $avis->produit->nom,
                 'date' => $avis->created_at->format('M Y'),
                 'avis_verifie' => $avis->avis_verifie,
-                'photos' => $avis->photos_avis ? json_decode($avis->photos_avis, true) : []
+                'photos' => collect($avis->photos_avis ?? [])
+                    ->map(fn ($p) => \Illuminate\Support\Facades\Storage::disk('public')->url($p))
+                    ->all(),
+                'produit_slug' => $avis->produit->slug ?? null,
             ];
         })->toArray();
     }

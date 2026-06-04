@@ -78,7 +78,8 @@ class AvisClient extends Model
 		'nombre_likes' => 'int',
 		'nombre_dislikes' => 'int',
 		'avis_verifie' => 'bool',
-		'date_reponse' => 'datetime'
+		'date_reponse' => 'datetime',
+		'photos_avis' => 'array'
 	];
 
 	protected $fillable = [

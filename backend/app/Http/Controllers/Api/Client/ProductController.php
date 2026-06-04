@@ -68,6 +68,66 @@ class ProductController extends Controller
         }
     }
 
+    /**
+     * Avis publics (approuvés et visibles) d'un produit.
+     */
+    public function reviews(string $slug): JsonResponse
+    {
+        try {
+            $product = \App\Models\Produit::where('slug', $slug)->first();
+
+            if (!$product) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Produit non trouvé'
+                ], 404);
+            }
+
+            $base = \App\Models\AvisClient::where('produit_id', $product->id)
+                ->where('statut', 'approuve')
+                ->where('est_visible', true);
+
+            $avis = (clone $base)
+                ->with('client')
+                ->orderByDesc('est_mis_en_avant')
+                ->orderBy('created_at', 'desc')
+                ->paginate((int) request('per_page', 10));
+
+            $reviews = collect($avis->items())->map(function ($a) {
+                return [
+                    'id' => $a->id,
+                    'nom_client' => $a->nom_affiche ?: ($a->client ? $a->client->prenom : 'Client'),
+                    'note' => $a->note_globale,
+                    'titre' => $a->titre,
+                    'commentaire' => $a->commentaire,
+                    'date' => $a->created_at->format('d/m/Y'),
+                    'avis_verifie' => $a->avis_verifie,
+                    'recommande_produit' => $a->recommande_produit,
+                    'photos' => collect($a->photos_avis ?? [])
+                        ->map(fn ($p) => \Illuminate\Support\Facades\Storage::disk('public')->url($p))
+                        ->all(),
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'reviews'      => $reviews,
+                    'note_moyenne' => round((float) (clone $base)->avg('note_globale'), 1),
+                    'total'        => $avis->total(),
+                    'current_page' => $avis->currentPage(),
+                    'last_page'    => $avis->lastPage(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement des avis'
+            ], 500);
+        }
+    }
+
     public function getImages(int $id): JsonResponse
     {
         try {

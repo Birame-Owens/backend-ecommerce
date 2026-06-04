@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class AvisClientController extends Controller
 {
@@ -34,6 +35,8 @@ class AvisClientController extends Controller
                 'nom_affiche' => ['nullable', 'string', 'max:120'],
                 'recommande_produit' => ['nullable', 'boolean'],
                 'recommande_boutique' => ['nullable', 'boolean'],
+                'photos' => ['nullable', 'array', 'max:3'],
+                'photos.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
             ]);
 
             $commande = Commande::where('id', $validated['commande_id'])
@@ -77,6 +80,14 @@ class AvisClientController extends Controller
                 ], 409);
             }
 
+            // Photos jointes (optionnelles) — stockées sur le disque public sous avis/
+            $photosPaths = [];
+            if ($request->hasFile('photos')) {
+                foreach ($request->file('photos') as $photo) {
+                    $photosPaths[] = $photo->store('avis', 'public');
+                }
+            }
+
             $avis = AvisClient::create([
                 'client_id' => $client->id,
                 'commande_id' => $commande->id,
@@ -87,6 +98,7 @@ class AvisClientController extends Controller
                 'nom_affiche' => $validated['nom_affiche'] ?? $client->prenom,
                 'recommande_produit' => $request->boolean('recommande_produit', true),
                 'recommande_boutique' => $request->boolean('recommande_boutique', true),
+                'photos_avis' => $photosPaths ?: null,
                 'statut' => 'en_attente',
                 'est_visible' => false,
                 'avis_verifie' => true,
