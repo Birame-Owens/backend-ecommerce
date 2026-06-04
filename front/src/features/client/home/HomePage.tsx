@@ -229,15 +229,15 @@ function PromoBanner({ data }: { data: HomeData }) {
 /* ── Stats ── */
 function StatsStrip({ data }: { data: HomeData }) {
   const stats = data.shop_stats
+  // "Années d'expérience" retiré : la preuve sociale passe par les avis clients réels (section ci-dessous).
   const items = [
     { val: stats.produits_disponibles + '+', label: 'Produits' },
     { val: stats.clients_satisfaits + '+', label: 'Clients satisfaits' },
     { val: stats.note_moyenne.toFixed(1) + ' ★', label: 'Note moyenne' },
-    { val: stats.annees_experience + ' ans', label: "D'expérience" },
   ]
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 md:pt-14">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-3 gap-3 md:gap-4">
         {items.map((it) => (
           <div key={it.label} className="text-center bg-white border border-line rounded-card p-4 md:p-6 shadow-sm">
             <div className="font-serif font-bold text-[20px] md:text-[28px] text-ink">{it.val}</div>
@@ -265,6 +265,14 @@ function TestimonialsSection({ data }: { data: HomeData }) {
           <div key={i} className="flex-shrink-0 w-[260px] bg-white border border-line rounded-[14px] p-4">
             <Stars value={tm.note} size={14} />
             <p className="text-[13.5px] leading-relaxed text-ink-2 my-2.5">"{tm.commentaire}"</p>
+            {tm.photos?.length > 0 && (
+              <div className="flex gap-1.5 mb-2">
+                {tm.photos.slice(0, 3).map((src, k) => (
+                  <img key={k} src={src} alt="" loading="lazy"
+                    className="w-12 h-12 rounded-lg object-cover border border-line" />
+                ))}
+              </div>
+            )}
             <div className="flex items-center gap-2.5 mt-3">
               <div className="w-8 h-8 rounded-full bg-sand flex-shrink-0" />
               <div className="text-[12.5px]">
@@ -282,6 +290,14 @@ function TestimonialsSection({ data }: { data: HomeData }) {
           <div key={i} className="bg-white border border-line rounded-[16px] p-5 shadow-sm">
             <Stars value={tm.note} size={15} />
             <p className="text-[14px] leading-relaxed text-ink-2 my-3">"{tm.commentaire}"</p>
+            {tm.photos?.length > 0 && (
+              <div className="flex gap-2 mb-2">
+                {tm.photos.slice(0, 3).map((src, k) => (
+                  <img key={k} src={src} alt="" loading="lazy"
+                    className="w-14 h-14 rounded-lg object-cover border border-line" />
+                ))}
+              </div>
+            )}
             <div className="flex items-center gap-3 mt-4">
               <div className="w-9 h-9 rounded-full bg-sand flex-shrink-0" />
               <div>
@@ -393,9 +409,6 @@ function WAFab() {
 
 /* ── Page ── */
 export function HomePage() {
-  const waNumber = useShopStore((s) => s.waNumber)
-  function waLink(msg: string) { return buildWaUrl(waNumber, msg) }
-
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['client-home'],
     queryFn: () => homeClientApi.home().then((r) => r.data.data),

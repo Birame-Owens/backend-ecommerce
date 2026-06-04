@@ -77,7 +77,7 @@ function OrderHistory() {
           <div className="min-w-0">
             <p className="text-[12.5px] font-bold text-ink font-mono truncate">#{order.numero_commande}</p>
             <p className="text-[11px] text-muted mt-0.5">
-              {order.items_count} article{order.items_count > 1 ? 's' : ''}
+              {(order.items_count ?? order.articles?.length ?? 0)} article{(order.items_count ?? order.articles?.length ?? 0) > 1 ? 's' : ''}
               {order.created_at && ` · ${new Date(order.created_at).toLocaleDateString('fr-FR')}`}
             </p>
           </div>
