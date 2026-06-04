@@ -123,13 +123,21 @@ class SearchService
 
     public function saveSearch(string $query, ?int $userId = null): void
     {
-        // Log des recherches pour analytics futures
-        DB::table('search_logs')->insert([
-            'query' => $query,
-            'user_id' => $userId,
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-            'created_at' => now()
-        ]);
+        // Log des recherches pour analytics futures.
+        // Best-effort : un échec d'analytics (ex: table search_logs absente — il
+        // n'existe aucune migration) ne doit JAMAIS faire échouer la recherche.
+        try {
+            DB::table('search_logs')->insert([
+                'query' => $query,
+                'user_id' => $userId,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'created_at' => now()
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning(
+                'saveSearch ignoré (analytics): ' . $e->getMessage()
+            );
+        }
     }
 }

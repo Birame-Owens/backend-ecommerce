@@ -35,6 +35,16 @@ use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\JobStatsController;
 
 
+// Middlewares de session/cookie retirés des routes PUBLIQUES de lecture (catalogue).
+// Sans StartSession, la réponse ne porte pas de Set-Cookie -> nginx peut la mettre
+// en cache FastCGI et PHP-FPM n'est plus sollicité. À n'appliquer qu'aux routes qui
+// ne touchent JAMAIS Auth::/session() (le guard par défaut est "web" = session).
+$statelessPublic = [
+    \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+];
+
 // =================== ROUTES PUBLIQUES ===================
 
 // Health check (publique, sans authentification)
@@ -248,24 +258,28 @@ Route::prefix('admin')->group(function () {
 });
 
 
-Route::prefix('client')->group(function () {
-    
-    // =================== PAGE D'ACCUEIL ===================
-    Route::get('/home', [HomeController::class, 'index']);
-    Route::get('/featured-products', [HomeController::class, 'featuredProducts']);
-    Route::get('/new-arrivals', [HomeController::class, 'newArrivals']);
-    Route::get('/products-on-sale', [HomeController::class, 'productsOnSale']);
-    Route::get('/categories-preview', [HomeController::class, 'categoriesPreview']);
-    Route::get('/active-promotions', [HomeController::class, 'activePromotions']);
-    Route::get('/shop-stats', [HomeController::class, 'shopStats']);
-    Route::get('/testimonials', [HomeController::class, 'testimonials']);
-    
-    // =================== NAVIGATION DYNAMIQUE ===================
-    Route::get('/navigation/menu', [NavigationController::class, 'getMainMenu']);
-    Route::get('/navigation/categories/{slug}/preview', [NavigationController::class, 'getCategoryPreview']);
-    
+Route::prefix('client')->group(function () use ($statelessPublic) {
+
+    // =================== ROUTES PUBLIQUES CACHEABLES (sans session) ===========
+    // Pas de StartSession ici -> pas de Set-Cookie -> cache nginx actif.
+    Route::withoutMiddleware($statelessPublic)->group(function () {
+        // PAGE D'ACCUEIL
+        Route::get('/home', [HomeController::class, 'index']);
+        Route::get('/featured-products', [HomeController::class, 'featuredProducts']);
+        Route::get('/new-arrivals', [HomeController::class, 'newArrivals']);
+        Route::get('/products-on-sale', [HomeController::class, 'productsOnSale']);
+        Route::get('/categories-preview', [HomeController::class, 'categoriesPreview']);
+        Route::get('/active-promotions', [HomeController::class, 'activePromotions']);
+        Route::get('/shop-stats', [HomeController::class, 'shopStats']);
+        Route::get('/testimonials', [HomeController::class, 'testimonials']);
+
+        // NAVIGATION DYNAMIQUE
+        Route::get('/navigation/menu', [NavigationController::class, 'getMainMenu']);
+        Route::get('/navigation/categories/{slug}/preview', [NavigationController::class, 'getCategoryPreview']);
+    });
+
     // =================== PRODUITS ===================
-    Route::prefix('products')->group(function () {
+    Route::prefix('products')->withoutMiddleware($statelessPublic)->group(function () {
     Route::get('/', [ClientProductController::class, 'index']);
     Route::get('/trending', [ClientProductController::class, 'trending']);
     Route::get('/new-arrivals', [ClientProductController::class, 'newArrivals']);
@@ -280,14 +294,15 @@ Route::prefix('client')->group(function () {
 });
     
     // =================== CATÉGORIES ===================
-   Route::prefix('categories')->group(function () {
+   Route::prefix('categories')->withoutMiddleware($statelessPublic)->group(function () {
     Route::get('/', [ClientCategoryController::class, 'index']);
     Route::get('/{slug}', [ClientCategoryController::class, 'show']);
     Route::get('/{slug}/products', [ClientCategoryController::class, 'getProducts']);
 });
     
     // =================== RECHERCHE ===================
-    Route::prefix('search')->group(function () {
+    // SearchController utilise le guard sanctum (pas la session web) -> sessionless OK.
+    Route::prefix('search')->withoutMiddleware($statelessPublic)->group(function () {
         Route::get('/', [SearchController::class, 'search']);
         Route::get('/suggestions', [SearchController::class, 'suggestions']);
         Route::get('/quick', [HomeController::class, 'quickSearch']); // Compatibilité avec l'existant
@@ -366,7 +381,9 @@ Route::prefix('client')->group(function () {
         ->middleware('throttle.api:20,1');
 
     // =================== ZONES DE LIVRAISON ===================
-    Route::get('/delivery-zones', [\App\Http\Controllers\Api\Client\DeliveryZoneController::class, 'index']);
+    Route::withoutMiddleware($statelessPublic)->group(function () {
+        Route::get('/delivery-zones', [\App\Http\Controllers\Api\Client\DeliveryZoneController::class, 'index']);
+    });
 
     // =================== CHECKOUT & PAIEMENT ===================
     Route::prefix('checkout')->group(function () {
@@ -387,7 +404,7 @@ Route::prefix('client')->group(function () {
     Route::post('/webhook/naboopay', [\App\Http\Controllers\Api\Client\NabooPayController::class, 'webhook'])
         ->name('naboopay.webhook');
     // =================== CONFIGURATION SYSTÈME ===================
-    Route::get('/config', function() {
+    Route::withoutMiddleware($statelessPublic)->get('/config', function() {
         return response()->json([
             'success' => true,
             'data' => [

@@ -14,11 +14,20 @@ class ApiResponseCache
      * Routes à mettre en cache (GET uniquement)
      */
     private array $cacheableRoutes = [
-        'api/client/products' => 3600,        // 1h
-        'api/client/categories' => 86400,     // 24h
-        'api/client/home' => 1800,            // 30min
-        'api/client/navigation' => 43200,     // 12h
-        'api/client/config' => 86400,         // 24h
+        'api/client/products' => 3600,            // 1h
+        'api/client/categories' => 86400,         // 24h
+        'api/client/home' => 1800,                // 30min
+        'api/client/navigation' => 43200,         // 12h
+        'api/client/config' => 86400,             // 24h
+        // Widgets page d'accueil — fortement sollicités, données peu fraîches
+        'api/client/featured-products' => 1800,   // 30min
+        'api/client/new-arrivals' => 1800,        // 30min
+        'api/client/products-on-sale' => 1800,    // 30min
+        'api/client/categories-preview' => 1800,  // 30min
+        'api/client/active-promotions' => 600,    // 10min (promos plus volatiles)
+        'api/client/shop-stats' => 1800,          // 30min
+        'api/client/testimonials' => 3600,        // 1h
+        'api/client/delivery-zones' => 86400,     // 24h
     ];
 
     /**

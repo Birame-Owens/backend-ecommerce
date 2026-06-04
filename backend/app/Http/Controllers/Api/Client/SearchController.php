@@ -26,8 +26,9 @@ class SearchController extends Controller
             $result = $this->searchService->search($query, $filters);
 
             // Sauvegarder la recherche pour analytics
+            // Guard sanctum (token) : pas de dépendance à la session web -> route cacheable.
             if (strlen($query) >= 2) {
-                $userId = Auth::check() ? Auth::id() : null;
+                $userId = auth('sanctum')->id();
                 $this->searchService->saveSearch($query, $userId);
             }
 
