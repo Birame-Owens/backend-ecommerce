@@ -8,6 +8,7 @@ use App\Models\Produit;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 
 use Carbon\Carbon;
 
@@ -126,6 +127,22 @@ class AvisClientService
                 'error' => $e->getMessage()
             ]);
             throw $e;
+        }
+    }
+
+    /**
+     * Vider les caches publics liés aux avis (home/testimonials + réponses API).
+     * Appelée après modération pour que l'avis approuvé apparaisse côté client.
+     */
+    private function clearPublicReviewCaches(): void
+    {
+        Cache::forget('client_home_data');
+        Cache::forget('home_page_data_' . now()->format('Y-m-d-H'));
+
+        try {
+            Cache::tags(['api_responses'])->flush();
+        } catch (\Throwable $e) {
+            Log::debug('Cache tags non disponible (avis publics)', ['error' => $e->getMessage()]);
         }
     }
 
