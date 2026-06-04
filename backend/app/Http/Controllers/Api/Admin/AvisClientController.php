@@ -387,7 +387,10 @@ class AvisClientController extends Controller
      */
     private function formatAvisResponse(AvisClient $avis, bool $detailed = false): array
     {
-        $photos = $avis->photos_avis ? json_decode($avis->photos_avis, true) : [];
+        // photos_avis est casté en array (modèle) -> ne plus json_decode (TypeError PHP 8).
+        $photos = collect($avis->photos_avis ?? [])
+            ->map(fn ($p) => \Illuminate\Support\Facades\Storage::disk('public')->url($p))
+            ->all();
         
         $data = [
             'id' => $avis->id,

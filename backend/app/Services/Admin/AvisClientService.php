@@ -177,7 +177,7 @@ class AvisClientService
         try {
             // Supprimer les photos s'il y en a
             if ($avis->photos_avis) {
-                $photos = json_decode($avis->photos_avis, true);
+                $photos = $avis->photos_avis; // déjà un array (cast modèle)
                 if (is_array($photos)) {
                     foreach ($photos as $photo) {
                         Storage::disk('public')->delete($photo);
