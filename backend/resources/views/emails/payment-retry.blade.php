@@ -42,8 +42,8 @@
                     
                     <!-- En-tête -->
                     <tr>
-                        <td align="center" style="padding: 40px 0 20px 0; border-bottom: 4px solid #000000;">
-                            <h1 style="margin: 0; font-size: 28px; letter-spacing: 6px; text-transform: uppercase; color: #000000;">NDEYA</h1>
+                        <td align="center" style="padding: 40px 0 20px 0; border-bottom: 4px solid #B76E4D;">
+                            <h1 style="margin: 0; font-size: 28px; letter-spacing: 6px; text-transform: uppercase; color: #B76E4D;">NDEYA</h1>
                             <p style="margin: 10px 0 0 0; font-size: 10px; text-transform: uppercase; letter-spacing: 3px; color: #999999;">L'Élégance Intemporelle</p>
                         </td>
                     </tr>
@@ -78,7 +78,7 @@
                     <!-- Bouton CTA -->
                     <tr>
                         <td align="center" style="padding: 0 40px 40px 40px;">
-                            <a href="{{ $paymentUrl }}" style="background-color: #000000; color: #FFFFFF; display: inline-block; padding: 16px 40px; text-decoration: none; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; font-weight: bold; border-radius: 0;">
+                            <a href="{{ $paymentUrl }}" style="background-color: #B76E4D; color: #FFFFFF; display: inline-block; padding: 16px 40px; text-decoration: none; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; font-weight: bold; border-radius: 0;">
                                 Finaliser mon paiement
                             </a>
                             <p style="margin: 15px 0 0 0; font-size: 10px; color: #999999; text-transform: uppercase; letter-spacing: 1px;">

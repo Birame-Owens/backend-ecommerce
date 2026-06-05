@@ -41,8 +41,8 @@
                 <table border="0" cellpadding="0" cellspacing="0" width="600" class="wrapper" style="background-color: #FFFFFF; max-width: 600px; width: 100%;">
                     
                     <tr>
-                        <td align="center" style="padding: 40px 0 20px 0; border-bottom: 4px solid #000000;">
-                            <h1 style="margin: 0; font-size: 28px; letter-spacing: 6px; text-transform: uppercase; color: #000000;">NDEYA</h1>
+                        <td align="center" style="padding: 40px 0 20px 0; border-bottom: 4px solid #B76E4D;">
+                            <h1 style="margin: 0; font-size: 28px; letter-spacing: 6px; text-transform: uppercase; color: #B76E4D;">NDEYA</h1>
                             <p style="margin: 10px 0 0 0; font-size: 10px; text-transform: uppercase; letter-spacing: 3px; color: #999999;">L'Élégance Intemporelle</p>
                         </td>
                     </tr>
@@ -123,7 +123,7 @@
 
                                 <tr>
                                     <td colspan="2" style="padding-top: 15px;">
-                                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-top: 1px dashed #000000;">
+                                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-top: 1px dashed #B76E4D;">
                                             <tr>
                                                 <td align="right" style="padding-top: 15px; font-size: 16px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">Total</td>
                                                 <td align="right" style="padding-top: 15px; font-size: 16px; font-weight: bold; width: 120px;">{{ number_format($commande->montant_total, 0, ',', ' ') }} FCFA</td>
@@ -199,7 +199,7 @@
 
                     <tr>
                         <td align="center" style="padding: 40px;">
-                            <a href="{{ config('services.frontend_url') }}/account/orders/{{ $commande->numero_commande }}" style="background-color: #000000; color: #FFFFFF; display: inline-block; padding: 16px 40px; text-decoration: none; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; font-weight: bold; border-radius: 0;">
+                            <a href="{{ config('services.frontend_url') }}/account/orders/{{ $commande->numero_commande }}" style="background-color: #B76E4D; color: #FFFFFF; display: inline-block; padding: 16px 40px; text-decoration: none; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; font-weight: bold; border-radius: 0;">
                                 Suivre ma commande
                             </a>
                         </td>

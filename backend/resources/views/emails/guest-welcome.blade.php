@@ -17,7 +17,7 @@
         
         /* Helpers */
         .uppercase { text-transform: uppercase; letter-spacing: 2px; }
-        .button:hover { background-color: #333333 !important; }
+        .button:hover { background-color: #9C5839 !important; }
     </style>
 </head>
 <body style="background-color: #FDFBF7; margin: 0; padding: 40px 0;">
@@ -28,8 +28,8 @@
                 <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #FFFFFF; max-width: 600px; width: 100%;">
                     
                     <tr>
-                        <td align="center" style="padding: 40px 0 30px 0; border-bottom: 4px solid #000000;">
-                            <h1 style="margin: 0; font-size: 32px; letter-spacing: 8px; text-transform: uppercase; color: #000000;">NDEYA</h1>
+                        <td align="center" style="padding: 40px 0 30px 0; border-bottom: 4px solid #B76E4D;">
+                            <h1 style="margin: 0; font-size: 32px; letter-spacing: 8px; text-transform: uppercase; color: #B76E4D;">NDEYA</h1>
                             <p style="margin: 10px 0 0 0; font-size: 10px; text-transform: uppercase; letter-spacing: 3px; color: #999999;">L'expérience Client</p>
                         </td>
                     </tr>
@@ -52,7 +52,7 @@
                                         <h3 style="margin: 0 0 10px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; font-weight: bold;">Membre Privilégié</h3>
                                         <p style="margin: 0 0 30px 0; font-size: 13px; color: #666666;">Activez votre compte pour accéder à vos avantages.</p>
                                         
-                                        <a href="{{ $accountCreationUrl }}" style="background-color: #000000; color: #FFFFFF; display: inline-block; padding: 18px 30px; text-decoration: none; text-transform: uppercase; font-size: 11px; letter-spacing: 2px; font-weight: bold; border-radius: 0;">
+                                        <a href="{{ $accountCreationUrl }}" style="background-color: #B76E4D; color: #FFFFFF; display: inline-block; padding: 18px 30px; text-decoration: none; text-transform: uppercase; font-size: 11px; letter-spacing: 2px; font-weight: bold; border-radius: 0;">
                                             Créer mon mot de passe
                                         </a>
                                         
@@ -79,7 +79,7 @@
                                             <tr>
                                                 <td width="50%" valign="top" style="padding-bottom: 20px; padding-right: 10px;">
                                                     <p style="margin: 0 0 5px 0; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
-                                                        <span style="color: #000;">01.</span> Suivi Réel
+                                                        <span style="color: #B76E4D;">01.</span> Suivi Réel
                                                     </p>
                                                     <p style="margin: 0; font-size: 12px; color: #666666; line-height: 18px;">
                                                         Localisez vos commandes en temps réel depuis votre espace.
@@ -87,7 +87,7 @@
                                                 </td>
                                                 <td width="50%" valign="top" style="padding-bottom: 20px; padding-left: 10px;">
                                                     <p style="margin: 0 0 5px 0; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
-                                                        <span style="color: #000;">02.</span> Facturation
+                                                        <span style="color: #B76E4D;">02.</span> Facturation
                                                     </p>
                                                     <p style="margin: 0; font-size: 12px; color: #666666; line-height: 18px;">
                                                         Accédez à votre historique et téléchargez vos factures PDF.
@@ -97,7 +97,7 @@
                                             <tr>
                                                 <td width="50%" valign="top" style="padding-bottom: 20px; padding-right: 10px;">
                                                     <p style="margin: 0 0 5px 0; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
-                                                        <span style="color: #000;">03.</span> Express
+                                                        <span style="color: #B76E4D;">03.</span> Express
                                                     </p>
                                                     <p style="margin: 0; font-size: 12px; color: #666666; line-height: 18px;">
                                                         Commandez plus rapidement sans ressaisir vos coordonnées.
@@ -105,7 +105,7 @@
                                                 </td>
                                                 <td width="50%" valign="top" style="padding-bottom: 20px; padding-left: 10px;">
                                                     <p style="margin: 0 0 5px 0; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
-                                                        <span style="color: #000;">04.</span> Wishlist
+                                                        <span style="color: #B76E4D;">04.</span> Wishlist
                                                     </p>
                                                     <p style="margin: 0; font-size: 12px; color: #666666; line-height: 18px;">
                                                         Sauvegardez vos coups de cœur pour vos prochains achats.
@@ -127,11 +127,11 @@
                                         <table border="0" cellpadding="0" cellspacing="0" width="100%">
                                             <tr>
                                                 <td style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #666666;">Rappel Commande</td>
-                                                <td align="right" style="font-size: 11px; font-weight: bold; color: #000000;">#{{ $commande->numero_commande }}</td>
+                                                <td align="right" style="font-size: 11px; font-weight: bold; color: #B76E4D;">#{{ $commande->numero_commande }}</td>
                                             </tr>
                                             <tr>
                                                 <td style="padding-top: 5px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #666666;">Montant</td>
-                                                <td align="right" style="padding-top: 5px; font-size: 11px; font-weight: bold; color: #000000;">{{ number_format($commande->montant_total, 0, ',', ' ') }} FCFA</td>
+                                                <td align="right" style="padding-top: 5px; font-size: 11px; font-weight: bold; color: #B76E4D;">{{ number_format($commande->montant_total, 0, ',', ' ') }} FCFA</td>
                                             </tr>
                                         </table>
                                     </td>
@@ -157,8 +157,8 @@
                                 Suivez-nous
                             </p>
                             <p style="margin: 0 0 20px 0;">
-                                <a href="{{ config('app.instagram_url') }}" style="color: #000000; text-decoration: none; font-size: 11px; margin: 0 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Instagram</a>
-                                <a href="{{ config('app.tiktok_url') }}" style="color: #000000; text-decoration: none; font-size: 11px; margin: 0 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">TikTok</a>
+                                <a href="{{ config('app.instagram_url') }}" style="color: #B76E4D; text-decoration: none; font-size: 11px; margin: 0 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Instagram</a>
+                                <a href="{{ config('app.tiktok_url') }}" style="color: #B76E4D; text-decoration: none; font-size: 11px; margin: 0 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">TikTok</a>
                             </p>
                             <p style="font-size: 10px; color: #CCCCCC; margin: 0;">
                                 © {{ date('Y') }} NDEYA SHOP. Tous droits réservés.
