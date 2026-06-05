@@ -144,12 +144,31 @@ class SeoController extends Controller
 
     public function clientApp(Request $request, string $path = '')
     {
-        // $path vient de la route /seo-render/{path} (proxy bots) ; sinon le chemin courant.
-        $path = $path !== '' ? $path : $request->path();
-
+        // $path vient de la route /seo-render/{path} (proxy bots). Vide = accueil.
         return response()
             ->view('client.client', ['seo' => $this->seoForPath(trim($path, '/'))])
             ->header('Content-Type', 'text/html; charset=UTF-8');
+    }
+
+    /**
+     * Cartes produits (nom + url + prix) pour les pages accueil/catégorie crawler.
+     */
+    private function productCards(int $limit, ?Category $category = null): array
+    {
+        $query = Produit::query()
+            ->where('est_visible', true)
+            ->whereHas('category', fn ($q) => $q->where('est_active', true))
+            ->orderByDesc('updated_at');
+
+        if ($category) {
+            $query->where('category_id', $category->id);
+        }
+
+        return $query->limit($limit)->get()->map(fn (Produit $p) => [
+            'nom' => $p->nom,
+            'url' => $this->publicUrl("/produits/{$p->slug}"),
+            'price' => number_format((float) ($p->prix_promo ?: $p->prix), 0, ',', ' ') . ' XOF',
+        ])->all();
     }
 
     private function seoForPath(string $path): array
@@ -199,6 +218,7 @@ class SeoController extends Controller
                     'image' => $this->absoluteAsset($category->image) ?: $defaults['image'],
                     'heading' => $category->nom,
                     'body' => $this->limitDescription($category->description) ?: null,
+                    'products' => $this->productCards(48, $category),
                 ]);
             }
         }
@@ -211,7 +231,14 @@ class SeoController extends Controller
             ],
         ];
 
-        return array_merge($defaults, $pageSeo[$path] ?? []);
+        $seo = array_merge($defaults, $pageSeo[$path] ?? []);
+
+        // Accueil et page catégories : lister des produits (contenu + liens internes).
+        if ($path === '' || $path === 'categories') {
+            $seo['products'] = $this->productCards(48);
+        }
+
+        return $seo;
     }
 
     private function defaultSeo(): array

@@ -49,6 +49,17 @@
         @if($image)<img src="{{ $image }}" alt="{{ $heading }}" width="600">@endif
         @if($body)<p>{{ $body }}</p>@endif
         @if($canonical)<p><a href="{{ $canonical }}">Voir sur ND WORLD</a></p>@endif
+
+        @if(!empty($seo['products']))
+        <section>
+            <h2>Nos produits</h2>
+            <ul>
+                @foreach($seo['products'] as $p)
+                <li><a href="{{ $p['url'] }}">{{ $p['nom'] }}</a> — {{ $p['price'] }}</li>
+                @endforeach
+            </ul>
+        </section>
+        @endif
     </main>
 </body>
 </html>
