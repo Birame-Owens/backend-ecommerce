@@ -18,6 +18,7 @@ export default function MessagesPage() {
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [sendMode, setSendMode] = useState<'group' | 'client'>('group')
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
 
   const loadGroups = async () => {
     const res = await messagesAdminApi.groups()
@@ -62,7 +63,7 @@ export default function MessagesPage() {
     if ((channel === 'email' || channel === 'both') && !subject.trim()) return
     setSending(true)
     try {
-      await messagesAdminApi.send({
+      const res = await messagesAdminApi.send({
         group_id: selectedGroup,
         channel,
         subject: subject.trim() || undefined,
@@ -71,14 +72,32 @@ export default function MessagesPage() {
         // "Ce client uniquement" → on cible le client sélectionné.
         client_ids: sendMode === 'client' && selectedClient ? [selectedClient.id] : undefined,
       })
+      const count = res.data?.data?.recipients_count
+      setToast({
+        msg: res.data?.message ?? `Message envoyé avec succès${count ? ` à ${count} client(s)` : ''}`,
+        ok: true,
+      })
       setMessage('')
+    } catch (e: any) {
+      setToast({ msg: e?.response?.data?.message ?? "Échec de l'envoi du message.", ok: false })
     } finally {
       setSending(false)
+      setTimeout(() => setToast(null), 4000)
     }
   }
 
   return (
     <div className="px-6 py-8">
+      {toast && (
+        <div
+          role="status"
+          className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold text-white ${
+            toast.ok ? 'bg-ok' : 'bg-rose-600'
+          }`}
+        >
+          {toast.msg}
+        </div>
+      )}
       <div className="mb-8">
         <h1 className="text-2xl font-serif font-bold text-ink">Messages & support client</h1>
         <p className="text-sm text-muted mt-1">Gerez les conversations et demandes de vos clients.</p>
