@@ -182,9 +182,9 @@ class SeoController extends Controller
 
             if ($category) {
                 return array_merge($defaults, [
-                    'title' => "{$category->nom} | NDEYA SHOP",
-                    'description' => $this->limitDescription($category->description ?: "Decouvrez notre selection {$category->nom} chez NDEYA SHOP au Senegal."),
-                    'keywords' => "{$category->nom}, mode senegalaise, boutique en ligne Senegal, NDEYA SHOP",
+                    'title' => "{$category->nom} | {$this->shopName()}",
+                    'description' => $this->limitDescription($category->description ?: "Decouvrez notre selection {$category->nom} chez {$this->shopName()}, livraison partout au Senegal."),
+                    'keywords' => "{$category->nom}, {$this->shopName()}, boutique en ligne Senegal, Dakar, achat en ligne",
                     'canonical' => $this->publicUrl("/categories/{$category->slug}"),
                     'image' => $this->absoluteAsset($category->image) ?: $defaults['image'],
                 ]);
@@ -194,7 +194,7 @@ class SeoController extends Controller
         $pageSeo = [
             'categories' => [
                 'title' => 'Categories | ' . $this->shopName(),
-                'description' => 'Explorez les robes, tissus, accessoires et creations NDEYA SHOP. Commandez en ligne au Senegal.',
+                'description' => 'Explorez tout le catalogue ' . $this->shopName() . ' : montres, chaussures, sacs, accessoires et plus. Commandez en ligne, livraison au Senegal.',
                 'canonical' => $this->publicUrl('/categories'),
             ],
         ];
@@ -210,7 +210,7 @@ class SeoController extends Controller
         return [
             'title' => $shopName . ' | Boutique en ligne au Senegal',
             'description' => $description,
-            'keywords' => $shopName . ', mode Senegal, robes Senegal, boutique en ligne Dakar, tissus, accessoires, creation sur mesure',
+            'keywords' => $shopName . ', boutique en ligne Senegal, achat en ligne Dakar, livraison Senegal, paiement securise',
             'canonical' => $this->publicUrl('/'),
             'image' => asset('assets/images/ndeya.jpg'),
             'type' => 'website',
@@ -319,7 +319,7 @@ class SeoController extends Controller
             'seo_description',
             ShopSetting::getValue(
                 'boutique_description',
-                'Boutique en ligne au Senegal pour mode, accessoires, parfums et creations elegantes. Commandez facilement avec livraison a Dakar et partout au Senegal.'
+                'Boutique en ligne au Senegal : montres, chaussures, sacs, accessoires et produits tendance. Commandez facilement avec livraison a Dakar et partout au Senegal.'
             )
         );
     }
