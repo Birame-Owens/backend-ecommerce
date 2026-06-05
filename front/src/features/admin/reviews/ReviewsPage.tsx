@@ -284,8 +284,8 @@ export default function ReviewsPage() {
               <div key={review.id} className="bg-beige-50 border border-beige-300 rounded-2xl p-5 shadow-beige">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-ink">{review.client.nom_complet}</p>
-                    <p className="text-xs text-muted">{review.created_at} · {review.produit.nom}</p>
+                    <p className="text-sm font-semibold text-ink">{review.client?.nom_complet ?? '—'}</p>
+                    <p className="text-xs text-muted">{review.created_at} · {review.produit?.nom ?? '—'}</p>
                   </div>
                   <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-beige-200 text-muted">
                     {review.statut_label}
@@ -342,7 +342,7 @@ export default function ReviewsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted uppercase tracking-widest">Detail avis</p>
-              <h3 className="text-lg font-serif font-semibold text-ink">{selected?.client.nom_complet ?? '—'}</h3>
+              <h3 className="text-lg font-serif font-semibold text-ink">{selected?.client?.nom_complet ?? '—'}</h3>
             </div>
             <MessageSquare className="w-4 h-4 text-beige-500" strokeWidth={1.5} />
           </div>
@@ -360,7 +360,7 @@ export default function ReviewsPage() {
                 <div className="bg-beige-100 rounded-xl p-3 border border-beige-300">
                   <p className="text-xs text-muted uppercase tracking-widest">Client</p>
                   <div className="mt-2 text-xs text-muted">
-                    <p className="text-sm font-semibold text-ink">{selected.client.nom_complet}</p>
+                    <p className="text-sm font-semibold text-ink">{selected.client?.nom_complet ?? '—'}</p>
                     <p>{selected.client_detaille?.telephone ?? '—'}</p>
                     <p>{selected.client_detaille?.email ?? '—'}</p>
                   </div>
@@ -368,7 +368,7 @@ export default function ReviewsPage() {
                 <div className="bg-beige-100 rounded-xl p-3 border border-beige-300">
                   <p className="text-xs text-muted uppercase tracking-widest">Avis</p>
                   <div className="mt-2 text-xs text-muted space-y-1">
-                    <p className="text-sm font-semibold text-ink">{selected.produit.nom}</p>
+                    <p className="text-sm font-semibold text-ink">{selected.produit?.nom ?? '—'}</p>
                     <p>Note globale: {selected.note_globale}/5</p>
                     <p>{selected.commentaire}</p>
                     {selected.reponse_boutique && (
