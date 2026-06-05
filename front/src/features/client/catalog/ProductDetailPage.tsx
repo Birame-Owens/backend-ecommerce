@@ -11,6 +11,7 @@ import { useWishlistStore } from '@/store/wishlistStore'
 import { useCartStore, cartCount } from '@/store/cartStore'
 import { useToastStore } from '@/store/toastStore'
 import { useShopStore, buildWaUrl } from '@/store/shopStore'
+import { SeoHead } from '@/components/client/SeoHead'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
@@ -315,6 +316,16 @@ export function ProductDetailPage() {
 
   return (
     <>
+      <SeoHead
+        title={product.seo?.title ?? `${product.nom} | ND WORLD`}
+        description={product.seo?.description ?? product.description_courte ?? product.description}
+        canonical={product.seo?.canonical ?? `/produits/${product.slug}`}
+        image={product.seo?.image ?? product.image_principale}
+        type="product"
+        keywords={product.seo?.keywords ?? product.tags}
+        structuredData={product.seo?.structured_data}
+      />
+
       {/* ── Mobile header ── */}
       <header className="md:hidden sticky top-0 z-30 bg-paper/95 backdrop-blur-xl border-b border-line">
         <div className="flex items-center h-14 px-4 gap-2">

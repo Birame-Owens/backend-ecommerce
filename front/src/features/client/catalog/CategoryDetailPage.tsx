@@ -5,6 +5,7 @@ import { catalogClientApi } from '@/api/client/catalog'
 import type { CategoryPreview } from '@/api/client/home'
 import { NProductCard } from '@/components/client/NProductCard'
 import { NIcon } from '@/components/client/NIcon'
+import { SeoHead } from '@/components/client/SeoHead'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
@@ -220,6 +221,24 @@ export function CategoryDetailPage() {
 
   const activeFilterLabel = quickFilter === 'all' ? null
     : QUICK_FILTERS.find((f) => f.value === quickFilter)?.label
+  const categoryDescription = category.description
+    ?? `Decouvrez les produits ${category.nom} chez ND WORLD, disponibles en ligne avec livraison au Senegal.`
+  const categorySeo = (
+    <SeoHead
+      title={`${category.nom} | ND WORLD`}
+      description={categoryDescription}
+      canonical={`/categories/${category.slug}`}
+      image={category.image}
+      keywords={[category.nom, 'ND WORLD', 'boutique en ligne Senegal', 'Dakar']}
+      structuredData={{
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: category.nom,
+        description: categoryDescription,
+        url: `/categories/${category.slug}`,
+      }}
+    />
+  )
 
   /* ── Shared header (centered, white bg) ── */
   const pageHeader = (
@@ -425,6 +444,8 @@ export function CategoryDetailPage() {
   if (isParent) {
     return (
       <>
+        {categorySeo}
+
         {/* Mobile back header */}
         <header className="md:hidden sticky top-0 z-30 bg-white border-b border-line">
           <div className="flex items-center h-14 px-4 gap-3">
@@ -476,6 +497,8 @@ export function CategoryDetailPage() {
   ════════════════════════════════════════════ */
   return (
     <>
+      {categorySeo}
+
       {/* Mobile back header */}
       <header className="md:hidden sticky top-0 z-30 bg-white border-b border-line">
         <div className="flex items-center h-14 px-4 gap-3">

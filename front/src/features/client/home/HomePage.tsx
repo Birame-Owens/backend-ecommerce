@@ -6,6 +6,7 @@ import { NProductCard } from '@/components/client/NProductCard'
 import { NImage } from '@/components/client/NImage'
 import { NIcon, WAGlyph, IGGlyph, TikTokGlyph, Stars } from '@/components/client/NIcon'
 import { useShopStore, buildWaUrl } from '@/store/shopStore'
+import { SeoHead } from '@/components/client/SeoHead'
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
 
@@ -459,7 +460,24 @@ export function HomePage() {
 
   return (
     <div className="bg-paper">
-
+      <SeoHead
+        title="ND WORLD | Boutique en ligne au Senegal"
+        description="Decouvrez ND WORLD, boutique en ligne au Senegal avec produits tendance, paiement securise et livraison rapide a Dakar et partout au pays."
+        canonical="/"
+        image="/ND-world.jpeg"
+        keywords={['ND WORLD', 'boutique en ligne Senegal', 'Dakar', 'mode', 'accessoires', 'parfums']}
+        structuredData={{
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: 'ND WORLD',
+          url: '/',
+          potentialAction: {
+            '@type': 'SearchAction',
+            target: '/recherche?q={search_term_string}',
+            'query-input': 'required name=search_term_string',
+          },
+        }}
+      />
 
       <Hero data={data} />
       <CatRow data={data} />

@@ -5,3 +5,6 @@ use App\Http\Controllers\SeoController;
 
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
+Route::get('/llms.txt', [SeoController::class, 'llms'])->name('seo.llms');
+Route::get('/products-feed.json', [SeoController::class, 'productFeed'])->name('seo.products-feed');
+Route::redirect('/products/{slug}', '/produits/{slug}', 301);

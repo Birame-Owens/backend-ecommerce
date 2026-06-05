@@ -89,7 +89,7 @@ class NavigationService
             'prix_promo' => $product->prix_promo,
             'prix_affiche' => $product->prix_promo ?: $product->prix,
             'image' => $image ? asset('storage/' . ($image->chemin_moyen ?: $image->chemin_miniature ?: $image->chemin_original)) : '/images/placeholder-product.jpg',
-            'url' => "/products/{$product->slug}"
+            'url' => "/produits/{$product->slug}"
         ];
     }
 }

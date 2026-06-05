@@ -5,13 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Produit;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
+use App\Models\ShopSetting;
 
 class SeoController extends Controller
 {
     public function robots()
     {
-        $sitemapUrl = url('/sitemap.xml');
+        $sitemapUrl = $this->publicUrl('/sitemap.xml');
+        $llmsUrl = $this->publicUrl('/llms.txt');
         $adminPath = '/' . (trim((string) env('ADMIN_PATH', 'ndeya-backoffice'), '/') ?: 'ndeya-backoffice');
 
         return response(
@@ -21,11 +24,12 @@ class SeoController extends Controller
             "Disallow: {$adminPath}\n" .
             "Disallow: /api\n" .
             "Disallow: /checkout\n" .
-            "Disallow: /cart\n" .
-            "Disallow: /wishlist\n" .
-            "Disallow: /profile\n" .
-            "Disallow: /account\n\n" .
-            "Sitemap: {$sitemapUrl}\n",
+            "Disallow: /panier\n" .
+            "Disallow: /favoris\n" .
+            "Disallow: /profil\n" .
+            "Disallow: /compte\n\n" .
+            "Sitemap: {$sitemapUrl}\n" .
+            "LLMs: {$llmsUrl}\n",
             200,
             ['Content-Type' => 'text/plain; charset=UTF-8']
         );
@@ -34,8 +38,8 @@ class SeoController extends Controller
     public function sitemap()
     {
         $urls = collect([
-            $this->urlEntry(url('/'), now(), 'daily', '1.0'),
-            $this->urlEntry(url('/shop'), now(), 'daily', '0.9'),
+            $this->urlEntry($this->publicUrl('/'), now(), 'daily', '1.0'),
+            $this->urlEntry($this->publicUrl('/categories'), now(), 'daily', '0.9'),
         ]);
 
         Category::query()
@@ -44,7 +48,7 @@ class SeoController extends Controller
             ->get(['slug', 'updated_at'])
             ->each(function (Category $category) use ($urls) {
                 $urls->push($this->urlEntry(
-                    url("/categories/{$category->slug}"),
+                    $this->publicUrl("/categories/{$category->slug}"),
                     $category->updated_at,
                     'weekly',
                     '0.8'
@@ -53,11 +57,12 @@ class SeoController extends Controller
 
         Produit::query()
             ->where('est_visible', true)
+            ->whereHas('category', fn ($q) => $q->where('est_active', true))
             ->orderByDesc('updated_at')
             ->get(['slug', 'updated_at'])
             ->each(function (Produit $produit) use ($urls) {
                 $urls->push($this->urlEntry(
-                    url("/products/{$produit->slug}"),
+                    $this->publicUrl("/produits/{$produit->slug}"),
                     $produit->updated_at,
                     'weekly',
                     '0.9'
@@ -67,6 +72,74 @@ class SeoController extends Controller
         $xml = $this->renderSitemapXml($urls);
 
         return response($xml, 200, ['Content-Type' => 'application/xml; charset=UTF-8']);
+    }
+
+    public function llms()
+    {
+        $products = Produit::query()
+            ->where('est_visible', true)
+            ->whereHas('category', fn ($q) => $q->where('est_active', true))
+            ->with('category')
+            ->orderByDesc('updated_at')
+            ->limit(80)
+            ->get();
+
+        $lines = [
+            '# ' . $this->shopName(),
+            '',
+            '> Catalogue public de produits pour les moteurs de recherche et les assistants IA.',
+            '',
+            'Site: ' . $this->publicUrl('/'),
+            'Sitemap: ' . $this->publicUrl('/sitemap.xml'),
+            'Products feed: ' . $this->publicUrl('/products-feed.json'),
+            'Contact: ' . ShopSetting::getValue('boutique_email', config('app.contact_email', '')),
+            'Location: ' . ShopSetting::getValue('boutique_adresse', 'Dakar, Senegal'),
+            '',
+            '## Boutique',
+            '',
+            $this->shopDescription(),
+            '',
+            '## Produits',
+            '',
+        ];
+
+        foreach ($products as $product) {
+            $description = $this->limitDescription($product->description_courte ?: $product->description);
+            $price = number_format((float) ($product->prix_promo ?: $product->prix), 0, ',', ' ');
+            $lines[] = '- ' . $product->nom . ' - ' . $price . ' XOF - ' . $this->publicUrl("/produits/{$product->slug}") . ($description ? ' - ' . $description : '');
+        }
+
+        return response(implode("\n", $lines) . "\n", 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+    }
+
+    public function productFeed(): JsonResponse
+    {
+        $products = Produit::query()
+            ->where('est_visible', true)
+            ->whereHas('category', fn ($q) => $q->where('est_active', true))
+            ->with(['category', 'images_produits' => fn ($q) => $q->where('est_visible', true)->orderBy('ordre_affichage')])
+            ->orderByDesc('updated_at')
+            ->limit(500)
+            ->get();
+
+        $payload = [
+            '@context' => 'https://schema.org',
+            '@type' => 'ItemList',
+            'name' => $this->shopName() . ' - Catalogue produits',
+            'url' => $this->publicUrl('/products-feed.json'),
+            'dateModified' => now()->toAtomString(),
+            'numberOfItems' => $products->count(),
+            'itemListElement' => $products->values()->map(fn (Produit $product, int $index) => [
+                '@type' => 'ListItem',
+                'position' => $index + 1,
+                'url' => $this->publicUrl("/produits/{$product->slug}"),
+                'item' => $this->productSchema($product, $this->productImage($product)),
+            ])->values(),
+        ];
+
+        return response()->json($payload, 200, [
+            'Content-Type' => 'application/ld+json; charset=UTF-8',
+        ]);
     }
 
     public function clientApp(Request $request)
@@ -80,26 +153,24 @@ class SeoController extends Controller
     {
         $defaults = $this->defaultSeo();
 
-        if (preg_match('#^products/([^/]+)$#', $path, $matches)) {
+        if (preg_match('#^(?:produits|products)/([^/]+)$#', $path, $matches)) {
             $produit = Produit::with(['category', 'images_produits'])
                 ->where('slug', $matches[1])
                 ->where('est_visible', true)
+                ->whereHas('category', fn ($q) => $q->where('est_active', true))
                 ->first();
 
             if ($produit) {
-                $image = $produit->images_produits
-                    ->where('est_visible', true)
-                    ->sortByDesc('est_principale')
-                    ->first()?->url;
+                $image = $this->productImage($produit);
 
                 return array_merge($defaults, [
-                    'title' => $produit->meta_titre ?: "{$produit->nom} | NDEYA SHOP",
+                    'title' => $produit->meta_titre ?: "{$produit->nom} | {$this->shopName()}",
                     'description' => $this->limitDescription($produit->meta_description ?: $produit->description_courte ?: $produit->description),
                     'keywords' => $this->keywordsFromProduct($produit),
-                    'canonical' => url("/products/{$produit->slug}"),
-                    'image' => $image ?: $this->absoluteAsset($produit->image_principale),
+                    'canonical' => $this->publicUrl("/produits/{$produit->slug}"),
+                    'image' => $image,
                     'type' => 'product',
-                    'schema' => $this->productSchema($produit, $image ?: $this->absoluteAsset($produit->image_principale)),
+                    'schema' => $this->productSchema($produit, $image),
                 ]);
             }
         }
@@ -114,17 +185,17 @@ class SeoController extends Controller
                     'title' => "{$category->nom} | NDEYA SHOP",
                     'description' => $this->limitDescription($category->description ?: "Decouvrez notre selection {$category->nom} chez NDEYA SHOP au Senegal."),
                     'keywords' => "{$category->nom}, mode senegalaise, boutique en ligne Senegal, NDEYA SHOP",
-                    'canonical' => url("/categories/{$category->slug}"),
+                    'canonical' => $this->publicUrl("/categories/{$category->slug}"),
                     'image' => $this->absoluteAsset($category->image) ?: $defaults['image'],
                 ]);
             }
         }
 
         $pageSeo = [
-            'shop' => [
-                'title' => 'Boutique NDEYA SHOP | Mode, robes et accessoires au Senegal',
+            'categories' => [
+                'title' => 'Categories | ' . $this->shopName(),
                 'description' => 'Explorez les robes, tissus, accessoires et creations NDEYA SHOP. Commandez en ligne au Senegal.',
-                'canonical' => url('/shop'),
+                'canonical' => $this->publicUrl('/categories'),
             ],
         ];
 
@@ -133,13 +204,14 @@ class SeoController extends Controller
 
     private function defaultSeo(): array
     {
-        $description = 'NDEYA SHOP est une boutique de mode au Senegal pour robes, tissus, accessoires et creations elegantes. Commandez en ligne facilement.';
+        $description = $this->shopDescription();
+        $shopName = $this->shopName();
 
         return [
-            'title' => 'NDEYA SHOP | Mode, robes et creations au Senegal',
+            'title' => $shopName . ' | Boutique en ligne au Senegal',
             'description' => $description,
-            'keywords' => 'NDEYA SHOP, mode Senegal, robes Senegal, boutique en ligne Dakar, tissus, accessoires, creation sur mesure',
-            'canonical' => url('/'),
+            'keywords' => $shopName . ', mode Senegal, robes Senegal, boutique en ligne Dakar, tissus, accessoires, creation sur mesure',
+            'canonical' => $this->publicUrl('/'),
             'image' => asset('assets/images/ndeya.jpg'),
             'type' => 'website',
             'schema' => $this->organizationSchema(),
@@ -192,9 +264,10 @@ class SeoController extends Controller
         return collect([
             $produit->nom,
             $produit->category?->nom,
-            'NDEYA SHOP',
+            $this->shopName(),
             'mode Senegal',
             'boutique en ligne Senegal',
+            'Dakar',
         ])->merge(is_array($tags) ? $tags : [])
             ->filter()
             ->unique()
@@ -214,18 +287,64 @@ class SeoController extends Controller
         return asset(ltrim($path, '/'));
     }
 
+    private function productImage(Produit $produit): ?string
+    {
+        $image = $produit->images_produits
+            ->where('est_visible', true)
+            ->sortByDesc('est_principale')
+            ->first()?->url;
+
+        return $image ?: $this->absoluteAsset($produit->image_principale);
+    }
+
+    private function publicUrl(string $path = '/'): string
+    {
+        $base = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
+        if ($base === '') {
+            $base = rtrim((string) config('app.url'), '/');
+        }
+
+        $path = '/' . ltrim($path, '/');
+        return $path === '/' ? $base : $base . $path;
+    }
+
+    private function shopName(): string
+    {
+        return (string) ShopSetting::getValue('boutique_nom', config('app.name', 'NDEYA SHOP'));
+    }
+
+    private function shopDescription(): string
+    {
+        return (string) ShopSetting::getValue(
+            'seo_description',
+            ShopSetting::getValue(
+                'boutique_description',
+                'Boutique en ligne au Senegal pour mode, accessoires, parfums et creations elegantes. Commandez facilement avec livraison a Dakar et partout au Senegal.'
+            )
+        );
+    }
+
     private function organizationSchema(): array
     {
+        $sameAs = array_values(array_filter([
+            ShopSetting::getValue('social_instagram', config('app.instagram_url')),
+            ShopSetting::getValue('social_tiktok', config('app.tiktok_url')),
+            ShopSetting::getValue('social_facebook', ''),
+        ]));
+
         return [
             '@context' => 'https://schema.org',
-            '@type' => 'Organization',
-            'name' => 'NDEYA SHOP',
-            'url' => url('/'),
+            '@type' => 'Store',
+            'name' => $this->shopName(),
+            'url' => $this->publicUrl('/'),
             'logo' => asset('favicon.ico'),
-            'sameAs' => array_values(array_filter([
-                config('app.instagram_url'),
-                config('app.tiktok_url'),
-            ])),
+            'description' => $this->shopDescription(),
+            'address' => [
+                '@type' => 'PostalAddress',
+                'addressLocality' => ShopSetting::getValue('boutique_ville', 'Dakar'),
+                'addressCountry' => ShopSetting::getValue('boutique_pays', 'SN'),
+            ],
+            'sameAs' => $sameAs,
         ];
     }
 
@@ -239,19 +358,28 @@ class SeoController extends Controller
             'name' => $produit->nom,
             'description' => $this->limitDescription($produit->description_courte ?: $produit->description),
             'image' => array_values(array_filter([$image])),
+            'sku' => 'ND-' . $produit->id,
+            'category' => $produit->category?->nom,
             'brand' => [
                 '@type' => 'Brand',
-                'name' => 'NDEYA SHOP',
+                'name' => $this->shopName(),
             ],
             'offers' => [
                 '@type' => 'Offer',
-                'url' => url("/products/{$produit->slug}"),
+                'url' => $this->publicUrl("/produits/{$produit->slug}"),
                 'priceCurrency' => 'XOF',
                 'price' => (string) round((float) $price),
+                'itemCondition' => 'https://schema.org/NewCondition',
                 'availability' => $produit->stock_disponible > 0 || !$produit->gestion_stock
                     ? 'https://schema.org/InStock'
                     : 'https://schema.org/OutOfStock',
             ],
-        ];
+        ] + ($produit->note_moyenne > 0 && $produit->nombre_avis > 0 ? [
+            'aggregateRating' => [
+                '@type' => 'AggregateRating',
+                'ratingValue' => round((float) $produit->note_moyenne, 1),
+                'reviewCount' => (int) $produit->nombre_avis,
+            ],
+        ] : []);
     }
 }

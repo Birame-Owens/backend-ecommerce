@@ -8,6 +8,8 @@ namespace App\Services\Client;
 use App\Models\Produit;
 use App\Models\Category;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
+use App\Models\ShopSetting;
 
 class ProductService
 {
@@ -306,6 +308,7 @@ class ProductService
         'tags' => is_array($product->tags) ? $product->tags : ($product->tags ? explode(',', $product->tags) : []),
         'est_nouveaute' => $product->est_nouveaute,
         'est_populaire' => $product->est_populaire,
+        'seo' => $this->buildProductSeo($product, $imagePrincipale),
         'meta' => [
             'views' => $product->nombre_vues,
             'sales' => $product->nombre_ventes,
@@ -313,6 +316,98 @@ class ProductService
         ]
     ];
 }
+    private function buildProductSeo(Produit $product, string $image): array
+    {
+        $canonical = $this->publicUrl('/produits/' . $product->slug);
+        $description = $this->seoDescription($product);
+        $title = $product->meta_titre ?: Str::limit($product->nom . ' | ' . $this->shopName(), 70, '');
+        $keywords = collect([
+            $product->nom,
+            $product->category?->nom,
+            $this->shopName(),
+            'boutique en ligne Senegal',
+            'Dakar',
+            'livraison Senegal',
+        ])->merge(is_array($product->tags) ? $product->tags : ($product->tags ? explode(',', $product->tags) : []))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        return [
+            'title' => $title,
+            'description' => $description,
+            'keywords' => $keywords,
+            'canonical' => $canonical,
+            'image' => $image,
+            'type' => 'product',
+            'structured_data' => $this->productStructuredData($product, $image, $canonical, $description),
+        ];
+    }
+
+    private function productStructuredData(Produit $product, string $image, string $canonical, string $description): array
+    {
+        $price = $product->prix_promo ?: $product->prix;
+        $schema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'Product',
+            'name' => $product->nom,
+            'description' => $description,
+            'image' => array_values(array_filter([$image])),
+            'sku' => 'ND-' . $product->id,
+            'category' => $product->category?->nom,
+            'brand' => [
+                '@type' => 'Brand',
+                'name' => $this->shopName(),
+            ],
+            'offers' => [
+                '@type' => 'Offer',
+                'url' => $canonical,
+                'priceCurrency' => 'XOF',
+                'price' => (string) round((float) $price),
+                'itemCondition' => 'https://schema.org/NewCondition',
+                'availability' => !$product->gestion_stock || $this->resolveStockTotal($product) > 0
+                    ? 'https://schema.org/InStock'
+                    : 'https://schema.org/OutOfStock',
+            ],
+        ];
+
+        if ($product->note_moyenne > 0 && $product->nombre_avis > 0) {
+            $schema['aggregateRating'] = [
+                '@type' => 'AggregateRating',
+                'ratingValue' => round((float) $product->note_moyenne, 1),
+                'reviewCount' => (int) $product->nombre_avis,
+            ];
+        }
+
+        return $schema;
+    }
+
+    private function seoDescription(Produit $product): string
+    {
+        $description = $product->meta_description ?: $product->description_courte ?: $product->description ?: '';
+        $description = preg_replace('/\s+/', ' ', trim(strip_tags((string) $description)));
+
+        if ($description === '') {
+            $description = 'Achetez ' . $product->nom . ' chez ' . $this->shopName() . ' au Senegal avec livraison a Dakar et partout au pays.';
+        }
+
+        return Str::limit($description, 160, '');
+    }
+
+    private function publicUrl(string $path): string
+    {
+        $base = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
+        $path = '/' . ltrim($path, '/');
+
+        return $base . $path;
+    }
+
+    private function shopName(): string
+    {
+        return (string) ShopSetting::getValue('boutique_nom', config('app.name', 'ND WORLD'));
+    }
+
     private function resolveStockTotal($product): int
     {
         if ($product->couleur_tailles_stock) {
@@ -392,7 +487,7 @@ class ProductService
         'type_variante' => $product->type_variante ?? 'vetement',
         'stock_disponible' => $product->gestion_stock ? $this->resolveStockTotal($product) : null,
         'stock_status' => $this->getStockStatus($product),
-        'url' => "/products/{$product->slug}",
+        'url' => "/produits/{$product->slug}",
         'badge' => $this->getProductBadge($product)
     ];
 }

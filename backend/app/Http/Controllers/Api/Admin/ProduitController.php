@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Produit;
 use App\Models\ImagesProduit;
+use App\Models\Category;
+use App\Models\ShopSetting;
 use App\Http\Requests\Admin\ProduitRequest;
 use App\Services\ImageOptimizationService;
 use Illuminate\Http\JsonResponse;
@@ -156,6 +158,8 @@ class ProduitController extends Controller
                 ));
             }
 
+            $validatedData = $this->applyDefaultSeo($validatedData);
+
             if (isset($validatedData['couleur_tailles']) && is_array($validatedData['couleur_tailles'])) {
                 $ctArray = $validatedData['couleur_tailles'];
                 $validatedData['couleur_tailles'] = json_encode($ctArray);
@@ -300,6 +304,8 @@ class ProduitController extends Controller
                     array_map('trim', explode(',', $validatedData['tags']))
                 ));
             }
+
+            $validatedData = $this->applyDefaultSeo($validatedData);
 
             if (isset($validatedData['couleur_tailles']) && is_array($validatedData['couleur_tailles'])) {
                 $ctArray = $validatedData['couleur_tailles'];
@@ -875,6 +881,51 @@ class ProduitController extends Controller
         
         return 'Produit visible côté client';
     }
+    private function applyDefaultSeo(array $data): array
+    {
+        $name = trim((string) ($data['nom'] ?? 'Produit'));
+        $categoryName = null;
+
+        if (!empty($data['categorie_id'])) {
+            $categoryName = Category::whereKey($data['categorie_id'])->value('nom');
+        }
+
+        $shopName = (string) ShopSetting::getValue('boutique_nom', config('app.name', 'ND WORLD'));
+
+        if (empty($data['meta_titre'])) {
+            $titleParts = array_filter([$name, $categoryName]);
+            $data['meta_titre'] = Str::limit(implode(' - ', $titleParts) . ' | ' . $shopName, 70, '');
+        }
+
+        if (empty($data['meta_description'])) {
+            $source = $data['description_courte'] ?? $data['description'] ?? '';
+            $source = preg_replace('/\s+/', ' ', trim(strip_tags((string) $source)));
+            $description = "Achetez {$name}";
+
+            if ($categoryName) {
+                $description .= " dans la categorie {$categoryName}";
+            }
+
+            $description .= " chez {$shopName} au Senegal.";
+
+            if ($source !== '') {
+                $description .= ' ' . $source;
+            }
+
+            $data['meta_description'] = Str::limit($description, 160, '');
+        }
+
+        if (empty($data['tags'])) {
+            $words = preg_split('/[\s,-]+/', Str::lower($name));
+            $data['tags'] = array_values(array_unique(array_filter(array_merge(
+                [$name, $categoryName, $shopName, 'boutique en ligne Senegal', 'Dakar', 'livraison Senegal'],
+                $words ?: []
+            ))));
+        }
+
+        return $data;
+    }
+
     private function clearClientProductCaches(?string $slug = null): void
     {
         Cache::forget('client_home_data');

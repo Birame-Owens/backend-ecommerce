@@ -22,6 +22,16 @@ export interface ProductImage {
   couleur_associee?: string | null
 }
 
+export interface ProductSeo {
+  title: string
+  description: string
+  keywords: string[]
+  canonical: string
+  image: string | null
+  type: 'product' | 'website'
+  structured_data: unknown
+}
+
 export interface ProductDetail {
   id: number
   nom: string
@@ -48,6 +58,7 @@ export interface ProductDetail {
   note_moyenne: number | null
   nombre_avis: number
   tags: string[]
+  seo?: ProductSeo
   est_nouveaute: boolean
   est_populaire: boolean
   type_variante: 'vetement' | 'chaussure' | 'parfum' | 'aucun'
