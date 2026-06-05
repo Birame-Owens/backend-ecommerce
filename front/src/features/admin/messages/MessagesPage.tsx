@@ -17,6 +17,7 @@ export default function MessagesPage() {
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const [sendMode, setSendMode] = useState<'group' | 'client'>('group')
 
   const loadGroups = async () => {
     const res = await messagesAdminApi.groups()
@@ -66,7 +67,9 @@ export default function MessagesPage() {
         channel,
         subject: subject.trim() || undefined,
         message: message.trim(),
-        client_ids: selectedClient ? [selectedClient.id] : undefined,
+        // Envoi groupé par défaut (client_ids vide = tout le groupe côté backend).
+        // "Ce client uniquement" → on cible le client sélectionné.
+        client_ids: sendMode === 'client' && selectedClient ? [selectedClient.id] : undefined,
       })
       setMessage('')
     } finally {
@@ -146,6 +149,28 @@ export default function MessagesPage() {
           </div>
 
           <div className="mt-4 bg-beige-100 border border-beige-300 rounded-2xl p-4">
+            {/* Destinataire : tout le groupe (défaut) ou un client précis */}
+            <div className="flex items-center gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => setSendMode('group')}
+                className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold border ${
+                  sendMode === 'group' ? 'bg-beige-500 text-white border-beige-500' : 'bg-beige-50 border-beige-300 text-muted'
+                }`}
+              >
+                Tout le groupe ({clients.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSendMode('client')}
+                disabled={!selectedClient}
+                className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold border disabled:opacity-50 ${
+                  sendMode === 'client' ? 'bg-beige-500 text-white border-beige-500' : 'bg-beige-50 border-beige-300 text-muted'
+                }`}
+              >
+                Ce client uniquement
+              </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
               <select
                 value={channel}
@@ -180,7 +205,7 @@ export default function MessagesPage() {
                 className="px-4 py-2 rounded-xl bg-beige-500 text-white text-xs font-semibold hover:bg-beige-400 disabled:opacity-50 flex items-center gap-2"
               >
                 <Send className="w-3.5 h-3.5" strokeWidth={1.5} />
-                Envoyer
+                {sendMode === 'group' ? `Envoyer au groupe (${clients.length})` : 'Envoyer au client'}
               </button>
             </div>
           </div>
