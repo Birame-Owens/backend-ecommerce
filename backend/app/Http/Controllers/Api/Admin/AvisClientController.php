@@ -411,7 +411,7 @@ class AvisClientController extends Controller
             'a_photos' => !empty($photos),
             'nombre_photos' => count($photos),
             'a_reponse' => !empty($avis->reponse_boutique),
-            'created_at' => $avis->created_at->format('d/m/Y H:i'),
+            'created_at' => $avis->created_at?->format('d/m/Y H:i'),
             'client' => $avis->client ? [
                 'id' => $avis->client->id,
                 'nom_complet' => $avis->client->nom . ' ' . $avis->client->prenom,
@@ -445,7 +445,7 @@ class AvisClientController extends Controller
                 'commande' => $avis->commande ? [
                     'id' => $avis->commande->id,
                     'numero_commande' => $avis->commande->numero_commande,
-                    'date_commande' => $avis->commande->created_at->format('d/m/Y')
+                    'date_commande' => $avis->commande->created_at?->format('d/m/Y')
                 ] : null,
                 'client_detaille' => $avis->client ? [
                     'id' => $avis->client->id,
