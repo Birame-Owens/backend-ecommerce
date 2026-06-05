@@ -410,11 +410,14 @@ Route::prefix('client')->group(function () use ($statelessPublic) {
             'success' => true,
             'data' => [
                 'company' => [
-                    'name' => 'NDEYA SHOP',
-                    'whatsapp' => config('app.admin_whatsapp', '+221784661412'),
-                    'instagram' => config('app.instagram_url', 'https://instagram.com/ndeyashop'),
-                    'tiktok' => config('app.tiktok_url', 'https://tiktok.com/@ndeyashop'),
-                    'email' => config('app.contact_email', 'contact@ndeyashop.sn'),
+                    'name' => \App\Models\ShopSetting::getValue('boutique_nom', 'NDEYA SHOP'),
+                    // Numéro WhatsApp géré depuis l'admin (Paramètres → WhatsApp). Si vide,
+                    // on retombe sur le téléphone boutique, puis sur une valeur par défaut.
+                    'whatsapp' => \App\Models\ShopSetting::getValue('social_whatsapp')
+                        ?: (\App\Models\ShopSetting::getValue('boutique_telephone') ?: '+221784661412'),
+                    'instagram' => \App\Models\ShopSetting::getValue('social_instagram') ?: config('app.instagram_url', 'https://instagram.com/ndeyashop'),
+                    'tiktok' => \App\Models\ShopSetting::getValue('social_tiktok') ?: config('app.tiktok_url', 'https://tiktok.com/@ndeyashop'),
+                    'email' => \App\Models\ShopSetting::getValue('boutique_email') ?: config('app.contact_email', 'contact@ndeyashop.sn'),
                     'address' => 'Dakar, Sénégal'
                 ],
                 'currency' => 'F CFA',

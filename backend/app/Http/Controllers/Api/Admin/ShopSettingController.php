@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class ShopSettingController extends Controller
 {
@@ -50,6 +51,14 @@ class ShopSettingController extends Controller
                     continue; // ignorer les clés inconnues
                 }
                 ShopSetting::setValue($key, $value, $group);
+            }
+
+            // Vider le cache des réponses publiques pour que le nouveau numéro
+            // WhatsApp / les coordonnées s'appliquent tout de suite côté client.
+            try {
+                Cache::tags(['api_responses'])->flush();
+            } catch (\Throwable $e) {
+                Log::debug('Flush cache settings ignoré', ['error' => $e->getMessage()]);
             }
 
             Log::info('Paramètres boutique mis à jour', [
