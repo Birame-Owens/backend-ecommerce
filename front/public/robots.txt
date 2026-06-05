@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /ndeya-backoffice
+Disallow: /api
+Disallow: /checkout
+Disallow: /panier
+Disallow: /favoris
+Disallow: /profil
+Disallow: /compte
+
+Sitemap: https://nd-world.site/sitemap.xml
+LLMs: https://nd-world.site/llms.txt
