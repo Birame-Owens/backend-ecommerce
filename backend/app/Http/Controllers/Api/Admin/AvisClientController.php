@@ -412,17 +412,17 @@ class AvisClientController extends Controller
             'nombre_photos' => count($photos),
             'a_reponse' => !empty($avis->reponse_boutique),
             'created_at' => $avis->created_at->format('d/m/Y H:i'),
-            'client' => [
+            'client' => $avis->client ? [
                 'id' => $avis->client->id,
                 'nom_complet' => $avis->client->nom . ' ' . $avis->client->prenom,
                 'type_client' => $avis->client->type_client ?? 'nouveau'
-            ],
-            'produit' => [
+            ] : null,
+            'produit' => $avis->produit ? [
                 'id' => $avis->produit->id,
                 'nom' => $avis->produit->nom,
                 'note_moyenne' => $avis->produit->note_moyenne,
                 'nombre_avis' => $avis->produit->nombre_avis
-            ]
+            ] : null
         ];
 
         if ($detailed) {
@@ -447,7 +447,7 @@ class AvisClientController extends Controller
                     'numero_commande' => $avis->commande->numero_commande,
                     'date_commande' => $avis->commande->created_at->format('d/m/Y')
                 ] : null,
-                'client_detaille' => [
+                'client_detaille' => $avis->client ? [
                     'id' => $avis->client->id,
                     'nom' => $avis->client->nom,
                     'prenom' => $avis->client->prenom,
@@ -458,7 +458,7 @@ class AvisClientController extends Controller
                     'score_fidelite' => $avis->client->score_fidelite ?? 0,
                     'nombre_commandes' => $avis->client->nombre_commandes ?? 0,
                     'total_depense' => $avis->client->total_depense ?? 0
-                ]
+                ] : null
             ]);
         }
 
@@ -468,8 +468,12 @@ class AvisClientController extends Controller
     /**
      * Obtenir le libellé du statut
      */
-    private function getStatutLabel(string $statut): string
+    private function getStatutLabel(?string $statut): string
     {
+        if ($statut === null) {
+            return 'Inconnu';
+        }
+
         $labels = [
             'en_attente' => 'En attente',
             'approuve' => 'Approuvé',
@@ -483,7 +487,7 @@ class AvisClientController extends Controller
     /**
      * Obtenir la couleur du statut
      */
-    private function getStatutColor(string $statut): string
+    private function getStatutColor(?string $statut): string
     {
         $colors = [
             'en_attente' => 'bg-yellow-100 text-yellow-800',

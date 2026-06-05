@@ -205,8 +205,10 @@ class AvisClientService
             $produitId = $avis->produit_id;
             $avis->delete();
 
-            // Mettre à jour les statistiques du produit
-            $this->updateProductStats($produitId);
+            // Mettre à jour les statistiques du produit (si l'avis y est rattaché)
+            if ($produitId) {
+                $this->updateProductStats($produitId);
+            }
 
             Log::info('Avis supprimé', [
                 'avis_id' => $avis->id,
