@@ -188,8 +188,8 @@
                                     <td valign="top" class="columns" width="50%" style="padding-top: 30px;">
                                         <h3 style="margin: 0 0 10px 0; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #888888;">Support</h3>
                                         <p style="margin: 0; font-size: 13px; line-height: 20px; color: #1A1A1A;">
-                                            <a href="mailto:contact@ndeyashop.sn" style="color: #1A1A1A; text-decoration: none; border-bottom: 1px solid #CCCCCC;">contact@ndeyashop.sn</a><br>
-                                            +221 78 466 14 12
+                                            <a href="mailto:contact@nd-world.site" style="color: #1A1A1A; text-decoration: none; border-bottom: 1px solid #CCCCCC;">contact@nd-world.site</a><br>
+                                            +221 76 592 34 02
                                         </p>
                                     </td>
                                 </tr>

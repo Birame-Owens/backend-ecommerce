@@ -144,9 +144,9 @@
                         <td align="center" style="padding: 0 40px 40px 40px;">
                             <p style="font-size: 12px; color: #1A1A1A; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Service Conciergerie</p>
                             <p style="font-size: 12px; color: #666666; margin: 0;">
-                                <a href="mailto:contact@ndeyashop.sn" style="color: #666666; text-decoration: none; border-bottom: 1px solid #CCCCCC;">contact@ndeyashop.sn</a>
+                                <a href="mailto:contact@nd-world.site" style="color: #666666; text-decoration: none; border-bottom: 1px solid #CCCCCC;">contact@nd-world.site</a>
                                 &nbsp;|&nbsp; 
-                                <a href="https://wa.me/221784661412" style="color: #666666; text-decoration: none;">+221 78 466 14 12</a>
+                                <a href="https://wa.me/221765923402" style="color: #666666; text-decoration: none;">+221 76 592 34 02</a>
                             </p>
                         </td>
                     </tr>

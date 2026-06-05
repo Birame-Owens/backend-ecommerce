@@ -65,13 +65,13 @@
                                     <td valign="top" width="50%" style="padding-top: 30px;">
                                         <h3 style="margin: 0 0 10px 0; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #888888;">Service Client</h3>
                                         <p style="margin: 0; font-size: 13px; line-height: 20px; color: #1A1A1A;">
-                                            <a href="mailto:contact@ndeyashop.sn" style="color: #1A1A1A; text-decoration: none; border-bottom: 1px solid #CCCCCC;">contact@ndeyashop.sn</a>
+                                            <a href="mailto:contact@nd-world.site" style="color: #1A1A1A; text-decoration: none; border-bottom: 1px solid #CCCCCC;">contact@nd-world.site</a>
                                         </p>
                                     </td>
                                     <td valign="top" width="50%" style="padding-top: 30px;">
                                         <h3 style="margin: 0 0 10px 0; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #888888;">WhatsApp</h3>
                                         <p style="margin: 0; font-size: 13px; line-height: 20px; color: #1A1A1A;">
-                                            <a href="https://wa.me/221784661412" style="color: #1A1A1A; text-decoration: none; border-bottom: 1px solid #CCCCCC;">+221 78 466 14 12</a>
+                                            <a href="https://wa.me/221765923402" style="color: #1A1A1A; text-decoration: none; border-bottom: 1px solid #CCCCCC;">+221 76 592 34 02</a>
                                         </p>
                                     </td>
                                 </tr>

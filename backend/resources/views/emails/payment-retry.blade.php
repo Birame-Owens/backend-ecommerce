@@ -147,7 +147,7 @@
                                         <h3 style="margin: 0 0 10px 0; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #888888;">Support</h3>
                                         <p style="margin: 0; font-size: 13px; line-height: 20px; color: #1A1A1A;">
                                             <a href="mailto:{{ config('mail.from.address') }}" style="color: #1A1A1A; text-decoration: none; border-bottom: 1px solid #CCCCCC;">{{ config('mail.from.address') }}</a><br>
-                                            +221 78 466 14 12
+                                            +221 76 592 34 02
                                         </p>
                                     </td>
                                 </tr>
