@@ -4,7 +4,9 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ND WORLD</title>
+    <meta name="description" content="ND WORLD est une boutique en ligne au Senegal. Decouvrez montres, chaussures, sacs, accessoires et produits tendance avec livraison a Dakar et partout au Senegal." />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <title>ND WORLD | Boutique en ligne au Senegal</title>
 
     <!-- Open Graph (Facebook, WhatsApp, LinkedIn…) -->
     <meta property="og:type"        content="website" />
@@ -23,12 +25,42 @@
     <meta name="twitter:description" content="Découvrez nos collections de mode tendance. Livraison partout au Sénégal." />
     <meta name="twitter:image"       content="https://nd-world.site/ND-world.jpeg" />
 
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "ND WORLD",
+        "url": "https://nd-world.site/",
+        "description": "Boutique en ligne au Senegal avec livraison a Dakar et partout au pays.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://nd-world.site/recherche?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main>
+        <h1>ND WORLD - Boutique en ligne au Senegal</h1>
+        <p>
+          ND WORLD propose une selection de montres, chaussures, sacs, accessoires et produits tendance avec livraison a Dakar et partout au Senegal.
+        </p>
+        <nav aria-label="Navigation principale">
+          <a href="/categories">Voir les categories</a>
+          <a href="/produits/hermes">Voir les nouveautes</a>
+          <a href="/produits/montre-classe">Voir les produits populaires</a>
+        </nav>
+      </main>
+      <noscript>
+        Activez JavaScript pour utiliser la boutique complete ND WORLD.
+      </noscript>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
