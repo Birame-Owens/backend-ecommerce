@@ -73,6 +73,25 @@ export function WAGlyph({ size = 22, className }: { size?: number; className?: s
   )
 }
 
+export function IGGlyph({ size = 22, className }: { size?: number; className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor"
+      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17" cy="7" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
+export function TikTokGlyph({ size = 22, className }: { size?: number; className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" className={className} aria-hidden="true">
+      <path d="M16.5 3c.35 2.1 1.6 3.65 3.5 3.98v2.62c-1.27 0-2.45-.4-3.5-1.05v6.2a5.7 5.7 0 1 1-5.7-5.7c.3 0 .6.02.9.07v2.73a3 3 0 1 0 2.1 2.86V3h2.7z" />
+    </svg>
+  )
+}
+
 export function Stars({ value, size = 13 }: { value: number; size?: number }) {
   return (
     <span className="inline-flex gap-0.5">

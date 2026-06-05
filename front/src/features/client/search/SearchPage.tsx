@@ -51,7 +51,7 @@ export function SearchPage() {
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Rechercher un produit, wax, bazin…"
+              placeholder="Rechercher un produit…"
               className="w-full h-12 pl-11 pr-4 border border-line-2 rounded-full bg-white text-[14px] text-ink
                 placeholder:text-muted focus:outline-none focus:border-accent transition-colors"
             />

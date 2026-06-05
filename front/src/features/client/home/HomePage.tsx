@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { homeClientApi, type HomeData } from '@/api/client/home'
 import { NProductCard } from '@/components/client/NProductCard'
 import { NImage } from '@/components/client/NImage'
-import { NIcon, WAGlyph, Stars } from '@/components/client/NIcon'
+import { NIcon, WAGlyph, IGGlyph, TikTokGlyph, Stars } from '@/components/client/NIcon'
 import { useShopStore, buildWaUrl } from '@/store/shopStore'
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
@@ -13,16 +13,16 @@ function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 const SLIDES = [
   {
     bg: 'from-[#3D2B1F] to-[#6B4423]',
-    kicker: 'Nouvelle Collection',
-    title: 'Le wax\nde vos\nrêves.',
-    sub: 'Pièces uniques fabriquées à Dakar',
+    kicker: 'Nouveautés',
+    title: 'Tout ce\nqu\'il vous\nfaut.',
+    sub: 'Une large sélection de produits, livrés vite à Dakar',
     cta: 'Découvrir',
   },
   {
     bg: 'from-[#1A2E1A] to-[#2E4A2E]',
-    kicker: 'Cérémonie & Prestige',
-    title: 'Le bazin\nde vos\ngrands jours.',
-    sub: 'Pièces de cérémonie brodées main.',
+    kicker: 'Sélection',
+    title: 'Qualité au\nmeilleur\nprix.',
+    sub: 'Paiement sécurisé et livraison rapide',
     cta: 'Explorer',
   },
 ]
@@ -316,7 +316,7 @@ function TestimonialsSection({ data }: { data: HomeData }) {
 function Footer() {
   const navigate = useNavigate()
   const year = new Date().getFullYear()
-  const waNumber = useShopStore((s) => s.waNumber)
+  const { waNumber, instagram, tiktok, email } = useShopStore()
   function waLink(msg: string) { return buildWaUrl(waNumber, msg) }
   return (
     <footer className="bg-ink text-white mt-10 md:mt-16 pt-12 md:pt-16 pb-6">
@@ -329,7 +329,7 @@ function Footer() {
               <span className="block text-[20px] font-serif font-bold leading-none">WORLD</span>
             </div>
             <p className="text-[13px] text-white/60 leading-relaxed">
-              Votre boutique de mode africaine à Dakar. Wax, bazin et pièces sur-mesure pour toutes vos occasions.
+              Votre boutique en ligne au Sénégal : une large sélection de produits, un paiement sécurisé et une livraison rapide à Dakar et partout au pays.
             </p>
           </div>
 
@@ -352,7 +352,7 @@ function Footer() {
           <div>
             <h3 className="text-[10px] font-semibold tracking-[.18em] uppercase text-camel mb-4">Services</h3>
             <ul className="space-y-2.5">
-              {['Livraison Dakar', 'Paiement sécurisé', 'Sur-mesure', 'Retours & échanges'].map((s) => (
+              {['Livraison rapide', 'Paiement sécurisé', 'Support client', 'Retours & échanges'].map((s) => (
                 <li key={s} className="text-[13px] text-white/65">{s}</li>
               ))}
             </ul>
@@ -370,12 +370,24 @@ function Footer() {
               </li>
               <li className="text-[13px] text-white/65">Dakar, Sénégal</li>
               <li>
-                <a href="mailto:contact@ndeya.sn"
+                <a href={`mailto:${email}`}
                   className="text-[13px] text-white/65 hover:text-white transition-colors">
-                  contact@ndeya.sn
+                  {email}
                 </a>
               </li>
             </ul>
+            {(instagram || tiktok) && (
+              <div className="flex items-center gap-2.5 mt-4">
+                {instagram && (
+                  <a href={instagram} target="_blank" rel="noreferrer" aria-label="Instagram"
+                    className="p-2 rounded-lg bg-white/10 hover:bg-accent transition-colors"><IGGlyph size={16} /></a>
+                )}
+                {tiktok && (
+                  <a href={tiktok} target="_blank" rel="noreferrer" aria-label="TikTok"
+                    className="p-2 rounded-lg bg-white/10 hover:bg-accent transition-colors"><TikTokGlyph size={16} /></a>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
