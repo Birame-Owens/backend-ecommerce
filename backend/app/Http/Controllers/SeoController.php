@@ -142,11 +142,14 @@ class SeoController extends Controller
         ]);
     }
 
-    public function clientApp(Request $request)
+    public function clientApp(Request $request, string $path = '')
     {
-        return view('client.client', [
-            'seo' => $this->seoForPath(trim($request->path(), '/')),
-        ]);
+        // $path vient de la route /seo-render/{path} (proxy bots) ; sinon le chemin courant.
+        $path = $path !== '' ? $path : $request->path();
+
+        return response()
+            ->view('client.client', ['seo' => $this->seoForPath(trim($path, '/'))])
+            ->header('Content-Type', 'text/html; charset=UTF-8');
     }
 
     private function seoForPath(string $path): array
@@ -163,6 +166,8 @@ class SeoController extends Controller
             if ($produit) {
                 $image = $this->productImage($produit);
 
+                $prix = $produit->prix_promo ?: $produit->prix;
+
                 return array_merge($defaults, [
                     'title' => $produit->meta_titre ?: "{$produit->nom} | {$this->shopName()}",
                     'description' => $this->limitDescription($produit->meta_description ?: $produit->description_courte ?: $produit->description),
@@ -171,6 +176,11 @@ class SeoController extends Controller
                     'image' => $image,
                     'type' => 'product',
                     'schema' => $this->productSchema($produit, $image),
+                    'heading' => $produit->nom,
+                    'price' => number_format((float) $prix, 0, ',', ' ') . ' XOF',
+                    'category_name' => $produit->category?->nom,
+                    'body' => $this->limitDescription($produit->description ?: $produit->description_courte) ?: null,
+                    'in_stock' => ($produit->stock_disponible > 0 || !$produit->gestion_stock),
                 ]);
             }
         }
@@ -187,6 +197,8 @@ class SeoController extends Controller
                     'keywords' => "{$category->nom}, {$this->shopName()}, boutique en ligne Senegal, Dakar, achat en ligne",
                     'canonical' => $this->publicUrl("/categories/{$category->slug}"),
                     'image' => $this->absoluteAsset($category->image) ?: $defaults['image'],
+                    'heading' => $category->nom,
+                    'body' => $this->limitDescription($category->description) ?: null,
                 ]);
             }
         }
@@ -215,6 +227,8 @@ class SeoController extends Controller
             'image' => asset('assets/images/ndeya.jpg'),
             'type' => 'website',
             'schema' => $this->organizationSchema(),
+            'heading' => $shopName,
+            'body' => $description,
         ];
     }
 
