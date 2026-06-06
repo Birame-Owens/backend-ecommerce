@@ -11,6 +11,10 @@ COPY . .
 ARG VITE_API_URL=https://api.nd-world.site
 ENV VITE_API_URL=$VITE_API_URL
 
+# DSN Sentry (vide par défaut → monitoring désactivé si non fourni au build)
+ARG VITE_SENTRY_DSN=
+ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
+
 RUN npx vite build
 
 # ─── Stage 2 : Nginx serving static files ────────────────────────────────────
