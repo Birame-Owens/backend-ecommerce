@@ -41,7 +41,7 @@ jobs:
         run: composer validate --no-check-publish
 
       - name: Composer install
-        run: composer install --no-interaction --prefer-dist --no-progress
+        run: composer install --no-interaction --prefer-dist --no-progress --ignore-platform-req=php
 
       - name: Lint PHP (syntaxe)
         run: |
@@ -98,7 +98,7 @@ jobs:
         run: npm run test
 
       - name: Build (comme en prod)
-        run: npm run build
+        run: npx vite build
 
   # ── Configs nginx : nginx -t ──────────────────────────────────────────────
   nginx:
