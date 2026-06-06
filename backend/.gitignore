@@ -43,6 +43,9 @@ yarn-error.log*
 .phpunit.result.cache
 /.phpunit.cache/
 
+# Résultats générés des load-tests (le .js et le README restent suivis)
+/tests/performance/results-summary.json
+
 # Secrets and local debug files
 nexpay_keys.txt
 ngrok_output.txt
