@@ -49,5 +49,6 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Remonter les exceptions non gérées vers Sentry (no-op si DSN absent)
+        \Sentry\Laravel\Integration::handles($exceptions);
     })->create();
