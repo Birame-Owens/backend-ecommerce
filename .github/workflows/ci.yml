@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+
+jobs:
+  # ── Backend Laravel : lint + tests ────────────────────────────────────────
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ndeya_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql, pgsql, redis, gd, zip, bcmath, intl, exif, pcntl
+          coverage: none
+
+      - name: Composer validate
+        run: composer validate --no-check-publish
+
+      - name: Composer install
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Lint PHP (syntaxe)
+        run: |
+          find app routes config database -name "*.php" -print0 \
+            | xargs -0 -n1 -P4 php -l
+
+      - name: Prepare app
+        run: |
+          [ -f .env ] || cp .env.example .env
+          php artisan key:generate
+
+      - name: Migrate + tests
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: ndeya_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: password
+          CACHE_STORE: array
+          QUEUE_CONNECTION: sync
+          SESSION_DRIVER: array
+          MAIL_MAILER: array
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+        run: |
+          php artisan migrate --force
+          php artisan test
+
+  # ── Frontend React/Vite : build + tests ───────────────────────────────────
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: front
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Typecheck (informatif, ne bloque pas)
+        continue-on-error: true
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+      - name: Tests
+        run: npm run test
+
+      - name: Build (comme en prod)
+        run: npm run build
+
+  # ── Configs nginx : nginx -t ──────────────────────────────────────────────
+  nginx:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Valider nginx du front
+        run: |
+          docker run --rm -v "${{ github.workspace }}/front/docker/nginx.conf:/etc/nginx/nginx.conf:ro" \
+            nginx:1.27-alpine nginx -t
+
+      - name: Valider nginx du backend (all-in-one)
+        run: |
+          cid=$(docker run -d nginx:1.27-alpine sleep 60)
+          docker exec "$cid" sh -c 'addgroup -S www-data 2>/dev/null; adduser -S -G www-data www-data 2>/dev/null; printf "map \$http_x_performance_test_token \$rl_key { default \$binary_remote_addr; }\n" > /etc/nginx/perf-token.conf'
+          docker cp backend/docker/nginx.conf "$cid":/etc/nginx/nginx.conf
+          docker exec "$cid" nginx -t
+          docker rm -f "$cid"
