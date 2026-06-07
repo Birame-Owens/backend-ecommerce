@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useShopStore } from '@/store/shopStore'
 
 type SeoType = 'website' | 'product'
 
@@ -80,11 +81,12 @@ export function SeoHead({
   keywords,
   structuredData,
 }: SeoHeadProps) {
+  const shopName = useShopStore((s) => s.shopName)
   const structuredJson = structuredData ? JSON.stringify(structuredData) : ''
   const keywordContent = Array.isArray(keywords) ? keywords.filter(Boolean).join(', ') : keywords ?? undefined
 
   useEffect(() => {
-    const resolvedTitle = title?.trim() || 'ND WORLD | Boutique en ligne au Senegal'
+    const resolvedTitle = title?.trim() || `${shopName} | Boutique en ligne au Senegal`
     const resolvedDescription = description?.trim() || 'Boutique en ligne au Senegal avec livraison rapide a Dakar et partout au pays.'
     const resolvedCanonical = absoluteUrl(canonical) || window.location.href
     const resolvedImage = absoluteUrl(image)
@@ -101,7 +103,7 @@ export function SeoHead({
     setMeta('property', 'og:description', resolvedDescription)
     setMeta('property', 'og:image', resolvedImage)
     setMeta('property', 'og:locale', 'fr_FR')
-    setMeta('property', 'og:site_name', 'ND WORLD')
+    setMeta('property', 'og:site_name', shopName)
 
     setMeta('name', 'twitter:card', resolvedImage ? 'summary_large_image' : 'summary')
     setMeta('name', 'twitter:title', resolvedTitle)
@@ -110,7 +112,7 @@ export function SeoHead({
 
     setCanonical(resolvedCanonical)
     setStructuredData(structuredJson)
-  }, [canonical, description, image, keywordContent, structuredJson, title, type])
+  }, [canonical, description, image, keywordContent, structuredJson, title, type, shopName])
 
   return null
 }

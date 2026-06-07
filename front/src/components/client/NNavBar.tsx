@@ -21,6 +21,8 @@ export function NNavBar() {
   const cnt = cartCount(items)
   const wishCount = useWishlistStore((s) => s.items.length)
   const waNumber = useShopStore((s) => s.waNumber)
+  const shopName = useShopStore((s) => s.shopName)
+  const logo = useShopStore((s) => s.logo)
   const { isAuthenticated, user } = useClientAuthStore()
 
   const isProductDetail = /^\/produits\/.+/.test(pathname)
@@ -120,10 +122,12 @@ export function NNavBar() {
             {/* ── LOGO (hidden on mobile when search open) ── */}
             <button
               onClick={() => navigate('/')}
-              className={`flex-shrink-0 flex flex-col leading-none ${mobileSearchOpen ? 'hidden md:flex' : ''}`}
+              aria-label={shopName}
+              className={`flex-shrink-0 flex items-center leading-none ${mobileSearchOpen ? 'hidden md:flex' : ''}`}
             >
-              <span className="text-[7.5px] font-semibold tracking-[.25em] uppercase text-accent">ND</span>
-              <span className="text-[16px] md:text-[18px] font-serif font-bold text-ink leading-none">WORLD</span>
+              {logo
+                ? <img src={logo} alt={shopName} className="h-9 md:h-10 w-auto object-contain" />
+                : <span className="text-[16px] md:text-[18px] font-serif font-bold text-ink leading-none">{shopName}</span>}
             </button>
 
             {/* ── NAV LINKS (desktop) ── */}
@@ -328,9 +332,10 @@ export function NNavBar() {
           <div className="fixed top-0 left-0 bottom-0 z-50 w-[80%] max-w-[300px] bg-paper shadow-card-lg flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-5 h-14 border-b border-line flex-shrink-0">
-              <div className="flex flex-col leading-none">
-                <span className="text-[7.5px] font-semibold tracking-[.25em] uppercase text-accent">ND</span>
-                <span className="text-[16px] font-serif font-bold text-ink leading-none">WORLD</span>
+              <div className="flex items-center leading-none">
+                {logo
+                  ? <img src={logo} alt={shopName} className="h-9 w-auto object-contain" />
+                  : <span className="text-[16px] font-serif font-bold text-ink leading-none">{shopName}</span>}
               </div>
               <button onClick={() => setMenuOpen(false)}
                 className="w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors text-ink-2">

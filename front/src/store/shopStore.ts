@@ -5,9 +5,12 @@ import clientApi from '@/lib/clientAxios'
 interface ShopState {
   waNumber: string
   shopName: string
+  logo: string | null
   instagram: string
+  facebook: string
   tiktok: string
   email: string
+  address: string
   loaded: boolean
   load: () => Promise<void>
 }
@@ -17,9 +20,12 @@ export const useShopStore = create<ShopState>()(
     (set, get) => ({
       waNumber: '221784661412',
       shopName: 'ND WORLD',
+      logo: null,
       instagram: '',
+      facebook: '',
       tiktok: '',
       email: 'contact@nd-world.site',
+      address: 'Dakar, Sénégal',
       loaded: false,
       load: async () => {
         try {
@@ -29,9 +35,12 @@ export const useShopStore = create<ShopState>()(
             set({
               waNumber: (c.whatsapp ?? '').replace(/\D/g, '') || get().waNumber,
               shopName: c.name ?? get().shopName,
+              logo: c.logo ?? null,
               instagram: c.instagram ?? '',
+              facebook: c.facebook ?? '',
               tiktok: c.tiktok ?? '',
               email: c.email || get().email,
+              address: c.address || get().address,
               loaded: true,
             })
           }
@@ -43,8 +52,9 @@ export const useShopStore = create<ShopState>()(
     {
       name: 'ndw-shop-config',
       partialize: (s) => ({
-        waNumber: s.waNumber, shopName: s.shopName,
-        instagram: s.instagram, tiktok: s.tiktok, email: s.email,
+        waNumber: s.waNumber, shopName: s.shopName, logo: s.logo,
+        instagram: s.instagram, facebook: s.facebook, tiktok: s.tiktok,
+        email: s.email, address: s.address,
       }),
     }
   )

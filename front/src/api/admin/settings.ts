@@ -11,6 +11,16 @@ export const shopSettingsApi = {
       { settings },
     ),
 
+  uploadLogo: (file: File) => {
+    const fd = new FormData()
+    fd.append('logo', file)
+    return api.post<{ success: boolean; message: string; data: { logo: string } }>(
+      '/api/admin/settings/logo',
+      fd,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    )
+  },
+
   changePassword: (payload: {
     current_password: string
     new_password: string

@@ -1,5 +1,6 @@
 export interface AdminShopSettingsGeneral {
   boutique_nom: string
+  boutique_logo: string
   boutique_email: string
   boutique_telephone: string
   boutique_adresse: string
