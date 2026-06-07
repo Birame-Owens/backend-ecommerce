@@ -161,7 +161,7 @@ class SeoController extends Controller
             ->orderByDesc('updated_at');
 
         if ($category) {
-            $query->where('category_id', $category->id);
+            $query->where('categorie_id', $category->id);
         }
 
         return $query->limit($limit)->get()->map(fn (Produit $p) => [
