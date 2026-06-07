@@ -186,9 +186,12 @@ export function ProductDetailPage() {
       return { color: c, idx, img: idx >= 0 ? images[idx] : undefined }
     })
     .filter((t) => t.img !== undefined)
-  // Photos de la couleur active (sinon images sans couleur, sinon toutes).
-  const currentColorImages = (color && imagesByColor[color]?.length)
-    ? imagesByColor[color]
+  // Photos de la couleur active. Pas de fallback "toutes les images" : sinon
+  // à l'ouverture (ou couleur sans image dédiée) on dumpait toutes les couleurs en haut.
+  // Produit sans variante de couleur -> on montre les images sans couleur (galerie simple).
+  const hasColorVariants = (product?.couleurs_disponibles?.length ?? 0) > 0
+  const currentColorImages = hasColorVariants
+    ? (color && imagesByColor[color] ? imagesByColor[color] : [])
     : (imagesByColor['__none__'] ?? images)
   // Bande du haut : les autres photos de la couleur active (hors celle affichée en grand).
   const topThumbs = currentColorImages
