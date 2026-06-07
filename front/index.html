@@ -2,7 +2,8 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/jpeg" href="/ND-world.jpeg" />
+    <link rel="apple-touch-icon" href="/ND-world.jpeg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="ND WORLD est une boutique en ligne au Senegal. Decouvrez montres, chaussures, sacs, accessoires et produits tendance avec livraison a Dakar et partout au Senegal." />
     <meta name="robots" content="index,follow,max-image-preview:large" />
@@ -46,6 +47,12 @@
   </head>
   <body>
     <div id="root">
+      <!-- Splash de chargement : remplacé par React au montage (évite le flash de texte). -->
+      <div id="app-splash" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#ffffff;z-index:9999">
+        <img src="/ND-world.jpeg" alt="ND WORLD" width="140" height="140" style="border-radius:20px;box-shadow:0 8px 30px rgba(0,0,0,.12)" />
+      </div>
+    </div>
+    <noscript>
       <main>
         <h1>ND WORLD - Boutique en ligne au Senegal</h1>
         <p>
@@ -57,10 +64,8 @@
           <a href="/produits/montre-classe">Voir les produits populaires</a>
         </nav>
       </main>
-      <noscript>
-        Activez JavaScript pour utiliser la boutique complete ND WORLD.
-      </noscript>
-    </div>
+      <p>Activez JavaScript pour utiliser la boutique complete ND WORLD.</p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
