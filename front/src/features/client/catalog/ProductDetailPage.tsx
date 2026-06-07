@@ -232,9 +232,13 @@ export function ProductDetailPage() {
     }
     if (maxAddable === 0) { toast('Stock insuffisant pour cette quantité', 'check'); return }
     const qtyToAdd = maxAddable === Infinity ? qty : Math.min(qty, maxAddable)
+    // Image de la couleur choisie (sinon image affichée, sinon image principale)
+    const selectedImg = color ? images.find((im) => im.couleur_associee === color) : undefined
+    const cartImage = selectedImg?.medium ?? selectedImg?.thumbnail
+      ?? activeImage?.medium ?? activeImage?.thumbnail ?? product.image_principale
     addItem({
       id: product.id, nom: product.nom, slug: product.slug,
-      prix: product.prix_affiche, image: product.image_principale,
+      prix: product.prix_affiche, image: cartImage,
       couleur: color, taille: size, type_variante: product.type_variante,
       qty: qtyToAdd, stock_max: variantStockMax,
     })
