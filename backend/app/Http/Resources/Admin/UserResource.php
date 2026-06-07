@@ -66,11 +66,17 @@ class UserResource extends JsonResource
      */
     private function getInitials(): string
     {
-        $words = explode(' ', $this->name);
-        if (count($words) >= 2) {
-            return strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1));
+        // mb_* obligatoire : substr() découpe par octet et casse les caractères
+        // accentués (É, È, à…), produisant de l'UTF-8 invalide -> json_encode échoue.
+        $name = trim((string) $this->name);
+        if ($name === '') {
+            return 'U';
         }
-        return strtoupper(substr($this->name, 0, 2));
+        $words = preg_split('/\s+/', $name);
+        if (count($words) >= 2) {
+            return mb_strtoupper(mb_substr($words[0], 0, 1) . mb_substr($words[1], 0, 1));
+        }
+        return mb_strtoupper(mb_substr($name, 0, 2));
     }
 
     /**
