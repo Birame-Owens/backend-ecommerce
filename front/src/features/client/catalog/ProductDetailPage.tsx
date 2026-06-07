@@ -104,6 +104,9 @@ export function ProductDetailPage() {
       const defaultColor = d.product.couleurs_disponibles?.[0] ?? null
       setColor(defaultColor)
       setSize(firstSize(d.product, defaultColor))
+      const imgs = d.product.images ?? []
+      const firstColorIdx = defaultColor ? imgs.findIndex((im) => im.couleur_associee === defaultColor) : -1
+      setActiveIdx(firstColorIdx >= 0 ? firstColorIdx : 0)
       return d
     }),
     enabled: !!slug,
@@ -168,6 +171,29 @@ export function ProductDetailPage() {
 
   const images = product?.images ?? []
   const activeImage = images[activeIdx]
+
+  // ── Galerie style Shein ──
+  // Images regroupées par couleur (conserve l'ordre).
+  const imagesByColor = images.reduce<Record<string, typeof images>>((acc, img) => {
+    const key = img.couleur_associee ?? '__none__'
+    ;(acc[key] ||= []).push(img)
+    return acc
+  }, {})
+  // Bande du bas : 1 miniature par couleur (la 1ʳᵉ photo de chaque couleur) = sélecteur de coloris.
+  const colorThumbs = (product?.couleurs_disponibles ?? [])
+    .map((c) => {
+      const idx = images.findIndex((im) => im.couleur_associee === c)
+      return { color: c, idx, img: idx >= 0 ? images[idx] : undefined }
+    })
+    .filter((t) => t.img !== undefined)
+  // Photos de la couleur active (sinon images sans couleur, sinon toutes).
+  const currentColorImages = (color && imagesByColor[color]?.length)
+    ? imagesByColor[color]
+    : (imagesByColor['__none__'] ?? images)
+  // Bande du haut : les autres photos de la couleur active (hors celle affichée en grand).
+  const topThumbs = currentColorImages
+    .map((img) => ({ img, idx: images.indexOf(img) }))
+    .filter((t) => t.idx !== activeIdx)
 
   const waUrl = useMemo(() => {
     if (!product) return '#'
@@ -364,6 +390,17 @@ export function ProductDetailPage() {
           MOBILE LAYOUT (< md)
       ════════════════════════════════════ */}
       <div className="md:hidden">
+        {/* Miniatures du haut : autres photos de la couleur active */}
+        {topThumbs.length > 0 && (
+          <div className="flex gap-2 px-4 pt-3 overflow-x-auto scrollbar-hide">
+            {topThumbs.map(({ img, idx }) => (
+              <button key={img.id} onClick={() => setActiveIdx(idx)}
+                className="flex-shrink-0 w-14 h-16 rounded-[10px] overflow-hidden border-2 border-line-2 opacity-80 hover:opacity-100 hover:border-accent transition-all">
+                <NImage src={img.thumbnail ?? img.medium} alt={img.alt_text} className="w-full h-full" />
+              </button>
+            ))}
+          </div>
+        )}
         {/* Image principale — format portrait 3/4 */}
         <div className="relative aspect-[3/4] bg-sand overflow-hidden">
           {activeImage?.medium ?? product.image_principale ? (
@@ -396,22 +433,15 @@ export function ProductDetailPage() {
           )}
         </div>
 
-        {/* Miniatures — scroll horizontal */}
-        {images.length > 1 && (
+        {/* Sélecteur de coloris : 1 miniature par couleur */}
+        {colorThumbs.length > 1 && (
           <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
-            {images.map((img, i) => (
-              <button key={img.id}
-                onClick={() => {
-                  setActiveIdx(i)
-                  if (img.couleur_associee && product.couleurs_disponibles.includes(img.couleur_associee)) {
-                    setColor(img.couleur_associee)
-                    setSize(firstSize(product, img.couleur_associee))
-                    setColorError(false)
-                  }
-                }}
+            {colorThumbs.map(({ color: c, img, idx }) => (
+              <button key={c} title={c}
+                onClick={() => { setActiveIdx(idx); setColor(c); setSize(firstSize(product, c)); setColorError(false) }}
                 className={`flex-shrink-0 w-16 h-20 rounded-[10px] overflow-hidden border-2 transition-all
-                  ${i === activeIdx ? 'border-accent scale-105' : 'border-line-2 opacity-70'}`}>
-                <NImage src={img.thumbnail ?? img.medium} alt={img.alt_text} className="w-full h-full" />
+                  ${color === c ? 'border-accent scale-105' : 'border-line-2 opacity-70 hover:opacity-100'}`}>
+                <NImage src={img!.thumbnail ?? img!.medium} alt={c} className="w-full h-full" />
               </button>
             ))}
           </div>
@@ -579,6 +609,17 @@ export function ProductDetailPage() {
         <div className="grid grid-cols-2 lg:grid-cols-[1fr_480px] gap-10 lg:gap-14">
           {/* ─ Galerie desktop ─ */}
           <section>
+            {/* Miniatures du haut : autres photos de la couleur active */}
+            {topThumbs.length > 0 && (
+              <div className="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
+                {topThumbs.map(({ img, idx }) => (
+                  <button key={img.id} onClick={() => setActiveIdx(idx)}
+                    className="flex-shrink-0 w-[64px] h-[80px] rounded-[10px] overflow-hidden border-2 border-line-2 opacity-70 hover:opacity-100 hover:border-ink transition-all">
+                    <NImage src={img.thumbnail ?? img.medium} alt={img.alt_text} className="w-full h-full" />
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="relative aspect-[4/5] rounded-[18px] overflow-hidden bg-sand border border-line-2">
               {activeImage?.medium ?? product.image_principale ? (
                 <NImage
@@ -607,22 +648,15 @@ export function ProductDetailPage() {
                 </div>
               )}
             </div>
-            {/* Miniatures desktop */}
-            {images.length > 1 && (
+            {/* Sélecteur de coloris : 1 miniature par couleur */}
+            {colorThumbs.length > 1 && (
               <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-hide">
-                {images.map((img, i) => (
-                  <button key={img.id}
-                    onClick={() => {
-                      setActiveIdx(i)
-                      if (img.couleur_associee && product.couleurs_disponibles.includes(img.couleur_associee)) {
-                        setColor(img.couleur_associee)
-                        setSize(firstSize(product, img.couleur_associee))
-                        setColorError(false)
-                      }
-                    }}
+                {colorThumbs.map(({ color: c, img, idx }) => (
+                  <button key={c} title={c}
+                    onClick={() => { setActiveIdx(idx); setColor(c); setSize(firstSize(product, c)); setColorError(false) }}
                     className={`flex-shrink-0 w-[72px] h-[90px] rounded-[10px] overflow-hidden border-2 transition-all
-                      ${i === activeIdx ? 'border-accent' : 'border-line-2 hover:border-ink opacity-70 hover:opacity-100'}`}>
-                    <NImage src={img.thumbnail ?? img.medium} alt={img.alt_text} className="w-full h-full" />
+                      ${color === c ? 'border-accent' : 'border-line-2 hover:border-ink opacity-70 hover:opacity-100'}`}>
+                    <NImage src={img!.thumbnail ?? img!.medium} alt={c} className="w-full h-full" />
                   </button>
                 ))}
               </div>
