@@ -38,6 +38,7 @@ class ShopSetting extends Model
         return [
             'general' => [
                 'boutique_nom'         => 'NDEYA SHOP',
+                'boutique_logo'        => '',
                 'boutique_email'       => config('app.contact_email', 'contact@ndeyashop.sn'),
                 'boutique_telephone'   => config('app.admin_whatsapp', '+221784661412'),
                 'boutique_adresse'     => 'Dakar, Sénégal',

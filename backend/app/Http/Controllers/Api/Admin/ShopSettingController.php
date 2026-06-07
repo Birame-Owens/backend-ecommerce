@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 
 class ShopSettingController extends Controller
 {
@@ -18,9 +19,14 @@ class ShopSettingController extends Controller
     public function index(): JsonResponse
     {
         try {
+            $data = ShopSetting::getAllGrouped();
+            // Exposer le logo en URL complète (stocké en chemin relatif)
+            if (!empty($data['general']['boutique_logo'])) {
+                $data['general']['boutique_logo'] = asset('storage/' . $data['general']['boutique_logo']);
+            }
             return response()->json([
                 'success' => true,
-                'data'    => ShopSetting::getAllGrouped(),
+                'data'    => $data,
             ]);
         } catch (\Exception $e) {
             Log::error('Erreur récupération paramètres boutique', ['error' => $e->getMessage()]);
@@ -46,6 +52,9 @@ class ShopSettingController extends Controller
             ]);
 
             foreach ($validated['settings'] as $key => $value) {
+                if ($key === 'boutique_logo') {
+                    continue; // le logo est géré par uploadLogo() (fichier), pas en texte
+                }
                 $group = ShopSetting::getGroup($key);
                 if ($group === null) {
                     continue; // ignorer les clés inconnues
@@ -83,6 +92,57 @@ class ShopSettingController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la mise à jour des paramètres.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Met à jour le logo de la boutique (upload de fichier).
+     */
+    public function uploadLogo(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'logo' => 'required|image|mimes:jpeg,jpg,png,webp,svg|max:2048',
+            ], [
+                'logo.image' => 'Le fichier doit être une image.',
+                'logo.max'   => 'Le logo ne doit pas dépasser 2 Mo.',
+            ]);
+
+            // Supprimer l'ancien logo s'il existe
+            $old = ShopSetting::getValue('boutique_logo');
+            if ($old && Storage::disk('public')->exists($old)) {
+                Storage::disk('public')->delete($old);
+            }
+
+            $path = $request->file('logo')->store('branding', 'public');
+            ShopSetting::setValue('boutique_logo', $path, 'general');
+
+            try {
+                Cache::tags(['api_responses'])->flush();
+            } catch (\Throwable $e) {
+                Log::debug('Flush cache logo ignoré', ['error' => $e->getMessage()]);
+            }
+
+            Log::info('Logo boutique mis à jour', ['path' => $path, 'user_id' => auth()->id()]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Logo mis à jour avec succès.',
+                'data'    => ['logo' => asset('storage/' . $path)],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Fichier invalide.',
+                'errors'  => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Erreur upload logo boutique', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => "Erreur lors de l'upload du logo.",
             ], 500);
         }
     }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Settings, Store, CreditCard, Bell, Shield, Users, Palette,
   Search, Upload, KeyRound, Save, RefreshCw,
@@ -46,6 +46,11 @@ export default function SettingsPage() {
     boutique_nom: '', boutique_email: '', boutique_telephone: '',
     boutique_adresse: '', boutique_devise: '', boutique_langue: '',
   })
+
+  // Logo de la boutique
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [logoUploading, setLogoUploading] = useState(false)
+  const logoInputRef = useRef<HTMLInputElement>(null)
 
   // Formulaire réseaux sociaux
   const [socialForm, setSocialForm] = useState({
@@ -104,6 +109,7 @@ export default function SettingsPage() {
           boutique_devise:    s.general.boutique_devise,
           boutique_langue:    s.general.boutique_langue,
         })
+        setLogoUrl(s.general.boutique_logo || null)
         setBoutiqueForm({
           boutique_description: s.general.boutique_description,
           boutique_ville:       s.general.boutique_ville,
@@ -138,6 +144,22 @@ export default function SettingsPage() {
       showToast('Erreur lors de la sauvegarde.', 'error')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setLogoUploading(true)
+    try {
+      const res = await shopSettingsApi.uploadLogo(file)
+      setLogoUrl(res.data.data.logo)
+      showToast('Logo mis à jour.')
+    } catch {
+      showToast("Erreur lors de l'envoi du logo (max 2 Mo, image uniquement).", 'error')
+    } finally {
+      setLogoUploading(false)
+      if (logoInputRef.current) logoInputRef.current.value = ''
     }
   }
 
@@ -244,6 +266,27 @@ export default function SettingsPage() {
                   </div>
                   <Settings className="w-4 h-4 text-beige-500" strokeWidth={1.5} />
                 </div>
+
+                {/* Logo de la boutique */}
+                <div className="mb-5">
+                  <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-2">Logo de la boutique</label>
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-xl border border-beige-300 bg-white overflow-hidden flex items-center justify-center flex-shrink-0">
+                      {logoUrl
+                        ? <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                        : <Store className="w-6 h-6 text-beige-400" strokeWidth={1.5} />}
+                    </div>
+                    <div>
+                      <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
+                      <button type="button" onClick={() => logoInputRef.current?.click()} disabled={logoUploading} className={saveBtnCls}>
+                        <Upload className="w-3.5 h-3.5" strokeWidth={1.5} />
+                        {logoUploading ? 'Envoi…' : (logoUrl ? 'Changer le logo' : 'Ajouter un logo')}
+                      </button>
+                      <p className="text-[11px] text-muted mt-1.5">PNG, JPG, WEBP ou SVG — max 2 Mo. S'affiche dans le menu, le pied de page et l'onglet du navigateur.</p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                   {[
                     { key: 'boutique_nom',       label: 'Nom boutique'  },
