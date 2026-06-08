@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { catalogClientApi } from '@/api/client/catalog'
@@ -83,6 +83,13 @@ function SubCatCard({ cat }: { cat: CategoryPreview }) {
 export function CategoriesPage() {
   const navigate = useNavigate()
   const [selectedParent, setSelectedParent] = useState<CategoryPreview | null>(null)
+
+  // Précharge les chunks JS des pages suivantes pour éviter l'écran blanc au clic
+  // (le chunk est téléchargé en arrière-plan pendant que l'utilisateur regarde les catégories).
+  useEffect(() => {
+    import('@/features/client/catalog/CategoryDetailPage')
+    import('@/features/client/catalog/ProductDetailPage')
+  }, [])
 
   const { data: allCats = [], isLoading } = useQuery({
     queryKey: ['client-categories'],
