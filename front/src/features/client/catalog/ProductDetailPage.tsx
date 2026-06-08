@@ -1,5 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { catalogClientApi, type ProductDetail } from '@/api/client/catalog'
 import { reviewsClientApi } from '@/api/client/reviews'
@@ -72,6 +72,13 @@ function ProductReviews({ slug }: { slug: string }) {
 export function ProductDetailPage() {
   const { slug = '' } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  // Retour : revient en arrière s'il y a un historique app, sinon va à l'accueil.
+  // (Cas d'un lien partagé ouvert directement : navigate(-1) ne ferait rien.)
+  const goBack = () => {
+    if (location.key && location.key !== 'default') navigate(-1)
+    else navigate('/')
+  }
   const { has, toggle } = useWishlistStore()
   const addItem = useCartStore((s) => s.addItem)
   const cartItems = useCartStore((s) => s.items)
@@ -257,7 +264,7 @@ export function ProductDetailPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
         <p className="text-[16px] text-muted">Produit introuvable.</p>
-        <button onClick={() => navigate(-1)} className="mt-4 text-[13px] font-semibold text-accent underline">Retour</button>
+        <button onClick={goBack} className="mt-4 text-[13px] font-semibold text-accent underline">Retour</button>
       </div>
     )
   }
@@ -362,7 +369,7 @@ export function ProductDetailPage() {
       {/* ── Mobile header ── */}
       <header className="md:hidden sticky top-0 z-30 bg-paper/95 backdrop-blur-xl border-b border-line">
         <div className="flex items-center h-14 px-4 gap-2">
-          <button onClick={() => navigate(-1)}
+          <button onClick={goBack}
             className="w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors flex-shrink-0">
             <NIcon name="back" size={20} strokeWidth={1.8} />
           </button>
