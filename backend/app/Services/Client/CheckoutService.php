@@ -87,6 +87,18 @@ class CheckoutService
                 unset($clientData['user_id']);
             }
 
+            // Éviter une violation de contrainte unique : si le téléphone ou
+            // l'email saisi appartient déjà à un AUTRE client, on ne l'écrase pas
+            // sur ce client. L'info de livraison reste stockée sur la commande.
+            foreach (['telephone', 'email'] as $uniqueField) {
+                if (!empty($clientData[$uniqueField])
+                    && $clientData[$uniqueField] !== $client->{$uniqueField}
+                    && Client::where($uniqueField, $clientData[$uniqueField])
+                        ->where('id', '!=', $client->id)->exists()) {
+                    unset($clientData[$uniqueField]);
+                }
+            }
+
             $client->update($clientData);
         } else {
             $client = Client::create(array_merge($clientData, [
