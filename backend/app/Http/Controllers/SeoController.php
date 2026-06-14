@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Produit;
+use App\Models\AvisClient;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
@@ -421,6 +422,42 @@ class SeoController extends Controller
                 'ratingValue' => round((float) $produit->note_moyenne, 1),
                 'reviewCount' => (int) $produit->nombre_avis,
             ],
+        ] : []) + (($reviews = $this->productReviews($produit)) ? [
+            'review' => $reviews,
         ] : []);
+    }
+
+    /**
+     * Avis réels (approuvés et visibles) au format schema.org/Review.
+     * Aucune donnée fabriquée : retourne un tableau vide si le produit n'a pas d'avis.
+     */
+    private function productReviews(Produit $produit): array
+    {
+        return AvisClient::where('produit_id', $produit->id)
+            ->where('statut', 'approuve')
+            ->where('est_visible', true)
+            ->where('note_globale', '>', 0)
+            ->with('client:id,prenom')
+            ->orderByDesc('est_mis_en_avant')
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get()
+            ->map(fn (AvisClient $avis) => array_filter([
+                '@type' => 'Review',
+                'reviewRating' => [
+                    '@type' => 'Rating',
+                    'ratingValue' => round((float) $avis->note_globale, 1),
+                    'bestRating' => 5,
+                    'worstRating' => 1,
+                ],
+                'author' => [
+                    '@type' => 'Person',
+                    'name' => $avis->nom_affiche ?: ($avis->client?->prenom ?: 'Client'),
+                ],
+                'datePublished' => $avis->created_at?->toDateString(),
+                'name' => $avis->titre ?: null,
+                'reviewBody' => $avis->commentaire ?: null,
+            ], fn ($value) => $value !== null))
+            ->all();
     }
 }
