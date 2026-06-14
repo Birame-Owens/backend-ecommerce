@@ -7,6 +7,7 @@ namespace App\Services\Client;
 
 use App\Models\Produit;
 use App\Models\Category;
+use App\Models\AvisClient;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use App\Models\ShopSetting;
@@ -380,7 +381,46 @@ class ProductService
             ];
         }
 
+        $reviews = $this->productReviews($product);
+        if (!empty($reviews)) {
+            $schema['review'] = $reviews;
+        }
+
         return $schema;
+    }
+
+    /**
+     * Avis réels (approuvés et visibles) au format schema.org/Review.
+     * Aucune donnée fabriquée : retourne un tableau vide si le produit n'a pas d'avis.
+     */
+    private function productReviews(Produit $product): array
+    {
+        return AvisClient::where('produit_id', $product->id)
+            ->where('statut', 'approuve')
+            ->where('est_visible', true)
+            ->where('note_globale', '>', 0)
+            ->with('client:id,prenom')
+            ->orderByDesc('est_mis_en_avant')
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get()
+            ->map(fn (AvisClient $avis) => array_filter([
+                '@type' => 'Review',
+                'reviewRating' => [
+                    '@type' => 'Rating',
+                    'ratingValue' => round((float) $avis->note_globale, 1),
+                    'bestRating' => 5,
+                    'worstRating' => 1,
+                ],
+                'author' => [
+                    '@type' => 'Person',
+                    'name' => $avis->nom_affiche ?: ($avis->client?->prenom ?: 'Client'),
+                ],
+                'datePublished' => $avis->created_at?->toDateString(),
+                'name' => $avis->titre ?: null,
+                'reviewBody' => $avis->commentaire ?: null,
+            ], fn ($value) => $value !== null))
+            ->all();
     }
 
     private function seoDescription(Produit $product): string
