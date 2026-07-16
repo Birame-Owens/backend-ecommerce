@@ -85,7 +85,11 @@ export const checkoutApi = {
     ),
 
   createOrder: (payload: CreateOrderPayload) =>
-    clientApi.post<{ success: boolean; data: { commande: { numero_commande: string } }; message?: string }>(
+    clientApi.post<{
+      success: boolean
+      data: { commande: { numero_commande: string }; access_token: string }
+      message?: string
+    }>(
       '/api/client/checkout/create-order',
       payload
     ),
@@ -96,9 +100,10 @@ export const checkoutApi = {
       payload
     ),
 
-  getOrder: (orderNumber: string) =>
+  getOrder: (orderNumber: string, accessToken?: string | null) =>
     clientApi.get<{ success: boolean; data: OrderDetail }>(
-      `/api/client/commandes/${orderNumber}`
+      `/api/client/commandes/${orderNumber}`,
+      { params: accessToken ? { t: accessToken } : undefined }
     ),
 
   getOrders: () =>

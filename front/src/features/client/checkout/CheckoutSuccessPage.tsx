@@ -13,6 +13,7 @@ export function CheckoutSuccessPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const orderNumber = params.get('order')
+  const accessToken = params.get('t')
   const [order, setOrder] = useState<OrderDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(false)
@@ -21,13 +22,13 @@ export function CheckoutSuccessPage() {
     if (!orderNumber) { setLoading(false); return }
     setFetchError(false)
     setLoading(true)
-    checkoutApi.getOrder(orderNumber)
+    checkoutApi.getOrder(orderNumber, accessToken)
       .then((res) => { if (res.data.success) setOrder(res.data.data) })
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { fetchOrder() }, [orderNumber])
+  useEffect(() => { fetchOrder() }, [orderNumber, accessToken])
 
   const articles = order?.articles_commandes ?? order?.articles ?? []
   const prenom = order?.client?.prenom ?? ''

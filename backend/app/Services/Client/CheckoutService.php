@@ -353,6 +353,7 @@ class CheckoutService
         return Commande::create([
             'client_id'          => $client->id,
             'numero_commande'    => $this->generateOrderNumber(),
+            'access_token'       => $this->generateAccessToken(),
             'idempotency_key'    => $idempotencyKey,
             'statut'             => 'en_attente',
             'sous_total'         => $totals['subtotal'],
@@ -514,6 +515,17 @@ class CheckoutService
 
         return "{$prefix}-{$date}-{$random}";
     }
+
+    /**
+     * Jeton secret à haute entropie (192 bits) donnant accès au détail d'une
+     * commande sans authentification. Distinct du numero_commande, qui lui
+     * circule en clair (URL de paiement, WhatsApp, email) et n'est donc pas
+     * assez confidentiel pour servir de clé d'accès.
+     */
+    private function generateAccessToken()
+    {
+        return bin2hex(random_bytes(24));
+    }
     /**
      * Initier le paiement via NabooPay.
      */
@@ -614,6 +626,7 @@ class CheckoutService
             'idempotent_replay' => $idempotentReplay,
             'data' => [
                 'commande' => $commande->load(['articles.produit', 'client']),
+                'access_token' => $commande->access_token,
                 'totals' => $totals,
             ]
         ];
