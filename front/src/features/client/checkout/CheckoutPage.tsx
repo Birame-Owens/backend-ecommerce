@@ -197,6 +197,7 @@ export function CheckoutPage() {
       }
 
       const orderNumber = orderRes.data.data.commande.numero_commande
+      const accessToken = orderRes.data.data.access_token
 
       const payRes = await checkoutApi.initiatePayment(orderNumber, {
         provider: payMethod,
@@ -216,7 +217,7 @@ export function CheckoutPage() {
         window.location.href = payRes.data.payment_url
       } else {
         toast('Commande créée !', 'check')
-        navigate(`/checkout/success?order=${orderNumber}`)
+        navigate(`/checkout/success?order=${orderNumber}&t=${accessToken}`)
       }
     } catch (e: unknown) {
       const msg = axios.isAxiosError(e) ? (e.response?.data?.message as string | undefined) : undefined

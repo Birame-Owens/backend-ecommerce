@@ -52,7 +52,7 @@ class NexPayService
                 'numero_commande' => $commande->numero_commande,
                 'provider' => $provider,
             ],
-            'successUrl' => config('services.frontend_url') . "/checkout/success?order={$commande->numero_commande}",
+            'successUrl' => config('services.frontend_url') . "/checkout/success?order={$commande->numero_commande}&t={$commande->access_token}",
             'provider' => $provider === 'orange_money' ? 'om' : 'wave',
         ];
 

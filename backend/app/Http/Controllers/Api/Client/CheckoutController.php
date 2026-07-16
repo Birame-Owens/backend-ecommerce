@@ -23,6 +23,28 @@ class CheckoutController extends Controller
     }
 
     /**
+     * Vérifie que l'appelant a le droit de voir cette commande : soit le
+     * client authentifié qui en est propriétaire, soit le porteur du jeton
+     * secret généré à la création (transmis via ?t=...). Le numero_commande
+     * seul ne suffit pas : il circule en clair (URL de paiement, WhatsApp,
+     * email) et n'est pas assez confidentiel pour servir de clé d'accès.
+     */
+    private function assertOrderAccess(Commande $commande, ?string $token): void
+    {
+        $ownedByAuthClient = auth()->check()
+            && ($client = auth()->user()->client)
+            && $commande->client_id === $client->id;
+
+        $validToken = !blank($token)
+            && !blank($commande->access_token)
+            && hash_equals($commande->access_token, $token);
+
+        if (!$ownedByAuthClient && !$validToken) {
+            abort(404, 'Commande non trouvée');
+        }
+    }
+
+    /**
      * Créer une commande (guest ou authentifié)
      */
     public function createOrder(Request $request)
@@ -131,10 +153,12 @@ class CheckoutController extends Controller
             $commande = Commande::where('numero_commande', $orderNumber)
                 ->with([
                     'articles_commandes.produit.images_produits',
-                    'client',
+                    'client:id,prenom,nom',
                     'paiements'
                 ])
                 ->firstOrFail();
+
+            $this->assertOrderAccess($commande, $request->query('t'));
 
             // Formatter les articles pour le frontend
             $commande->articles = $commande->articles_commandes->map(function ($article) {
@@ -187,11 +211,8 @@ class CheckoutController extends Controller
                 ], 400);
             }
 
-            $query = Commande::where('numero_commande', $orderNumber);
-            if (auth()->check() && ($client = auth()->user()->client)) {
-                $query->where('client_id', $client->id);
-            }
-            $commande = $query->firstOrFail();
+            $commande = Commande::where('numero_commande', $orderNumber)->firstOrFail();
+            $this->assertOrderAccess($commande, $request->query('t'));
 
             return response()->json([
                 'success' => true,
@@ -282,20 +303,18 @@ class CheckoutController extends Controller
     /**
      * Récupérer une commande par son numéro (pour page success)
      */
-    public function getOrderByNumber($orderNumber)
+    public function getOrderByNumber(Request $request, $orderNumber)
     {
         try {
             $this->syncNabooPayStatus($orderNumber);
 
             \Log::info('🔍 getOrderByNumber appelé', ['numero_commande' => $orderNumber]);
 
-            $query = Commande::where('numero_commande', $orderNumber);
-            if (auth()->check() && ($client = auth()->user()->client)) {
-                $query->where('client_id', $client->id);
-            }
-            $commande = $query
-                ->with(['articles.produit.images_produits', 'client', 'paiements'])
+            $commande = Commande::where('numero_commande', $orderNumber)
+                ->with(['articles.produit.images_produits', 'client:id,prenom,nom', 'paiements'])
                 ->firstOrFail();
+
+            $this->assertOrderAccess($commande, $request->query('t'));
 
             \Log::info('✅ Commande trouvée', [
                 'id' => $commande->id,

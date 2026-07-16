@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * 
  * @property int $id
  * @property string $numero_commande
+ * @property string|null $access_token
  * @property int $client_id
  * @property float $sous_total
  * @property float $frais_livraison
@@ -81,8 +82,13 @@ class Commande extends Model
 		'note_satisfaction' => 'int'
 	];
 
+	protected $hidden = [
+		'access_token',
+	];
+
 	protected $fillable = [
 		'numero_commande',
+		'access_token',
 		'idempotency_key',
 		'client_id',
 		'sous_total',

@@ -391,12 +391,15 @@ Route::prefix('client')->group(function () use ($statelessPublic) {
     Route::prefix('checkout')->group(function () {
         Route::post('/create-order', [\App\Http\Controllers\Api\Client\CheckoutController::class, 'createOrder']);
         Route::post('/payment/{orderNumber}', [\App\Http\Controllers\Api\Client\CheckoutController::class, 'initiatePayment']);
-        Route::get('/success', [\App\Http\Controllers\Api\Client\CheckoutController::class, 'success']);
-        Route::get('/cancel', [\App\Http\Controllers\Api\Client\CheckoutController::class, 'cancel']);
+        Route::get('/success', [\App\Http\Controllers\Api\Client\CheckoutController::class, 'success'])
+            ->middleware('throttle.api:30,1');
+        Route::get('/cancel', [\App\Http\Controllers\Api\Client\CheckoutController::class, 'cancel'])
+            ->middleware('throttle.api:30,1');
     });
-    
-    // Route publique pour récupérer détails commande après paiement
-    Route::get('/commandes/{orderNumber}', [\App\Http\Controllers\Api\Client\CheckoutController::class, 'getOrderByNumber']);
+
+    // Route publique pour récupérer détails commande après paiement (protégée par ?t= access_token, voir CheckoutController::assertOrderAccess)
+    Route::get('/commandes/{orderNumber}', [\App\Http\Controllers\Api\Client\CheckoutController::class, 'getOrderByNumber'])
+        ->middleware('throttle.api:30,1');
     // =================== NABOOPAY ===================
     Route::prefix('naboopay')->group(function () {
         Route::get('/status/{orderId}', [\App\Http\Controllers\Api\Client\NabooPayController::class, 'status'])
