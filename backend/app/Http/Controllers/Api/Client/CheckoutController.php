@@ -126,10 +126,12 @@ class CheckoutController extends Controller
             return response()->json($result);
 
         } catch (Exception $e) {
+            $isStockError = str_contains($e->getMessage(), 'Stock') || str_contains($e->getMessage(), 'stock');
+
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()
-            ], 500);
+            ], $isStockError ? 400 : 500);
         }
     }
 

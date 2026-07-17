@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('model:prune', ['--model' => 'App\\Models\\AdminAuditLog'])->daily();
+Schedule::command('commandes:liberer-stock-expire')->everyFiveMinutes()->withoutOverlapping();
