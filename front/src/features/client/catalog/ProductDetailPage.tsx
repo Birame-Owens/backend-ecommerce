@@ -575,7 +575,7 @@ export function ProductDetailPage() {
           {/* CTAs */}
           <div className="flex flex-col gap-3">
             <button onClick={handleAddToCart} disabled={maxAddable === 0}
-              className={`flex items-center justify-center gap-2.5 h-[52px] rounded-[12px] text-white text-[14px] font-bold tracking-wide transition-colors disabled:cursor-not-allowed
+              className={`flex items-center justify-center gap-2.5 h-[52px] rounded-[12px] text-white text-[14px] font-bold tracking-wide transition disabled:cursor-not-allowed active:scale-[0.97]
                 ${maxAddable === 0 && cartQtyForVariant === 0 ? 'bg-red-400' : 'bg-accent hover:bg-accent-dark disabled:opacity-50'}`}>
               <NIcon name="bag" size={18} strokeWidth={1.8} />
               {maxAddable === 0 ? (cartQtyForVariant > 0 ? 'Déjà en panier' : 'Rupture de stock') : 'Ajouter au panier'}
@@ -826,7 +826,7 @@ export function ProductDetailPage() {
             {/* CTAs */}
             <div className="flex flex-col gap-3 pt-1">
               <button onClick={handleAddToCart} disabled={maxAddable === 0}
-                className={`flex items-center justify-center gap-2.5 h-12 rounded-[10px] text-white text-[13px] font-semibold tracking-wide transition-colors disabled:cursor-not-allowed
+                className={`flex items-center justify-center gap-2.5 h-12 rounded-[10px] text-white text-[13px] font-semibold tracking-wide transition disabled:cursor-not-allowed active:scale-[0.97]
                   ${maxAddable === 0 && cartQtyForVariant === 0 ? 'bg-red-400' : 'bg-accent hover:bg-accent-dark disabled:opacity-50'}`}>
                 <NIcon name="bag" size={18} strokeWidth={1.8} />
                 {maxAddable === 0 ? (cartQtyForVariant > 0 ? 'Déjà en panier' : 'Rupture de stock') : 'Ajouter au panier'}

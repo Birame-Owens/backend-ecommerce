@@ -404,7 +404,7 @@ export function CheckoutPage() {
             <button type="submit" disabled={processing}
               className="w-full flex items-center justify-center gap-2.5 h-14 rounded-[12px]
                 bg-accent text-white text-[14px] font-bold tracking-wide
-                hover:bg-accent-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                hover:bg-accent-dark transition disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98]">
               {processing ? (
                 <>
                   <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />

@@ -40,7 +40,7 @@ export function NImage({
     <div className={cn('relative overflow-hidden bg-sand', className)}>
       {/* Skeleton shimmer visible tant que l'image n'est pas chargée */}
       {!loaded && !error && (
-        <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-sand via-line to-sand bg-[length:200%_100%]" />
+        <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-sand via-line to-sand bg-[length:200%_100%]" />
       )}
 
       {!error ? (

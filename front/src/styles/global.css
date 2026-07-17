@@ -37,9 +37,15 @@
   to   { opacity: 1; }
 }
 
+@keyframes shimmerSweep {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
 .animate-toastin { animation: toastin .3s cubic-bezier(.22,.61,.36,1); }
 .animate-slideup { animation: slideUp .36s cubic-bezier(.22,.61,.36,1); }
 .animate-fadein  { animation: fadeIn .3s ease; }
+.animate-shimmer { animation: shimmerSweep 1.6s ease-in-out infinite; }
 
 /* Prevent iOS auto-zoom on form inputs (zoom triggers when font-size < 16px) */
 @media (hover: none) and (pointer: coarse) {

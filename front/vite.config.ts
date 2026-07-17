@@ -21,6 +21,9 @@ export default defineConfig({
           'vendor-ui': ['recharts', 'lucide-react'],
           // Forms
           'vendor-forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
+          // Animations — isolé pour ne pas re-forcer son téléchargement à
+          // chaque déploiement de code applicatif (cache navigateur stable).
+          'vendor-motion': ['framer-motion'],
         },
       },
     },
