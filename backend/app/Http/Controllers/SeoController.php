@@ -200,7 +200,7 @@ class SeoController extends Controller
                     'price' => number_format((float) $prix, 0, ',', ' ') . ' XOF',
                     'category_name' => $produit->category?->nom,
                     'body' => $this->limitDescription($produit->description ?: $produit->description_courte) ?: null,
-                    'in_stock' => ($produit->stock_disponible > 0 || !$produit->gestion_stock),
+                    'in_stock' => ($produit->fait_sur_mesure || $produit->stock_disponible > 0 || !$produit->gestion_stock),
                 ]);
             }
         }
@@ -412,9 +412,11 @@ class SeoController extends Controller
                 'priceCurrency' => 'XOF',
                 'price' => (string) round((float) $price),
                 'itemCondition' => 'https://schema.org/NewCondition',
-                'availability' => $produit->stock_disponible > 0 || !$produit->gestion_stock
-                    ? 'https://schema.org/InStock'
-                    : 'https://schema.org/OutOfStock',
+                'availability' => $produit->fait_sur_mesure
+                    ? 'https://schema.org/MadeToOrder'
+                    : (($produit->stock_disponible > 0 || !$produit->gestion_stock)
+                        ? 'https://schema.org/InStock'
+                        : 'https://schema.org/OutOfStock'),
             ],
         ] + ($produit->note_moyenne > 0 && $produit->nombre_avis > 0 ? [
             'aggregateRating' => [

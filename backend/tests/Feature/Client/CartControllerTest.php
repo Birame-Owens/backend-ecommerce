@@ -78,6 +78,34 @@ class CartControllerTest extends TestCase
                  ->assertJsonPath('success', true);
     }
 
+    public function test_add_succeeds_for_made_to_order_product_with_zero_stock(): void
+    {
+        $produit = Produit::create([
+            'nom'              => 'Robe Sur Mesure',
+            'slug'             => 'robe-sur-mesure-cart',
+            'description'      => 'Fabriquée à la demande.',
+            'image_principale' => 'produits/default-product.jpg',
+            'prix'             => 30000,
+            'categorie_id'     => $this->produit->categorie_id,
+            'stock_disponible' => 0,
+            'seuil_alerte'     => 2,
+            'gestion_stock'    => true,
+            'fait_sur_mesure'  => true,
+            'delai_production_jours' => 5,
+            'est_visible'      => true,
+            'est_populaire'    => false,
+            'est_nouveaute'    => false,
+        ]);
+
+        $response = $this->postJson('/api/client/cart/add', [
+            'product_id' => $produit->id,
+            'quantity'   => 1,
+        ]);
+
+        $response->assertStatus(200)
+                 ->assertJsonPath('success', true);
+    }
+
     public function test_add_increases_cart_count(): void
     {
         $user = User::factory()->create(['role' => 'client', 'statut' => 'actif']);

@@ -213,7 +213,7 @@ class CartService
                     'image' => $imageData['image'],
                     'image_principale' => $imageData['image_principale'],
                     'images' => $imageData['images'],
-                    'en_stock' => !$product->gestion_stock || $this->resolveStockTotal($product) > 0
+                    'en_stock' => !$product->gestion_stock || $product->fait_sur_mesure || $this->resolveStockTotal($product) > 0
                 ],
                 'quantite' => $cartItem->quantite,
                 'prix_unitaire' => $prixUnitaire,
@@ -273,7 +273,7 @@ class CartService
             return ['success' => false, 'message' => 'Produit non trouvé'];
         }
 
-        if ($product->gestion_stock) {
+        if ($product->gestion_stock && !$product->fait_sur_mesure) {
             $couleur = $options['couleur'] ?? null;
             $taille = $options['taille'] ?? null;
 

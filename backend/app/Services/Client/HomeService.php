@@ -492,8 +492,8 @@ class HomeService
             'url'              => '/produits/' . $produit->slug,
             'est_nouveaute'    => $produit->est_nouveaute,
             'est_populaire'    => $produit->est_populaire,
-            'stock_quantite'   => $produit->gestion_stock ? $this->resolveStockTotal($produit) : 999,
-            'en_stock'         => !$produit->gestion_stock || $this->resolveStockTotal($produit) > 0,
+            'stock_quantite'   => ($produit->gestion_stock && !$produit->fait_sur_mesure) ? $this->resolveStockTotal($produit) : 999,
+            'en_stock'         => !$produit->gestion_stock || $produit->fait_sur_mesure || $this->resolveStockTotal($produit) > 0,
             'type_variante'    => $produit->type_variante ?? 'vetement',
         ];
 
@@ -507,7 +507,7 @@ class HomeService
                 'note_moyenne'        => $produit->note_moyenne ?? 0,
                 'nombre_avis'         => $produit->nombre_avis ?? 0,
                 'fait_sur_mesure'     => $produit->fait_sur_mesure,
-                'stock_disponible'    => $produit->gestion_stock ? $this->resolveStockTotal($produit) : null,
+                'stock_disponible'    => ($produit->gestion_stock && !$produit->fait_sur_mesure) ? $this->resolveStockTotal($produit) : null,
                 'stock_status'        => $this->getProductStockStatus($produit),
                 'tailles_disponibles' => $produit->tailles_disponibles
                     ? json_decode($produit->tailles_disponibles, true) : [],
@@ -531,6 +531,9 @@ class HomeService
      */
     private function getProductStockStatus($produit): array
     {
+        if ($produit->fait_sur_mesure) {
+            return ['status' => 'made_to_order', 'label' => 'Fait sur commande', 'color' => 'blue'];
+        }
         if (!$produit->gestion_stock) {
             return ['status' => 'unlimited', 'label' => 'Non limité', 'color' => 'blue'];
         }

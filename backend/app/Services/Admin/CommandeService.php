@@ -400,7 +400,7 @@ class CommandeService
         foreach ($commande->articles_commandes as $article) {
             $produit = $article->produit;
 
-            if ($produit && $produit->gestion_stock) {
+            if ($produit && $produit->gestion_stock && !$produit->fait_sur_mesure) {
                 $stockDisponible = $produit->stock_disponible;
                 $couleur = trim((string) ($article->couleur_choisie ?? ''));
                 $taille = trim((string) ($article->taille_choisie ?? ''));
@@ -447,6 +447,9 @@ class CommandeService
                 }
 
                 $produit->decrement('stock_disponible', $article->quantite);
+            }
+
+            if ($produit) {
                 $produit->increment('nombre_ventes', $article->quantite);
             }
         }
@@ -639,7 +642,7 @@ class CommandeService
     {
         foreach ($articles as $article) {
             $produit = Produit::find($article['produit_id']);
-            if ($produit && $produit->gestion_stock) {
+            if ($produit && $produit->gestion_stock && !$produit->fait_sur_mesure) {
                 $produit->decrement('stock_disponible', $article['quantite']);
             }
         }
@@ -651,7 +654,7 @@ class CommandeService
     private function restoreStock($articlesCommande): void
     {
         foreach ($articlesCommande as $article) {
-            if ($article->produit && $article->produit->gestion_stock) {
+            if ($article->produit && $article->produit->gestion_stock && !$article->produit->fait_sur_mesure) {
                 $article->produit->increment('stock_disponible', $article->quantite);
             }
         }
