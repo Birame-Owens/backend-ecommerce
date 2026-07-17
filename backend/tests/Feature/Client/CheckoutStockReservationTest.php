@@ -178,4 +178,57 @@ class CheckoutStockReservationTest extends TestCase
         $this->expectExceptionMessage('Stock indisponible');
         app(CheckoutService::class)->initiatePayment($commandeA->fresh(), 'wave', ['phone' => '771234567']);
     }
+
+    private function makeMadeToOrderProduit(): Produit
+    {
+        $category = Category::create([
+            'nom' => 'Sur-mesure',
+            'slug' => 'sur-mesure-' . uniqid(),
+            'est_active' => true,
+            'est_populaire' => false,
+            'ordre_affichage' => 1,
+        ]);
+
+        return Produit::create([
+            'nom' => 'Robe Sur Mesure',
+            'slug' => 'robe-sur-mesure-' . uniqid(),
+            'description' => 'Fabriquée à la demande.',
+            'image_principale' => 'produits/default-product.jpg',
+            'prix' => 45000,
+            'categorie_id' => $category->id,
+            'stock_disponible' => 0,
+            'seuil_alerte' => 1,
+            'gestion_stock' => true,
+            'fait_sur_mesure' => true,
+            'delai_production_jours' => 10,
+            'est_visible' => true,
+            'est_populaire' => false,
+            'est_nouveaute' => false,
+        ]);
+    }
+
+    public function test_made_to_order_product_can_be_ordered_with_zero_stock(): void
+    {
+        $produit = $this->makeMadeToOrderProduit();
+
+        $result = app(CheckoutService::class)->createOrder($this->orderPayload($produit, 1));
+
+        $this->assertTrue($result['success']);
+        // Le stock ne bouge pas : le produit est fabriqué à la demande, jamais suivi.
+        $this->assertSame(0, $produit->fresh()->stock_disponible);
+    }
+
+    public function test_made_to_order_product_stock_untouched_by_release_command(): void
+    {
+        $produit = $this->makeMadeToOrderProduit();
+        app(CheckoutService::class)->createOrder($this->orderPayload($produit, 1));
+
+        Commande::query()->update(['stock_decremented_at' => now()->subMinutes(20)]);
+
+        $this->artisan(ReleaseExpiredOrderStock::class, ['--minutes' => 15])
+            ->assertExitCode(0);
+
+        // Rien à restituer : le stock n'a jamais été décrémenté pour ce produit.
+        $this->assertSame(0, $produit->fresh()->stock_disponible);
+    }
 }

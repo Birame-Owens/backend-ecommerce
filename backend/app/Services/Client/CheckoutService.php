@@ -373,7 +373,9 @@ class CheckoutService
     {
         $produit = Produit::where('id', $produit->id)->lockForUpdate()->first();
 
-        if (!$produit || !$produit->gestion_stock) {
+        // Fait sur mesure = fabriqué à la demande, jamais de suivi de stock,
+        // quel que soit le réglage gestion_stock.
+        if (!$produit || !$produit->gestion_stock || $produit->fait_sur_mesure) {
             return;
         }
 
@@ -407,7 +409,7 @@ class CheckoutService
     {
         $produit = Produit::where('id', $produit->id)->lockForUpdate()->first();
 
-        if (!$produit || !$produit->gestion_stock) {
+        if (!$produit || !$produit->gestion_stock || $produit->fait_sur_mesure) {
             return;
         }
 
