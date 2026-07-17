@@ -108,6 +108,15 @@ function CartItemRow({ item, onRemoveRequest }: {
           )
         })()}
 
+        {/* Fait sur mesure : rappel du délai */}
+        {item.sur_mesure && (
+          <p className="text-[10.5px] text-accent-dark mt-1.5">
+            Fait sur mesure — {item.delai_production_jours
+              ? `délai de production : ${item.delai_production_jours} jour${item.delai_production_jours > 1 ? 's' : ''}`
+              : 'fabriqué après votre commande'}
+          </p>
+        )}
+
         <div className="flex-1" />
 
         {/* Price + qty */}

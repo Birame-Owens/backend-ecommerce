@@ -295,12 +295,14 @@ class ProductService
         'tailles_disponibles' => $product->tailles_disponibles
             ? json_decode($product->tailles_disponibles, true)
             : ($product->couleur_tailles ? array_unique(array_merge(...array_values(json_decode($product->couleur_tailles, true) ?? [[]]))) : []),
-        'couleur_tailles_stock' => $product->couleur_tailles_stock ?
+        'couleur_tailles_stock' => (!$product->fait_sur_mesure && $product->couleur_tailles_stock) ?
             json_decode($product->couleur_tailles_stock, true) : null,
         'couleur_tailles_seuil' => $product->couleur_tailles_seuil ?
             json_decode($product->couleur_tailles_seuil, true) : null,
-        'stock_disponible' => $product->gestion_stock ? $this->resolveStockTotal($product) : null,
-        'en_stock' => !$product->gestion_stock || $this->resolveStockTotal($product) > 0,
+        // Un produit fait sur mesure n'est jamais suivi en stock : il est fabriqué
+        // à la demande, quel que soit le réglage gestion_stock.
+        'stock_disponible' => ($product->gestion_stock && !$product->fait_sur_mesure) ? $this->resolveStockTotal($product) : null,
+        'en_stock' => !$product->gestion_stock || $product->fait_sur_mesure || $this->resolveStockTotal($product) > 0,
         'stock_status' => $this->getStockStatus($product),
         'fait_sur_mesure' => $product->fait_sur_mesure,
         'delai_production_jours' => $product->delai_production_jours,
@@ -465,6 +467,9 @@ class ProductService
 
     private function getStockStatus($product): ?array
     {
+        if ($product->fait_sur_mesure) {
+            return ['status' => 'made_to_order', 'label' => 'Fait sur commande', 'color' => 'blue'];
+        }
         if (!$product->gestion_stock) {
             return ['status' => 'unlimited', 'label' => 'Non limité', 'color' => 'blue'];
         }
@@ -525,8 +530,10 @@ class ProductService
         'est_nouveaute' => $product->est_nouveaute,
         'est_populaire' => $product->est_populaire,
         'type_variante' => $product->type_variante ?? 'vetement',
-        'stock_disponible' => $product->gestion_stock ? $this->resolveStockTotal($product) : null,
+        'stock_disponible' => ($product->gestion_stock && !$product->fait_sur_mesure) ? $this->resolveStockTotal($product) : null,
         'stock_status' => $this->getStockStatus($product),
+        'fait_sur_mesure' => $product->fait_sur_mesure,
+        'delai_production_jours' => $product->delai_production_jours,
         'url' => "/produits/{$product->slug}",
         'badge' => $this->getProductBadge($product)
     ];

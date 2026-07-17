@@ -32,6 +32,8 @@ export interface ProductClient {
   note_moyenne: number | null
   nombre_avis: number
   type_variante?: 'vetement' | 'chaussure' | 'parfum' | 'aucun'
+  fait_sur_mesure?: boolean
+  delai_production_jours?: number | null
 }
 
 export interface ShopStats {

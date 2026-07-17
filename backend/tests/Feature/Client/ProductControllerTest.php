@@ -137,6 +137,27 @@ class ProductControllerTest extends TestCase
              ->assertJsonPath('success', false);
     }
 
+    public function test_show_reports_made_to_order_product_as_always_in_stock(): void
+    {
+        $this->makeProduit([
+            'nom' => 'Robe Sur Mesure',
+            'slug' => 'robe-sur-mesure',
+            'stock_disponible' => 0,
+            'gestion_stock' => true,
+            'fait_sur_mesure' => true,
+            'delai_production_jours' => 10,
+        ]);
+
+        $response = $this->getJson('/api/client/products/robe-sur-mesure');
+
+        $response->assertStatus(200)
+                 ->assertJsonPath('data.en_stock', true)
+                 ->assertJsonPath('data.stock_disponible', null)
+                 ->assertJsonPath('data.stock_status.status', 'made_to_order')
+                 ->assertJsonPath('data.fait_sur_mesure', true)
+                 ->assertJsonPath('data.delai_production_jours', 10);
+    }
+
     public function test_show_returns_404_for_invisible_product(): void
     {
         $this->makeProduit(['nom' => 'Masqué', 'slug' => 'masque', 'est_visible' => false]);

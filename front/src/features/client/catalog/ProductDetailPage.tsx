@@ -261,6 +261,8 @@ export function ProductDetailPage() {
       prix: product.prix_affiche, image: cartImage,
       couleur: color, taille: size, type_variante: product.type_variante,
       qty: qtyToAdd, stock_max: variantStockMax,
+      sur_mesure: product.fait_sur_mesure,
+      delai_production_jours: product.delai_production_jours,
     })
     toast(qtyToAdd < qty ? `Ajouté (${qtyToAdd} dispo)` : 'Ajouté au panier', 'check')
   }
@@ -517,6 +519,21 @@ export function ProductDetailPage() {
             </div>
           )}
 
+          {/* Fait sur mesure : délai de production */}
+          {product.fait_sur_mesure && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-[12px] bg-accent-light border border-accent/20">
+              <NIcon name="settings" size={18} strokeWidth={1.5} className="text-accent flex-shrink-0" />
+              <div>
+                <p className="text-[13px] font-bold text-ink">Fait sur mesure</p>
+                <p className="text-[11px] text-muted mt-0.5">
+                  {product.delai_production_jours
+                    ? `Fabriqué spécialement pour vous — délai de production : ${product.delai_production_jours} jour${product.delai_production_jours > 1 ? 's' : ''}.`
+                    : 'Fabriqué spécialement pour vous après votre commande.'}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Séparateur */}
           <div className="border-t border-line" />
 
@@ -747,6 +764,21 @@ export function ProductDetailPage() {
                 <div>
                   <p className="text-[13px] font-bold text-red-600">Rupture de stock</p>
                   <p className="text-[11px] text-red-400 mt-0.5">Ce produit est actuellement indisponible.</p>
+                </div>
+              </div>
+            )}
+
+            {/* Fait sur mesure : délai de production */}
+            {product.fait_sur_mesure && (
+              <div className="flex items-center gap-3 px-4 py-3 rounded-[10px] bg-accent-light border border-accent/20">
+                <NIcon name="settings" size={18} strokeWidth={1.5} className="text-accent flex-shrink-0" />
+                <div>
+                  <p className="text-[13px] font-bold text-ink">Fait sur mesure</p>
+                  <p className="text-[11px] text-muted mt-0.5">
+                    {product.delai_production_jours
+                      ? `Fabriqué spécialement pour vous — délai de production : ${product.delai_production_jours} jour${product.delai_production_jours > 1 ? 's' : ''}.`
+                      : 'Fabriqué spécialement pour vous après votre commande.'}
+                  </p>
                 </div>
               </div>
             )}

@@ -17,6 +17,7 @@ export interface CartItem {
   qty: number
   stock_max?: number | null
   sur_mesure?: boolean
+  delai_production_jours?: number | null
 }
 
 export interface CartCoupon {
