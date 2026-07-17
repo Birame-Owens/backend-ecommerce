@@ -305,7 +305,7 @@ class WishlistService
             'image' => $product->image,
             'image_principale' => $product->image,
             'category' => $product->category ? $product->category->nom : '',
-            'en_stock' => !$product->gestion_stock || $this->resolveStockTotal($product) > 0,
+            'en_stock' => !$product->gestion_stock || $product->fait_sur_mesure || $this->resolveStockTotal($product) > 0,
             'note_moyenne' => $product->note_moyenne,
             'url' => "/produits/{$product->slug}",
         ];

@@ -347,7 +347,7 @@ class CommandeRequest extends FormRequest
                     // Vérifier le stock disponible
                     if (isset($article['produit_id']) && isset($article['quantite'])) {
                         $produit = \App\Models\Produit::find($article['produit_id']);
-                        if ($produit && $produit->gestion_stock) {
+                        if ($produit && $produit->gestion_stock && !$produit->fait_sur_mesure) {
                             $stockDisponible = $produit->stock_disponible;
                             $couleur = $article['couleur'] ?? null;
                             $taille = $article['taille'] ?? null;
