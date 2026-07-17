@@ -2,6 +2,27 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { NIcon } from '@/components/client/NIcon'
 import { checkoutApi, type OrderDetail } from '@/api/client/checkout'
+import { trackPurchase } from '@/lib/analytics'
+
+const TRACKED_ORDERS_KEY = 'ndeya-ga-tracked-orders'
+
+function alreadyTracked(orderNumber: string): boolean {
+  try {
+    const list = JSON.parse(sessionStorage.getItem(TRACKED_ORDERS_KEY) ?? '[]') as string[]
+    return list.includes(orderNumber)
+  } catch {
+    return false
+  }
+}
+
+function markTracked(orderNumber: string): void {
+  try {
+    const list = JSON.parse(sessionStorage.getItem(TRACKED_ORDERS_KEY) ?? '[]') as string[]
+    sessionStorage.setItem(TRACKED_ORDERS_KEY, JSON.stringify([...list, orderNumber].slice(-20)))
+  } catch {
+    // sessionStorage indisponible (navigation privée stricte) : tant pis, pas bloquant
+  }
+}
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
@@ -34,6 +55,18 @@ export function CheckoutSuccessPage() {
   const prenom = order?.client?.prenom ?? ''
   const nom = order?.client?.nom ?? ''
   const clientName = [prenom, nom].filter(Boolean).join(' ')
+
+  useEffect(() => {
+    if (!order || alreadyTracked(order.numero_commande)) return
+    trackPurchase(
+      order.numero_commande,
+      order.montant_total,
+      order.frais_livraison,
+      articles.map((a) => ({ item_id: a.id, item_name: a.nom_produit, price: a.prix_unitaire, quantity: a.quantite })),
+    )
+    markTracked(order.numero_commande)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order?.numero_commande])
 
   return (
     <>

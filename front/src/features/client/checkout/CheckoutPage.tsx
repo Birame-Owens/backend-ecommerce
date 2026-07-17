@@ -7,6 +7,7 @@ import { useCartStore, cartSubtotal, cartCount } from '@/store/cartStore'
 import { checkoutApi, type DeliveryZone } from '@/api/client/checkout'
 import { useToastStore } from '@/store/toastStore'
 import { useClientAuthStore } from '@/store/clientAuthStore'
+import { trackBeginCheckout } from '@/lib/analytics'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
@@ -103,6 +104,16 @@ export function CheckoutPage() {
   const subtotal = cartSubtotal(items)
   const discount = coupon?.discount ?? 0
   const count = cartCount(items)
+
+  useEffect(() => {
+    if (items.length > 0) {
+      trackBeginCheckout(
+        items.map((i) => ({ item_id: i.id, item_name: i.nom, price: i.prix, quantity: i.qty })),
+        subtotal - discount,
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const [payMethod, setPayMethod] = useState<PaymentMethod>('wave')
   const [processing, setProcessing] = useState(false)

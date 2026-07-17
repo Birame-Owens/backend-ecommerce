@@ -32,9 +32,14 @@ export interface AdminShopSettingsNotifications {
   notif_promotions: string
 }
 
+export interface AdminShopSettingsAnalytics {
+  analytics_ga_id: string
+}
+
 export interface AdminShopSettings {
   general: AdminShopSettingsGeneral
   social: AdminShopSettingsSocial
   seo: AdminShopSettingsSeo
   notifications: AdminShopSettingsNotifications
+  analytics: AdminShopSettingsAnalytics
 }

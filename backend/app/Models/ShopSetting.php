@@ -66,6 +66,9 @@ class ShopSetting extends Model
                 'notif_livraison'         => '1',
                 'notif_promotions'        => '0',
             ],
+            'analytics' => [
+                'analytics_ga_id' => '',
+            ],
         ];
     }
 

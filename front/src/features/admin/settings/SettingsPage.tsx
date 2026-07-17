@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   Settings, Store, CreditCard, Bell, Shield, Users, Palette,
-  Search, Upload, KeyRound, Save, RefreshCw,
+  Search, Upload, KeyRound, Save, RefreshCw, BarChart3,
 } from 'lucide-react'
 import { paiementsAdminApi } from '@/api/admin/paiements'
 import { shopSettingsApi } from '@/api/admin/settings'
@@ -20,6 +20,7 @@ const sections = [
   { id: 'apparence',     label: 'Apparence',         icon: Palette   },
   { id: 'seo',           label: 'SEO',               icon: Search    },
   { id: 'reseaux',       label: 'Réseaux sociaux',   icon: Upload    },
+  { id: 'analytics',     label: 'Analytics',         icon: BarChart3 },
 ]
 
 type ToastType = 'success' | 'error'
@@ -61,6 +62,11 @@ export default function SettingsPage() {
   // Formulaire SEO
   const [seoForm, setSeoForm] = useState({
     seo_titre: '', seo_description: '', seo_mots_cles: '',
+  })
+
+  // Formulaire Analytics
+  const [analyticsForm, setAnalyticsForm] = useState({
+    analytics_ga_id: '',
   })
 
   // Formulaire notifications
@@ -118,6 +124,7 @@ export default function SettingsPage() {
         })
         setSocialForm({ ...s.social })
         setSeoForm({ ...s.seo })
+        setAnalyticsForm({ ...s.analytics })
         setNotifForm({
           notif_nouvelle_commande: s.notifications.notif_nouvelle_commande === '1',
           notif_paiement_recu:     s.notifications.notif_paiement_recu === '1',
@@ -163,9 +170,10 @@ export default function SettingsPage() {
     }
   }
 
-  const handleSaveGeneral = () => saveSettings(generalForm)
-  const handleSaveSocial  = () => saveSettings(socialForm)
-  const handleSaveSeo     = () => saveSettings(seoForm)
+  const handleSaveGeneral   = () => saveSettings(generalForm)
+  const handleSaveSocial    = () => saveSettings(socialForm)
+  const handleSaveSeo       = () => saveSettings(seoForm)
+  const handleSaveAnalytics = () => saveSettings(analyticsForm)
 
   const handleSaveNotif = () => saveSettings({
     notif_nouvelle_commande: notifForm.notif_nouvelle_commande ? '1' : '0',
@@ -581,6 +589,39 @@ export default function SettingsPage() {
                   ))}
                 </div>
                 <button onClick={handleSaveSocial} disabled={saving} className={saveBtnCls}>
+                  <Save className="w-3.5 h-3.5" strokeWidth={1.5} />
+                  {saving ? 'Enregistrement…' : 'Enregistrer'}
+                </button>
+              </section>
+            )}
+
+            {/* ── Analytics ── */}
+            {activeSection === 'analytics' && (
+              <section className="bg-beige-50 border border-beige-300 rounded-2xl p-5 shadow-beige">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-xs text-muted uppercase tracking-widest">Analytics</p>
+                    <h2 className="text-lg font-serif font-semibold text-ink">Google Analytics</h2>
+                  </div>
+                  <BarChart3 className="w-4 h-4 text-beige-500" strokeWidth={1.5} />
+                </div>
+                <div className="space-y-3 mb-4 max-w-sm">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">ID de mesure Google Analytics</label>
+                    <input
+                      className={`w-full ${inputCls}`}
+                      value={analyticsForm.analytics_ga_id}
+                      onChange={(e) => setAnalyticsForm({ analytics_ga_id: e.target.value })}
+                      placeholder="G-XXXXXXXXXX"
+                    />
+                    <p className="text-[11px] text-muted mt-1.5">
+                      Trouvable dans Google Analytics → Administration → Flux de données. Une fois enregistré,
+                      le suivi des visites, des vues produit, des ajouts au panier et des achats démarre automatiquement.
+                      Laissez vide pour désactiver le suivi.
+                    </p>
+                  </div>
+                </div>
+                <button onClick={handleSaveAnalytics} disabled={saving} className={saveBtnCls}>
                   <Save className="w-3.5 h-3.5" strokeWidth={1.5} />
                   {saving ? 'Enregistrement…' : 'Enregistrer'}
                 </button>

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics'
 
 const CART_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 jours
 
@@ -46,6 +47,7 @@ export const useCartStore = create<CartState>()(
       _savedAt: now(),
       addItem: (item) => {
         const key = `${item.id}-${item.couleur || 'nc'}-${item.taille || 'nc'}`
+        trackAddToCart({ item_id: item.id, item_name: item.nom, price: item.prix, quantity: item.qty })
         set((s) => {
           const existing = s.items.find((i) => i.key === key)
           if (existing) {
@@ -57,7 +59,13 @@ export const useCartStore = create<CartState>()(
           return { items: [...s.items, { ...item, key, qty: initQty }], _savedAt: now() }
         })
       },
-      removeItem: (key) => set((s) => ({ items: s.items.filter((i) => i.key !== key), _savedAt: now() })),
+      removeItem: (key) => set((s) => {
+        const removed = s.items.find((i) => i.key === key)
+        if (removed) {
+          trackRemoveFromCart({ item_id: removed.id, item_name: removed.nom, price: removed.prix, quantity: removed.qty })
+        }
+        return { items: s.items.filter((i) => i.key !== key), _savedAt: now() }
+      }),
       updateQty: (key, delta) =>
         set((s) => ({
           _savedAt: now(),

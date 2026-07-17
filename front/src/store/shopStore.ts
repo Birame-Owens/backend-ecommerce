@@ -11,6 +11,7 @@ interface ShopState {
   tiktok: string
   email: string
   address: string
+  gaId: string | null
   loaded: boolean
   load: () => Promise<void>
 }
@@ -26,12 +27,14 @@ export const useShopStore = create<ShopState>()(
       tiktok: '',
       email: 'contact@nd-world.site',
       address: 'Dakar, Sénégal',
+      gaId: null,
       loaded: false,
       load: async () => {
         try {
           const res = await clientApi.get('/api/client/config')
           if (res.data.success) {
             const c = res.data.data.company
+            const analytics = res.data.data.analytics
             set({
               waNumber: (c.whatsapp ?? '').replace(/\D/g, '') || get().waNumber,
               shopName: c.name ?? get().shopName,
@@ -41,6 +44,7 @@ export const useShopStore = create<ShopState>()(
               tiktok: c.tiktok ?? '',
               email: c.email || get().email,
               address: c.address || get().address,
+              gaId: analytics?.ga_measurement_id ?? null,
               loaded: true,
             })
           }
@@ -54,7 +58,7 @@ export const useShopStore = create<ShopState>()(
       partialize: (s) => ({
         waNumber: s.waNumber, shopName: s.shopName, logo: s.logo,
         instagram: s.instagram, facebook: s.facebook, tiktok: s.tiktok,
-        email: s.email, address: s.address,
+        email: s.email, address: s.address, gaId: s.gaId,
       }),
     }
   )

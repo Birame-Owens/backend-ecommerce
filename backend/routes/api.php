@@ -428,6 +428,10 @@ Route::prefix('client')->group(function () use ($statelessPublic) {
                     'email' => \App\Models\ShopSetting::getValue('boutique_email') ?: config('app.contact_email', 'contact@ndeyashop.sn'),
                     'address' => \App\Models\ShopSetting::getValue('boutique_adresse') ?: 'Dakar, Sénégal',
                 ],
+                'analytics' => [
+                    // Configuré depuis Admin → Paramètres → Analytics. Vide = tracking désactivé.
+                    'ga_measurement_id' => \App\Models\ShopSetting::getValue('analytics_ga_id') ?: null,
+                ],
                 'currency' => 'F CFA',
                 'shipping' => [
                     'free_threshold' => env('SHIPPING_FREE_THRESHOLD', 50000),
