@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import { NToast } from '@/components/client/NToast'
 import { NNavBar } from '@/components/client/NNavBar'
+import { AnnouncementBar } from '@/components/client/AnnouncementBar'
 import { useShopStore } from '@/store/shopStore'
 import { useClientAuthStore } from '@/store/clientAuthStore'
 
@@ -29,6 +30,7 @@ export function ClientLayout() {
 
   return (
     <div className="min-h-dvh bg-paper font-sans text-ink">
+      <AnnouncementBar />
       <NNavBar />
       <main>
         <Outlet />

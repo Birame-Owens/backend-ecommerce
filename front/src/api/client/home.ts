@@ -103,6 +103,13 @@ export interface HomeData {
   flash_sale: FlashSale | null
 }
 
+export interface ActivePromotionsData {
+  promotions: PromotionBanner[]
+  has_flash_sale: boolean
+}
+
 export const homeClientApi = {
   home: () => clientApi.get<{ success: boolean; data: HomeData }>('/api/client/home'),
+  activePromotions: () =>
+    clientApi.get<{ success: boolean; data: ActivePromotionsData }>('/api/client/active-promotions'),
 }
