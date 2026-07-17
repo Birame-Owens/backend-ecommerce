@@ -164,7 +164,7 @@ class CheckoutService
             // 1. Obtenir ou créer le client
             $client = $this->getOrCreateClient($data['customer']);
 
-            // 2. Valider les articles du panier
+            // 2. Valider les articles du panier et réserver leur stock
             $validatedItems = $this->validateCartItems($data['items']);
 
             // 3. Calculer les totaux
@@ -176,7 +176,6 @@ class CheckoutService
             // 5. Créer les articles de commande
             $this->createOrderItems($commande, $validatedItems);
 
-            // 6. Mettre à jour le stock
             DB::commit();
 
             return $this->orderResponse($commande, $totals);
@@ -231,21 +230,12 @@ class CheckoutService
                 throw new Exception("Produit {$item['product_id']} non disponible");
             }
 
-            // Vérifier le stock si gestion activée
-            if ($produit->gestion_stock) {
-                $couleur = $item['options']['couleur'] ?? null;
-                $taille  = $item['options']['taille']  ?? null;
-
-                if ($couleur && $taille && $produit->couleur_tailles_stock) {
-                    $stockData     = json_decode($produit->couleur_tailles_stock, true) ?? [];
-                    $variantStock  = $stockData[$couleur][$taille] ?? null;
-                    if ($variantStock !== null && $variantStock < $quantity) {
-                        throw new Exception("Stock insuffisant pour {$produit->nom} ({$couleur} / {$taille}). Disponible: {$variantStock}");
-                    }
-                } elseif ($this->resolveStockTotal($produit) < $quantity) {
-                    throw new Exception("Stock insuffisant pour {$produit->nom}. Disponible: {$this->resolveStockTotal($produit)}");
-                }
-            }
+            // Réserve le stock immédiatement (verrou pessimiste) plutôt que de
+            // juste le vérifier : évite que deux commandes concurrentes passent
+            // toutes les deux la validation pour le même dernier exemplaire.
+            $couleur = $item['options']['couleur'] ?? null;
+            $taille  = $item['options']['taille']  ?? null;
+            $this->reserveProductStock($produit, $quantity, $couleur, $taille);
 
             $validatedItems[] = [
                 'produit' => $produit,
@@ -367,7 +357,71 @@ class CheckoutService
             'telephone_livraison'=> $data['customer']['telephone'],
             'nom_destinataire'   => $nomComplet ?: 'Client',
             'notes_client'       => $data['notes'] ?? null,
+            // Le stock des articles vient d'être réservé (voir validateCartItems).
+            'stock_decremented_at' => now(),
         ]);
+    }
+
+    /**
+     * Réserve (décrémente) le stock d'un produit de façon atomique : verrouille
+     * la ligne produit pour la durée de la transaction en cours, revérifie la
+     * disponibilité sous ce verrou, puis décrémente. Lève une exception si le
+     * stock est insuffisant. Doit toujours être appelée à l'intérieur d'une
+     * transaction DB (createOrder, initiatePayment) pour que le verrou tienne.
+     */
+    public function reserveProductStock(Produit $produit, int $quantity, ?string $couleur, ?string $taille): void
+    {
+        $produit = Produit::where('id', $produit->id)->lockForUpdate()->first();
+
+        if (!$produit || !$produit->gestion_stock) {
+            return;
+        }
+
+        if ($couleur && $taille && $produit->couleur_tailles_stock) {
+            $stockData    = json_decode($produit->couleur_tailles_stock, true) ?? [];
+            $variantStock = $stockData[$couleur][$taille] ?? null;
+
+            if ($variantStock !== null) {
+                if ($variantStock < $quantity) {
+                    throw new Exception("Stock insuffisant pour {$produit->nom} ({$couleur} / {$taille}). Disponible: {$variantStock}");
+                }
+                $stockData[$couleur][$taille] = $variantStock - $quantity;
+                $produit->couleur_tailles_stock = json_encode($stockData);
+                $produit->save();
+                return;
+            }
+        }
+
+        if ($this->resolveStockTotal($produit) < $quantity) {
+            throw new Exception("Stock insuffisant pour {$produit->nom}. Disponible: {$this->resolveStockTotal($produit)}");
+        }
+
+        $produit->decrement('stock_disponible', $quantity);
+    }
+
+    /**
+     * Restitue un stock précédemment réservé (commande expirée non payée).
+     * Symétrique de reserveProductStock, mêmes garanties de verrouillage.
+     */
+    public function restoreProductStock(Produit $produit, int $quantity, ?string $couleur, ?string $taille): void
+    {
+        $produit = Produit::where('id', $produit->id)->lockForUpdate()->first();
+
+        if (!$produit || !$produit->gestion_stock) {
+            return;
+        }
+
+        if ($couleur && $taille && $produit->couleur_tailles_stock) {
+            $stockData = json_decode($produit->couleur_tailles_stock, true) ?? [];
+            if (isset($stockData[$couleur][$taille])) {
+                $stockData[$couleur][$taille] += $quantity;
+                $produit->couleur_tailles_stock = json_encode($stockData);
+                $produit->save();
+                return;
+            }
+        }
+
+        $produit->increment('stock_disponible', $quantity);
     }
 
     /**
@@ -395,43 +449,18 @@ class CheckoutService
     }
 
     /**
-     * Mettre à jour le stock des produits
-     */
-    private function updateStock(array $items)
-    {
-        foreach ($items as $item) {
-            $produit  = $item['produit'];
-            $quantity = $item['quantity'];
-
-            if ($produit->gestion_stock) {
-                $couleur = $item['options']['couleur'] ?? null;
-                $taille  = $item['options']['taille']  ?? null;
-
-                // Décrémenter le stock par variante si disponible
-                if ($couleur && $taille && $produit->couleur_tailles_stock) {
-                    $stockData = json_decode($produit->couleur_tailles_stock, true) ?? [];
-                    if (isset($stockData[$couleur][$taille])) {
-                        $stockData[$couleur][$taille] = max(0, $stockData[$couleur][$taille] - $quantity);
-                        $produit->couleur_tailles_stock = json_encode($stockData);
-                        $produit->save();
-                    }
-                } else {
-                    $produit->decrement('stock_disponible', $quantity);
-                }
-
-                $produit->increment('nombre_ventes', $quantity);
-            }
-        }
-    }
-
-    /**
-     * Decrementer le stock seulement quand la commande est confirmee.
+     * Appelée à la confirmation du paiement. Le stock a normalement déjà été
+     * réservé à la création de la commande (ou re-réservé par initiatePayment
+     * si la réservation avait expiré) — ici on ne fait donc que comptabiliser
+     * la vente. Le décrément de secours ne sert que pour d'éventuelles
+     * commandes créées avant ce correctif, ou un cas limite non prévu ; s'il
+     * n'y a plus de stock à ce stade, l'argent a déjà été débité chez le
+     * client, donc on logue en critique pour résolution manuelle plutôt que
+     * d'échouer la confirmation de paiement.
      */
     private function decrementConfirmedOrderStock(Commande $commande): void
     {
-        if ($commande->stock_decremented_at) {
-            return;
-        }
+        $stockDejaReserve = (bool) $commande->stock_decremented_at;
 
         $commande->loadMissing('articles_commandes.produit');
 
@@ -439,25 +468,26 @@ class CheckoutService
             $produit = $article->produit;
 
             if ($produit && $produit->gestion_stock) {
-                $couleur = $article->couleur_choisie;
-                $taille  = $article->taille_choisie;
-
-                if ($couleur && $taille && $produit->couleur_tailles_stock) {
-                    $stockData = json_decode($produit->couleur_tailles_stock, true) ?? [];
-                    if (isset($stockData[$couleur][$taille])) {
-                        $stockData[$couleur][$taille] = max(0, $stockData[$couleur][$taille] - $article->quantite);
-                        $produit->couleur_tailles_stock = json_encode($stockData);
-                        $produit->save();
+                if (!$stockDejaReserve) {
+                    try {
+                        $this->reserveProductStock($produit, $article->quantite, $article->couleur_choisie, $article->taille_choisie);
+                    } catch (Exception $e) {
+                        \Log::critical('Survente possible : paiement confirmé sans stock disponible', [
+                            'commande_id' => $commande->id,
+                            'numero_commande' => $commande->numero_commande,
+                            'produit_id' => $produit->id,
+                            'error' => $e->getMessage(),
+                        ]);
                     }
-                } else {
-                    $produit->decrement('stock_disponible', $article->quantite);
                 }
 
                 $produit->increment('nombre_ventes', $article->quantite);
             }
         }
 
-        $commande->update(['stock_decremented_at' => now()]);
+        if (!$stockDejaReserve) {
+            $commande->update(['stock_decremented_at' => now()]);
+        }
     }
 
     private function updatePromotionStats(Commande $commande): void
@@ -532,6 +562,28 @@ class CheckoutService
     public function initiatePayment(Commande $commande, string $provider, array $data = [], ?string $idempotencyKey = null)
     {
         $idempotencyKey = $this->normalizeIdempotencyKey($idempotencyKey);
+
+        // Le stock de cette commande a pu être libéré (voir commandes:liberer-stock-expire)
+        // si le client n'avait pas payé dans les 15 minutes. S'il relance le
+        // paiement plus tard (lien de relance par email), on retente une
+        // réservation ici, avant de contacter le fournisseur de paiement.
+        if (!$commande->stock_decremented_at) {
+            $commande->loadMissing('articles_commandes.produit');
+
+            DB::beginTransaction();
+            try {
+                foreach ($commande->articles_commandes as $article) {
+                    if ($article->produit) {
+                        $this->reserveProductStock($article->produit, $article->quantite, $article->couleur_choisie, $article->taille_choisie);
+                    }
+                }
+                $commande->update(['stock_decremented_at' => now()]);
+                DB::commit();
+            } catch (Exception $e) {
+                DB::rollBack();
+                throw new Exception("Stock indisponible entre-temps pour cette commande : {$e->getMessage()}");
+            }
+        }
 
         $methodePaiement = match ($provider) {
             'card', 'carte_bancaire' => 'carte_bancaire',
