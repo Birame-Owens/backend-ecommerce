@@ -369,9 +369,11 @@ class ProductService
                 'priceCurrency' => 'XOF',
                 'price' => (string) round((float) $price),
                 'itemCondition' => 'https://schema.org/NewCondition',
-                'availability' => !$product->gestion_stock || $this->resolveStockTotal($product) > 0
-                    ? 'https://schema.org/InStock'
-                    : 'https://schema.org/OutOfStock',
+                'availability' => $product->fait_sur_mesure
+                    ? 'https://schema.org/MadeToOrder'
+                    : ((!$product->gestion_stock || $this->resolveStockTotal($product) > 0)
+                        ? 'https://schema.org/InStock'
+                        : 'https://schema.org/OutOfStock'),
             ],
         ];
 

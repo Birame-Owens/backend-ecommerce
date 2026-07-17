@@ -175,6 +175,20 @@ class ProduitControllerTest extends TestCase
         $this->assertEquals('in_stock', $response->json('data.produit.stock_status.status'));
     }
 
+    public function test_made_to_order_product_shows_made_to_order_status_despite_zero_stock(): void
+    {
+        $produit = $this->makeProduit([
+            'stock_disponible' => 0,
+            'gestion_stock' => true,
+            'fait_sur_mesure' => true,
+            'delai_production_jours' => 7,
+        ]);
+
+        $response = $this->asAdmin()->getJson("/api/admin/produits/{$produit->id}");
+
+        $this->assertEquals('made_to_order', $response->json('data.produit.stock_status.status'));
+    }
+
     // ── duplicate ─────────────────────────────────────────────────────────────
 
     public function test_duplicate_creates_copy_in_draft_mode(): void

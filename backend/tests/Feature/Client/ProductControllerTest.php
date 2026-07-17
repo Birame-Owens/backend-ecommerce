@@ -154,6 +154,7 @@ class ProductControllerTest extends TestCase
                  ->assertJsonPath('data.en_stock', true)
                  ->assertJsonPath('data.stock_disponible', null)
                  ->assertJsonPath('data.stock_status.status', 'made_to_order')
+                 ->assertJsonPath('data.seo.structured_data.offers.availability', 'https://schema.org/MadeToOrder')
                  ->assertJsonPath('data.fait_sur_mesure', true)
                  ->assertJsonPath('data.delai_production_jours', 10);
     }

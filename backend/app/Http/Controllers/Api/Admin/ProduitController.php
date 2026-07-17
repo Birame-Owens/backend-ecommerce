@@ -833,6 +833,14 @@ class ProduitController extends Controller
      */
     private function getStockStatus(Produit $produit): array
     {
+        if ($produit->fait_sur_mesure) {
+            return [
+                'status' => 'made_to_order',
+                'label' => 'Fait sur commande',
+                'color' => 'blue'
+            ];
+        }
+
         if (!$produit->gestion_stock) {
             return [
                 'status' => 'unlimited',
