@@ -12,6 +12,7 @@ import { useCartStore, cartCount } from '@/store/cartStore'
 import { useToastStore } from '@/store/toastStore'
 import { useShopStore, buildWaUrl } from '@/store/shopStore'
 import { SeoHead } from '@/components/client/SeoHead'
+import { trackViewItem } from '@/lib/analytics'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
@@ -121,6 +122,18 @@ export function ProductDetailPage() {
 
   const product = data?.product ?? null
   const related = data?.related_products ?? []
+
+  useEffect(() => {
+    if (product) {
+      trackViewItem({
+        item_id: product.id,
+        item_name: product.nom,
+        price: product.prix_affiche,
+        item_category: product.category?.nom,
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id])
 
   const variantStockMax = useMemo(() => {
     if (!product) return null
