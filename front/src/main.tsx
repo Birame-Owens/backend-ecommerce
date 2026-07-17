@@ -16,6 +16,20 @@ if (sentryDsn) {
   })
 }
 
+// Après un déploiement, un onglet resté ouvert référence encore les anciens
+// fichiers JS (hashés par build) que le nouveau déploiement a remplacés — le
+// chargement différé d'une page pas encore visitée échoue alors avec
+// "Failed to fetch dynamically imported module". Vite émet cet évènement
+// dédié dans ce cas précis : on recharge une seule fois (sessionStorage
+// évite une boucle si le rechargement ne résout pas le problème).
+window.addEventListener('vite:preloadError', () => {
+  const key = 'ndeya-preload-error-reload'
+  if (!sessionStorage.getItem(key)) {
+    sessionStorage.setItem(key, '1')
+    window.location.reload()
+  }
+})
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
