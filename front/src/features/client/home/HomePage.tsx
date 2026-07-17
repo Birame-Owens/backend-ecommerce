@@ -7,6 +7,7 @@ import { NImage } from '@/components/client/NImage'
 import { NIcon, WAGlyph, IGGlyph, TikTokGlyph, Stars } from '@/components/client/NIcon'
 import { useShopStore, buildWaUrl } from '@/store/shopStore'
 import { SeoHead } from '@/components/client/SeoHead'
+import { Reveal } from '@/components/client/Reveal'
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
 
@@ -480,29 +481,33 @@ export function HomePage() {
       />
 
       <Hero data={data} />
-      <CatRow data={data} />
-      <ServiceStrip />
+      <Reveal><CatRow data={data} /></Reveal>
+      <Reveal><ServiceStrip /></Reveal>
 
-      <ProductSection
-        kicker="Fraîchement arrivé"
-        title="Nouveautés"
-        products={data.new_arrivals.slice(0, 8)}
-        linkLabel="Voir tout"
-        linkPath="/produits"
-      />
+      <Reveal>
+        <ProductSection
+          kicker="Fraîchement arrivé"
+          title="Nouveautés"
+          products={data.new_arrivals.slice(0, 8)}
+          linkLabel="Voir tout"
+          linkPath="/produits"
+        />
+      </Reveal>
 
-      <PromoBanner data={data} />
+      <Reveal><PromoBanner data={data} /></Reveal>
 
-      <ProductSection
-        kicker="Sélection"
-        title="Populaires"
-        products={data.featured_products.slice(0, 8)}
-        linkLabel="Voir tout"
-        linkPath="/produits"
-      />
+      <Reveal>
+        <ProductSection
+          kicker="Sélection"
+          title="Populaires"
+          products={data.featured_products.slice(0, 8)}
+          linkLabel="Voir tout"
+          linkPath="/produits"
+        />
+      </Reveal>
 
-      <StatsStrip data={data} />
-      <TestimonialsSection data={data} />
+      <Reveal><StatsStrip data={data} /></Reveal>
+      <Reveal><TestimonialsSection data={data} /></Reveal>
       <Footer />
       <WAFab />
     </div>

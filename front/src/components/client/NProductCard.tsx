@@ -152,7 +152,7 @@ export const NProductCard = memo(function NProductCard({ product }: { product: P
             aria-label={canAdd ? `Ajouter ${product.nom} au panier` : `${product.nom} indisponible`}
             className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-[8px]
               bg-white/95 backdrop-blur-sm text-ink text-[11px] font-semibold
-              hover:bg-white transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              hover:bg-white transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
           >
             <NIcon name="bag" size={15} strokeWidth={2} />
             {!inStock ? 'Indisponible' : hasVariants ? 'Choisir' : !canAdd ? 'En panier' : 'Ajouter'}

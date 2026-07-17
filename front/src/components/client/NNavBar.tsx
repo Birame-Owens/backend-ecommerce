@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { NIcon, WAGlyph } from './NIcon'
 import { useCartStore, cartCount } from '@/store/cartStore'
 import { useWishlistStore } from '@/store/wishlistStore'
@@ -13,6 +14,26 @@ const LINKS = [
 ]
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
+
+/** Badge de compteur qui "rebondit" à chaque changement (ajout/retrait panier ou favoris). */
+function CountBadge({ count, className }: { count: number; className: string }) {
+  return (
+    <AnimatePresence>
+      {count > 0 && (
+        <motion.span
+          key={count}
+          initial={{ scale: 0.4, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.4, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 18 }}
+          className={className}
+        >
+          {count}
+        </motion.span>
+      )}
+    </AnimatePresence>
+  )
+}
 
 export function NNavBar() {
   const navigate = useNavigate()
@@ -252,13 +273,9 @@ export function NNavBar() {
               </div>
 
               <button onClick={() => navigate('/favoris')}
-                className="relative w-10 h-10 grid place-items-center rounded-full hover:bg-sand transition-colors text-ink-2 hover:text-ink">
+                className="relative w-10 h-10 grid place-items-center rounded-full hover:bg-sand transition text-ink-2 hover:text-ink active:scale-90">
                 <NIcon name="heart" size={20} strokeWidth={1.7} />
-                {wishCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 min-w-[14px] h-3.5 px-0.5 bg-accent text-white text-[9px] font-bold rounded-full grid place-items-center">
-                    {wishCount}
-                  </span>
-                )}
+                <CountBadge count={wishCount} className="absolute top-1.5 right-1.5 min-w-[14px] h-3.5 px-0.5 bg-accent text-white text-[9px] font-bold rounded-full grid place-items-center" />
               </button>
 
               <button onClick={() => navigate('/compte')}
@@ -274,13 +291,9 @@ export function NNavBar() {
               </button>
 
               <button onClick={() => navigate('/panier')}
-                className="relative w-10 h-10 grid place-items-center rounded-full hover:bg-sand transition-colors text-ink-2 hover:text-ink">
+                className="relative w-10 h-10 grid place-items-center rounded-full hover:bg-sand transition text-ink-2 hover:text-ink active:scale-90">
                 <NIcon name="bag" size={20} strokeWidth={1.7} />
-                {cnt > 0 && (
-                  <span className="absolute top-1.5 right-1.5 min-w-[14px] h-3.5 px-0.5 bg-accent text-white text-[9px] font-bold rounded-full grid place-items-center">
-                    {cnt}
-                  </span>
-                )}
+                <CountBadge count={cnt} className="absolute top-1.5 right-1.5 min-w-[14px] h-3.5 px-0.5 bg-accent text-white text-[9px] font-bold rounded-full grid place-items-center" />
               </button>
 
               <a
@@ -306,13 +319,9 @@ export function NNavBar() {
 
             {/* ── MOBILE CART ICON (masqué sur page produit car son header a le sien) ── */}
             <button onClick={() => navigate('/panier')}
-              className={`relative w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition-colors text-ink flex-shrink-0 ${isProductDetail ? 'hidden' : 'md:hidden'}`}>
+              className={`relative w-9 h-9 grid place-items-center rounded-full hover:bg-sand transition text-ink flex-shrink-0 active:scale-90 ${isProductDetail ? 'hidden' : 'md:hidden'}`}>
               <NIcon name="bag" size={21} strokeWidth={1.7} />
-              {cnt > 0 && (
-                <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-0.5 bg-accent text-white text-[9px] font-bold rounded-full grid place-items-center">
-                  {cnt}
-                </span>
-              )}
+              <CountBadge count={cnt} className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-0.5 bg-accent text-white text-[9px] font-bold rounded-full grid place-items-center" />
             </button>
 
           </div>
