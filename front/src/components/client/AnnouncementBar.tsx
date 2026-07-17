@@ -53,11 +53,13 @@ export function AnnouncementBar() {
       onClick={() => navigate('/categories')}
       onKeyDown={(e) => e.key === 'Enter' && navigate('/categories')}
       className="relative bg-ink text-white cursor-pointer select-none"
-      style={promo.couleur ? { backgroundColor: promo.couleur } : undefined}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-10 flex items-center justify-center gap-2 sm:gap-3 text-[12px] sm:text-[13px]">
-        <span className="font-serif font-bold text-camel flex-shrink-0">
-          {fmtValue(promo.type, promo.valeur, promo.valeur_formatted)}
+      <div className="max-w-7xl mx-auto pl-3 pr-9 sm:px-6 lg:px-8 h-11 flex items-center justify-center gap-2 sm:gap-3 text-[12px] sm:text-[13px] overflow-hidden">
+        {/* Badge toujours visible, y compris sur mobile : doit se voir au premier coup d'œil. */}
+        <span className="flex-shrink-0 inline-flex items-center gap-1 pl-1.5 pr-2.5 h-7 rounded-full
+          bg-accent text-white font-bold uppercase tracking-wide text-[11px] shadow-sm">
+          <NIcon name="spark" size={13} strokeWidth={2} />
+          Promo {fmtValue(promo.type, promo.valeur, promo.valeur_formatted)}
         </span>
         <span className="hidden sm:inline text-white/85 truncate">
           {promo.description ?? promo.nom}
@@ -73,7 +75,7 @@ export function AnnouncementBar() {
           </button>
         )}
         {promo.is_flash_sale && (
-          <span className="hidden md:inline text-[10px] font-semibold uppercase tracking-widest text-camel/90">
+          <span className="hidden md:inline text-[10px] font-semibold uppercase tracking-widest text-camel/90 flex-shrink-0">
             Offre limitée
           </span>
         )}
