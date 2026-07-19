@@ -182,6 +182,7 @@ Route::prefix('admin')->group(function () {
         Route::post('/commandes/{commande}/update-status', [CommandeController::class, 'updateStatus']);
         Route::post('/commandes/{commande}/duplicate', [CommandeController::class, 'duplicate']);
         Route::post('/commandes/{commande}/mark-paid', [CommandeController::class, 'markAsPaid']);
+        Route::get('/commandes/{commande}/etiquette', [CommandeController::class, 'printLabel']);
         
         // Routes CRUD principales (à la fin)
         Route::apiResource('commandes', CommandeController::class);

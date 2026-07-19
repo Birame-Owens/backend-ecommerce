@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Commande;
 use App\Models\Client;
 use App\Models\Produit;
+use App\Models\ShopSetting;
 use App\Http\Requests\Admin\CommandeRequest;
 use App\Services\Admin\CommandeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class CommandeController extends Controller
 {
@@ -758,6 +760,24 @@ class CommandeController extends Controller
         return $commande->paiements()
             ->where('statut', 'valide')
             ->sum('montant') >= $commande->montant_total;
+    }
+
+    /**
+     * Génère l'étiquette de livraison (PDF au format 100x150mm) à imprimer
+     * et coller sur le sachet, pour que le livreur ne se trompe pas de
+     * destinataire/adresse/montant.
+     */
+    public function printLabel(Commande $commande)
+    {
+        $boutiqueNom = ShopSetting::getValue('boutique_nom', config('app.name', 'NDEYA SHOP'));
+
+        $pdf = Pdf::loadView('pdfs.delivery-label', [
+            'commande'    => $commande,
+            'estPayee'    => $this->isCommandePaid($commande),
+            'boutiqueNom' => $boutiqueNom,
+        ])->setPaper([0, 0, 283.5, 425.2]); // 100mm x 150mm en points (1mm ≈ 2.835pt)
+
+        return $pdf->stream("etiquette-{$commande->numero_commande}.pdf");
     }
 
     /**
