@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Bell, Download, Filter, Search, Package, Clock, CheckCircle2, XCircle,
   ChevronLeft, ChevronRight, Eye, Truck, RefreshCw, Calendar, CreditCard,
-  MapPin, MoreHorizontal, FileText, Plus,
+  MapPin, MoreHorizontal, FileText, Plus, Printer,
 } from 'lucide-react'
 import { ordersAdminApi } from '@/api/admin/orders'
 import { CreateOrderModal } from '@/features/admin/orders/components/CreateOrderModal'
@@ -230,6 +230,11 @@ function OrdersPage() {
     } finally {
       setDeleteLoadingId(null)
     }
+  }
+
+  const handlePrintLabel = (order: AdminOrderListItem) => {
+    const base = import.meta.env.VITE_API_URL || ''
+    window.open(`${base}/api/admin/commandes/${order.id}/etiquette`, '_blank')
   }
 
   const filteredOrders = useMemo(() => {
@@ -473,6 +478,13 @@ function OrdersPage() {
                   disabled
                 >
                   <FileText className="w-3.5 h-3.5 text-muted" strokeWidth={1.5} />
+                </button>
+                <button
+                  onClick={() => handlePrintLabel(order)}
+                  className="p-2 rounded-xl border border-beige-300 hover:bg-beige-200 transition-colors"
+                  title="Imprimer l'étiquette de livraison"
+                >
+                  <Printer className="w-3.5 h-3.5 text-muted" strokeWidth={1.5} />
                 </button>
                 <button
                   onClick={() => handleDelete(order)}

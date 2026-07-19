@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CreditCard, Mail, MessageCircle, Package, Phone, Ruler, X } from 'lucide-react'
+import { CreditCard, Mail, MessageCircle, Package, Phone, Printer, Ruler, X } from 'lucide-react'
 import type { AdminOrderDetail } from '@/types/admin'
 import { fmtMoney, statusBadge, statusLabels, statusOrder } from '../orderHelpers'
 
@@ -48,13 +48,27 @@ export function OrderDetailsModal({
               {order?.date_commande ?? '—'} · {order?.nb_articles ?? 0} article(s)
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl border border-beige-300 hover:bg-beige-200 transition-colors"
-            aria-label="Fermer"
-          >
-            <X className="w-4 h-4 text-muted" strokeWidth={1.5} />
-          </button>
+          <div className="flex items-center gap-2">
+            {order && (
+              <button
+                onClick={() => {
+                  const base = import.meta.env.VITE_API_URL || ''
+                  window.open(`${base}/api/admin/commandes/${order.id}/etiquette`, '_blank')
+                }}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl border border-beige-300 hover:bg-beige-200 transition-colors text-xs font-semibold text-ink"
+              >
+                <Printer className="w-3.5 h-3.5" strokeWidth={1.5} />
+                Étiquette
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl border border-beige-300 hover:bg-beige-200 transition-colors"
+              aria-label="Fermer"
+            >
+              <X className="w-4 h-4 text-muted" strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
 
         {loading ? (
