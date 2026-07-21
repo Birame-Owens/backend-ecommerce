@@ -133,6 +133,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/rapports/tailleurs', [RapportController::class, 'tailleurs']);
         Route::get('/rapports/tissus', [RapportController::class, 'tissus']);
         Route::get('/rapports/analytics', [RapportController::class, 'analytics']);
+        Route::get('/rapports/comportement', [RapportController::class, 'comportement']);
         Route::get('/rapports/performance-produits', [RapportController::class, 'performanceProduits']);
 
 

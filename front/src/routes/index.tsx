@@ -37,6 +37,7 @@ const ShippingPage   = lazy_(() => import('@/features/admin/shipping/ShippingPag
 const DeliveryZonesPage = lazy_(() => import('@/features/admin/deliveryZones/DeliveryZonesPage'))
 const ReviewsPage    = lazy_(() => import('@/features/admin/reviews/ReviewsPage'))
 const ReportsPage    = lazy_(() => import('@/features/admin/reports/ReportsPage'))
+const BehaviorPage   = lazy_(() => import('@/features/admin/behavior/BehaviorPage'))
 const MessagesPage   = lazy_(() => import('@/features/admin/messages/MessagesPage'))
 const SettingsPage   = lazy_(() => import('@/features/admin/settings/SettingsPage'))
 
@@ -81,6 +82,7 @@ export const router = createBrowserRouter(
                 { path: 'avis-clients', element: <ReviewsPage /> },
                 { path: 'messages',     element: <MessagesPage /> },
                 { path: 'rapports',     element: <ReportsPage /> },
+                { path: 'comportement', element: <BehaviorPage /> },
                 { path: 'parametres',   element: <SettingsPage /> },
               ],
             },

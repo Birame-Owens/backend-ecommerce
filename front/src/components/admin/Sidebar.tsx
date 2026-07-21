@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Tag, CreditCard,
-  Percent, Star, BarChart3, LogOut, X, Menu, Send, Truck, Settings, MapPin,
+  Percent, Star, BarChart3, LogOut, X, Menu, Send, Truck, Settings, MapPin, Filter,
 } from 'lucide-react'
 import { useAdminAuthStore } from '@/store/adminAuthStore'
 import { adminAuthApi } from '@/api/admin/auth'
@@ -18,6 +18,7 @@ const menuItems = [
   { name: 'Livraison',      icon: Truck,            path: '/admin/livraison' },
   { name: 'Zones livraison', icon: MapPin,          path: '/admin/zones-livraison' },
   { name: 'Rapports',       icon: BarChart3,        path: '/admin/rapports' },
+  { name: 'Comportement',   icon: Filter,           path: '/admin/comportement' },
   { name: 'Messages',       icon: Send,             path: '/admin/messages' },
   { name: 'Paramètres',     icon: Settings,         path: '/admin/parametres' },
 ]

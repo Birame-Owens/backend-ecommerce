@@ -18,6 +18,29 @@ export interface ReportPeriodParams {
   date_fin?: string
 }
 
+export interface ComportementReport {
+  resume: {
+    visiteurs_uniques: number
+    vues_produits: number
+    ajouts_panier: number
+    debuts_paiement: number
+    achats: number
+  }
+  entonnoir: Array<{ etape: string; valeur: number; taux_depuis_precedent: number | null }>
+  produits_performance: Array<{
+    produit_id: number
+    nom: string
+    vues: number
+    ajouts_panier: number
+    achats: number
+    taux_conversion: number
+  }>
+  recherches_frequentes: Array<{ terme: string; total: number }>
+  recherches_sans_clic: Array<{ terme: string; total: number }>
+  top_categories: Array<{ nom: string; vues: number }>
+  echecs_paiement: Array<{ methode: string; total: number }>
+}
+
 export const rapportsAdminApi = {
   catalog: () =>
     api.get<{ success: boolean; data: AdminReportCatalog }>('/api/admin/rapports'),
@@ -54,6 +77,9 @@ export const rapportsAdminApi = {
 
   performanceProduits: (params?: ReportPeriodParams) =>
     api.get<{ success: boolean; data: AdminReportPerformanceProduits }>('/api/admin/rapports/performance-produits', { params }),
+
+  comportement: (params?: ReportPeriodParams) =>
+    api.get<{ success: boolean; data: ComportementReport }>('/api/admin/rapports/comportement', { params }),
 
   export: (payload: { type: string; format: 'excel' | 'csv' | 'pdf' } & ReportPeriodParams) =>
     api.post('/api/admin/rapports/export', payload, { responseType: 'blob' }),
