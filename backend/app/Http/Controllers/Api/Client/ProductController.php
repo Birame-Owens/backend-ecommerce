@@ -24,9 +24,19 @@ class ProductController extends Controller
     {
         try {
             $filters = $request->only([
-                'category', 'search', 'min_price', 'max_price', 
+                'category', 'search', 'min_price', 'max_price',
                 'on_sale', 'sort', 'direction', 'per_page'
             ]);
+
+            // La vraie recherche du site passe par ici (barre de recherche +
+            // page /recherche appellent /products?search=...), pas par
+            // /api/client/search. On journalise donc le terme ici. Uniquement
+            // la 1ère page pour ne pas compter chaque scroll comme une recherche.
+            $terme = trim((string) $request->query('search', ''));
+            if (strlen($terme) >= 2 && (int) $request->query('page', 1) <= 1) {
+                app(\App\Services\Client\EvenementService::class)
+                    ->log('recherche', ['terme_recherche' => $terme]);
+            }
 
             $result = $this->productService->getProducts($filters);
 
