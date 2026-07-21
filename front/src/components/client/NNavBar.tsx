@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
 import { NIcon, WAGlyph } from './NIcon'
 import { useCartStore, cartCount } from '@/store/cartStore'
 import { useWishlistStore } from '@/store/wishlistStore'
@@ -15,24 +14,12 @@ const LINKS = [
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
-/** Badge de compteur qui "rebondit" à chaque changement (ajout/retrait panier ou favoris). */
+/** Badge de compteur qui "rebondit" à chaque changement (ajout/retrait panier ou favoris).
+ *  La clé = le compteur : à chaque changement, React remonte le span et
+ *  rejoue l'animation CSS (léger pop), sans dépendance framer-motion. */
 function CountBadge({ count, className }: { count: number; className: string }) {
-  return (
-    <AnimatePresence>
-      {count > 0 && (
-        <motion.span
-          key={count}
-          initial={{ scale: 0.4, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.4, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 18 }}
-          className={className}
-        >
-          {count}
-        </motion.span>
-      )}
-    </AnimatePresence>
-  )
+  if (count <= 0) return null
+  return <span key={count} className={`${className} animate-pop`}>{count}</span>
 }
 
 export function NNavBar() {
