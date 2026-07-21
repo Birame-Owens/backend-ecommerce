@@ -72,6 +72,22 @@ class EvenementTest extends TestCase
         $response->assertStatus(422);
     }
 
+    public function test_client_event_endpoint_stores_validated_search_term(): void
+    {
+        $response = $this->postJson('/api/client/evenements', [
+            'type' => 'recherche',
+            'terme_recherche' => 'top basic',
+        ], ['X-Session-Id' => 'sess-search']);
+
+        $response->assertStatus(204);
+
+        $this->assertDatabaseHas('evenements', [
+            'type' => 'recherche',
+            'terme_recherche' => 'top basic',
+            'session_id' => 'sess-search',
+        ]);
+    }
+
     public function test_service_uses_session_header_as_session_id(): void
     {
         $this->withHeader('X-Session-Id', 'sess-xyz')

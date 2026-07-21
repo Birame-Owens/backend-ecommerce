@@ -28,6 +28,9 @@ class EvenementController extends Controller
         'changement_variante',
         'partage_produit',
         'clic_whatsapp',
+        // Recherche VALIDÉE uniquement (terme final), journalisée depuis la
+        // page /recherche — pas la recherche instantanée frappe par frappe.
+        'recherche',
     ];
 
     public function __construct(private EvenementService $evenements)
@@ -37,16 +40,18 @@ class EvenementController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'type'         => 'required|string|in:' . implode(',', self::TYPES_AUTORISES),
-            'produit_id'   => 'nullable|integer|exists:produits,id',
-            'categorie_id' => 'nullable|integer|exists:categories,id',
-            'metadata'     => 'nullable|array',
+            'type'            => 'required|string|in:' . implode(',', self::TYPES_AUTORISES),
+            'produit_id'      => 'nullable|integer|exists:produits,id',
+            'categorie_id'    => 'nullable|integer|exists:categories,id',
+            'terme_recherche' => 'nullable|string|max:255',
+            'metadata'        => 'nullable|array',
         ]);
 
         $this->evenements->log($validated['type'], [
-            'produit_id'   => $validated['produit_id'] ?? null,
-            'categorie_id' => $validated['categorie_id'] ?? null,
-            'metadata'     => $validated['metadata'] ?? null,
+            'produit_id'      => $validated['produit_id'] ?? null,
+            'categorie_id'    => $validated['categorie_id'] ?? null,
+            'terme_recherche' => isset($validated['terme_recherche']) ? trim($validated['terme_recherche']) : null,
+            'metadata'        => $validated['metadata'] ?? null,
         ]);
 
         // Toujours 204 : un échec de journalisation ne doit jamais remonter

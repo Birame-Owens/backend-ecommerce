@@ -21,10 +21,12 @@ export type EventType =
   | 'changement_variante'
   | 'partage_produit'
   | 'clic_whatsapp'
+  | 'recherche'
 
 interface EventPayload {
   produit_id?: number | null
   categorie_id?: number | null
+  terme_recherche?: string | null
   metadata?: Record<string, unknown>
 }
 
