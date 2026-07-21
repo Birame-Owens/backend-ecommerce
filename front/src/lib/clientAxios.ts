@@ -6,28 +6,38 @@ const clientApi = axios.create({
   withCredentials: true,
 })
 
-const SESSION_ID_KEY = 'ndeya-session-id'
+const SESSION_COOKIE = 'ndeya_sid'
 
 /**
- * Identifiant de visiteur généré une seule fois et stocké en localStorage.
- * Les routes catalogue tournent sans session Laravel (cache nginx), donc pas
- * de cookie de session fiable à cet endroit — cet identifiant, stable pour
- * un même navigateur, sert de clé de session pour les statistiques internes
- * (voir backend EvenementService), qui ne dépendent d'aucun script tiers.
+ * Identifiant de visiteur pour les statistiques internes, stocké dans un
+ * COOKIE (pas un en-tête HTTP). Crucial pour la performance : un en-tête
+ * personnalisé force le navigateur à faire une requête CORS preflight
+ * (OPTIONS) AVANT chaque appel API, ce qui double les allers-retours réseau
+ * et ralentit fortement le chargement, surtout sur mobile. Un cookie est
+ * envoyé automatiquement (withCredentials) sans en-tête custom → aucun
+ * preflight. Le back le lit côté serveur (voir EvenementService).
  */
-function getSessionId(): string {
-  let id = localStorage.getItem(SESSION_ID_KEY)
-  if (!id) {
-    id = crypto.randomUUID()
-    localStorage.setItem(SESSION_ID_KEY, id)
-  }
-  return id
+function ensureSessionCookie(): void {
+  const has = document.cookie.split('; ').some((c) => c.startsWith(SESSION_COOKIE + '='))
+  if (has) return
+
+  const id = crypto.randomUUID?.() ?? (String(Date.now()) + Math.random().toString(16).slice(2))
+  const host = location.hostname
+  const isIpOrLocal = host === 'localhost' || /^[0-9.]+$/.test(host)
+  const parts = host.split('.')
+  // domaine parent (.mondomaine.tld) pour que le cookie atteigne aussi le
+  // sous-domaine api. Générique (pas de domaine en dur) — le site est vendu
+  // en marque blanche sur d'autres domaines.
+  const domainAttr = !isIpOrLocal && parts.length >= 2 ? `; domain=.${parts.slice(-2).join('.')}` : ''
+  const secure = location.protocol === 'https:' ? '; Secure' : ''
+  document.cookie = `${SESSION_COOKIE}=${id}; path=/; max-age=31536000; SameSite=Lax${domainAttr}${secure}`
 }
+
+ensureSessionCookie()
 
 clientApi.interceptors.request.use((config) => {
   const token = localStorage.getItem('client_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
-  config.headers['X-Session-Id'] = getSessionId()
   return config
 })
 

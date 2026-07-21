@@ -1,34 +1,52 @@
-import { motion, type Variants } from 'framer-motion'
-import type { ReactNode } from 'react'
-
-const variants: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0 },
-}
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 interface RevealProps {
   children: ReactNode
   className?: string
-  /** Délai en secondes, utile pour faire apparaître plusieurs éléments en cascade */
+  /** Délai en secondes, pour un effet de cascade entre plusieurs éléments */
   delay?: number
 }
 
 /**
  * Fait apparaître son contenu (fondu + léger glissement) quand il entre dans
- * le viewport au scroll. `once: true` : ne se déclenche qu'une fois, pas à
- * chaque scroll dans les deux sens.
+ * le viewport au scroll. Basé sur IntersectionObserver + CSS — aucune
+ * dépendance d'animation lourde (framer-motion retiré pour la performance :
+ * il chargeait ~42 Ko sur toutes les pages). Se déclenche une seule fois.
  */
 export function Reveal({ children, className, delay = 0 }: RevealProps) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+
+    // Pas de support (ou reduced-motion) : on affiche directement.
+    if (typeof IntersectionObserver === 'undefined') {
+      setVisible(true)
+      return
+    }
+
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true)
+          obs.disconnect()
+        }
+      },
+      { rootMargin: '0px 0px -80px 0px' },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
   return (
-    <motion.div
-      className={className}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: '0px 0px -80px 0px' }}
-      variants={variants}
-      transition={{ duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }}
+    <div
+      ref={ref}
+      className={`${className ?? ''} reveal ${visible ? 'reveal-in' : ''}`}
+      style={delay ? { transitionDelay: `${delay}s` } : undefined}
     >
       {children}
-    </motion.div>
+    </div>
   )
 }

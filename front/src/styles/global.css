@@ -42,10 +42,25 @@
   to   { background-position: -200% 0; }
 }
 
+@keyframes pop {
+  0%   { transform: scale(.4); opacity: 0; }
+  60%  { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 .animate-toastin { animation: toastin .3s cubic-bezier(.22,.61,.36,1); }
 .animate-slideup { animation: slideUp .36s cubic-bezier(.22,.61,.36,1); }
 .animate-fadein  { animation: fadeIn .3s ease; }
 .animate-shimmer { animation: shimmerSweep 1.6s ease-in-out infinite; }
+.animate-pop     { animation: pop .3s cubic-bezier(.5,1.5,.5,1); }
+
+/* Apparition au scroll (composant Reveal) — remplace framer-motion */
+.reveal    { opacity: 0; transform: translateY(24px); transition: opacity .5s cubic-bezier(.22,1,.36,1), transform .5s cubic-bezier(.22,1,.36,1); }
+.reveal-in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
 
 /* Prevent iOS auto-zoom on form inputs (zoom triggers when font-size < 16px) */
 @media (hover: none) and (pointer: coarse) {

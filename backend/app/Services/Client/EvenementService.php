@@ -33,16 +33,19 @@ class EvenementService
 
     private function sessionId(): string
     {
-        // Les routes catalogue (produits/catégories/recherche) tournent
-        // volontairement SANS session Laravel pour rester cacheables côté
-        // nginx (voir [[scaling_cache_architecture]]) — donc pas de cookie
-        // de session fiable là où la plupart de ces événements se déclenchent.
-        // Le front envoie un identifiant généré une fois et stocké en
-        // localStorage (X-Session-Id) : stable pour un même visiteur, quelle
-        // que soit la route. Fallback sur la session Laravel puis l'IP.
-        $header = request()->header('X-Session-Id');
-        if ($header) {
-            return (string) $header;
+        // Identifiant visiteur transmis via le cookie ndeya_sid (posé par le
+        // front). Lu depuis l'en-tête Cookie brut pour être robuste quel que
+        // soit le middleware de la route (le chiffrement de cookies Laravel
+        // ne s'applique pas à ce cookie posé côté JS). Fallback sur l'ancien
+        // en-tête X-Session-Id (clients encore en cache), puis session, puis IP.
+        $cookieHeader = (string) request()->header('Cookie', '');
+        if ($cookieHeader !== '' && preg_match('/(?:^|;\s*)ndeya_sid=([^;]+)/', $cookieHeader, $m)) {
+            return substr(rawurldecode($m[1]), 0, 100);
+        }
+
+        $legacyHeader = request()->header('X-Session-Id');
+        if ($legacyHeader) {
+            return (string) $legacyHeader;
         }
 
         if (request()->hasSession()) {
