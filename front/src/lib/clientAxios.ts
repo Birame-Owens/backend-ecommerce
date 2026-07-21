@@ -6,9 +6,28 @@ const clientApi = axios.create({
   withCredentials: true,
 })
 
+const SESSION_ID_KEY = 'ndeya-session-id'
+
+/**
+ * Identifiant de visiteur généré une seule fois et stocké en localStorage.
+ * Les routes catalogue tournent sans session Laravel (cache nginx), donc pas
+ * de cookie de session fiable à cet endroit — cet identifiant, stable pour
+ * un même navigateur, sert de clé de session pour les statistiques internes
+ * (voir backend EvenementService), qui ne dépendent d'aucun script tiers.
+ */
+function getSessionId(): string {
+  let id = localStorage.getItem(SESSION_ID_KEY)
+  if (!id) {
+    id = crypto.randomUUID()
+    localStorage.setItem(SESSION_ID_KEY, id)
+  }
+  return id
+}
+
 clientApi.interceptors.request.use((config) => {
   const token = localStorage.getItem('client_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
+  config.headers['X-Session-Id'] = getSessionId()
   return config
 })
 

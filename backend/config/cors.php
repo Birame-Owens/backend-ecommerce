@@ -29,6 +29,7 @@ return [
         'X-CSRF-TOKEN',
         'X-Requested-With',
         'X-XSRF-TOKEN',
+        'X-Session-Id',
     ],
 
     'exposed_headers' => [],

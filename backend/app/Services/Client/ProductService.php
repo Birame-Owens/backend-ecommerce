@@ -11,6 +11,7 @@ use App\Models\AvisClient;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use App\Models\ShopSetting;
+use App\Services\Client\EvenementService;
 
 class ProductService
 {
@@ -678,6 +679,7 @@ class ProductService
         // Incrémenter les vues hors du cache, en arrière-plan (non bloquant)
         dispatch(function () use ($cached) {
             Produit::where('id', $cached['product_id'])->increment('nombre_vues');
+            app(EvenementService::class)->log('vue_produit', ['produit_id' => $cached['product_id']]);
         })->afterResponse();
 
         return [

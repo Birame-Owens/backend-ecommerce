@@ -178,6 +178,11 @@ class CheckoutService
 
             DB::commit();
 
+            app(EvenementService::class)->log('commande_creee', [
+                'commande_id' => $commande->id,
+                'metadata'    => ['montant_total' => $commande->montant_total],
+            ]);
+
             return $this->orderResponse($commande, $totals);
 
         } catch (QueryException $e) {
@@ -639,11 +644,23 @@ class CheckoutService
         }
 
         try {
-            return app(NabooPayService::class)->createTransaction($commande, $paiement, $provider, $data);
+            $result = app(NabooPayService::class)->createTransaction($commande, $paiement, $provider, $data);
+
+            app(EvenementService::class)->log('paiement_initie', [
+                'commande_id' => $commande->id,
+                'metadata'    => ['methode' => $methodePaiement],
+            ]);
+
+            return $result;
         } catch (Exception $e) {
             $paiement->update([
                 'statut' => 'echoue',
                 'message_retour' => $e->getMessage(),
+            ]);
+
+            app(EvenementService::class)->log('paiement_echoue', [
+                'commande_id' => $commande->id,
+                'metadata'    => ['methode' => $methodePaiement, 'raison' => $e->getMessage()],
             ]);
 
             throw $e;
@@ -841,6 +858,12 @@ class CheckoutService
                 'commande_id' => $commande->id,
                 'montant' => $commande->montant_total,
                 'new_account_created' => $isNewAccount
+            ]);
+
+            app(EvenementService::class)->log('achat_confirme', [
+                'client_id'   => $commande->client_id,
+                'commande_id' => $commande->id,
+                'metadata'    => ['montant_total' => $commande->montant_total],
             ]);
 
             return [

@@ -4,16 +4,19 @@ namespace App\Http\Controllers\Api\Client;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Services\Client\ProductService;
+use App\Services\Client\EvenementService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
     protected ProductService $productService;
+    protected EvenementService $evenements;
 
-    public function __construct(ProductService $productService)
+    public function __construct(ProductService $productService, EvenementService $evenements)
     {
         $this->productService = $productService;
+        $this->evenements = $evenements;
     }
 
     // Retourne TOUTES les catégories actives (parents + enfants) avec parent_id
@@ -113,6 +116,12 @@ class CategoryController extends Controller
 
             if (!$category) {
                 return response()->json(['success' => false, 'message' => 'Catégorie non trouvée'], 404);
+            }
+
+            // Uniquement la 1ère page (page 2, 3... c'est de la pagination, pas
+            // une nouvelle "visite" de catégorie pour les statistiques).
+            if ((int) $request->query('page', 1) <= 1) {
+                $this->evenements->log('vue_categorie', ['categorie_id' => $category->id]);
             }
 
             $filters = $request->only(['search', 'min_price', 'max_price', 'on_sale', 'sort', 'direction', 'per_page', 'est_nouveaute', 'est_populaire', 'page']);

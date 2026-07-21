@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics'
+import { logEvent } from '@/lib/events'
 
 const CART_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 jours
 
@@ -49,6 +50,7 @@ export const useCartStore = create<CartState>()(
       addItem: (item) => {
         const key = `${item.id}-${item.couleur || 'nc'}-${item.taille || 'nc'}`
         trackAddToCart({ item_id: item.id, item_name: item.nom, price: item.prix, quantity: item.qty })
+        logEvent('ajout_panier', { produit_id: item.id, metadata: { quantite: item.qty, couleur: item.couleur, taille: item.taille, prix: item.prix } })
         set((s) => {
           const existing = s.items.find((i) => i.key === key)
           if (existing) {
@@ -64,6 +66,7 @@ export const useCartStore = create<CartState>()(
         const removed = s.items.find((i) => i.key === key)
         if (removed) {
           trackRemoveFromCart({ item_id: removed.id, item_name: removed.nom, price: removed.prix, quantity: removed.qty })
+          logEvent('retrait_panier', { produit_id: removed.id, metadata: { quantite: removed.qty } })
         }
         return { items: s.items.filter((i) => i.key !== key), _savedAt: now() }
       }),

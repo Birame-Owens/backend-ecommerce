@@ -311,6 +311,11 @@ Route::prefix('client')->group(function () use ($statelessPublic) {
         Route::get('/quick', [HomeController::class, 'quickSearch']); // Compatibilité avec l'existant
     });
     
+    // =================== ÉVÉNEMENTS (business intelligence interne) ===================
+    Route::withoutMiddleware($statelessPublic)
+        ->post('/evenements', [\App\Http\Controllers\Api\Client\EvenementController::class, 'store'])
+        ->middleware('throttle.api:60,1');
+
     // =================== PANIER (SESSION BASED) ===================
     Route::prefix('cart')->group(function () {
         Route::get('/', [CartController::class, 'index']);
