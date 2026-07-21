@@ -1,20 +1,41 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { catalogClientApi } from '@/api/client/catalog'
 import { NProductCard } from '@/components/client/NProductCard'
 import { NIcon } from '@/components/client/NIcon'
+import { logEvent } from '@/lib/events'
 
 export function SearchPage() {
   const navigate = useNavigate()
-  const [query, setQuery] = useState('')
-  const [submitted, setSubmitted] = useState('')
+  const [params] = useSearchParams()
+  const urlQuery = params.get('q')?.trim() ?? ''
+  const [query, setQuery] = useState(urlQuery)
+  const [submitted, setSubmitted] = useState(urlQuery)
+
+  // La barre de nav redirige vers /recherche?q=... : on synchronise le terme
+  // soumis avec l'URL (sinon la page reste vide en arrivant depuis la nav).
+  useEffect(() => {
+    if (urlQuery && urlQuery !== submitted) {
+      setQuery(urlQuery)
+      setSubmitted(urlQuery)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlQuery])
 
   const { data, isLoading } = useQuery({
     queryKey: ['client-search', submitted],
     queryFn: () => catalogClientApi.products({ search: submitted, per_page: 24 }).then((r) => r.data.data),
     enabled: submitted.length >= 2,
   })
+
+  // Journalise UNIQUEMENT la recherche validée (terme final complet), pas
+  // chaque frappe — voir ProductController::index (côté serveur, désactivé).
+  useEffect(() => {
+    if (submitted.length >= 2) {
+      logEvent('recherche', { terme_recherche: submitted })
+    }
+  }, [submitted])
 
   const products = data?.products ?? []
 

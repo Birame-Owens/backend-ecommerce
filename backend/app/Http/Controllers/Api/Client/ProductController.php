@@ -28,15 +28,11 @@ class ProductController extends Controller
                 'on_sale', 'sort', 'direction', 'per_page'
             ]);
 
-            // La vraie recherche du site passe par ici (barre de recherche +
-            // page /recherche appellent /products?search=...), pas par
-            // /api/client/search. On journalise donc le terme ici. Uniquement
-            // la 1ère page pour ne pas compter chaque scroll comme une recherche.
-            $terme = trim((string) $request->query('search', ''));
-            if (strlen($terme) >= 2 && (int) $request->query('page', 1) <= 1) {
-                app(\App\Services\Client\EvenementService::class)
-                    ->log('recherche', ['terme_recherche' => $terme]);
-            }
+            // NB : on ne journalise PAS la recherche ici — cet endpoint est
+            // appelé à chaque frappe par la recherche instantanée de la barre
+            // (« Top », « Top b », « Top ba »…). Seule la recherche VALIDÉE
+            // est journalisée, depuis le front (page /recherche), avec le
+            // terme final complet. Voir front SearchPage + EvenementController.
 
             $result = $this->productService->getProducts($filters);
 
