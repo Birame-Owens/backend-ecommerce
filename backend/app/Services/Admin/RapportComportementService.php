@@ -22,7 +22,7 @@ class RapportComportementService
             'entonnoir'               => $this->entonnoir($debut, $fin),
             'produits_performance'    => $this->produitsPerformance($debut, $fin),
             'recherches_frequentes'   => $this->recherchesFrequentes($debut, $fin),
-            'recherches_sans_clic'    => $this->recherchesSansClic($debut, $fin),
+            'recherches_sans_resultat'=> $this->recherchesSansResultat($debut, $fin),
             'top_categories'          => $this->topCategories($debut, $fin),
             'echecs_paiement'         => $this->echecsPaiement($debut, $fin),
         ];
@@ -163,45 +163,25 @@ class RapportComportementService
     }
 
     /**
-     * Recherches suivies d'aucun clic sur un résultat dans la même session :
-     * ce que les clients cherchent mais ne trouvent pas (produits à ajouter
-     * au catalogue). Approximation : terme recherché jamais suivi, pour la
-     * même session, d'une vue produit dans les 10 minutes.
+     * Recherches qui n'ont renvoyé AUCUN résultat (metadata.resultats = 0) :
+     * ce que les clients cherchent mais que le catalogue ne contient pas —
+     * donc des articles à ajouter. Basé sur le nombre de résultats réel
+     * enregistré avec chaque recherche validée (pas sur une heuristique de
+     * clic, qui donnait des faux positifs pour des produits pourtant existants).
      */
-    private function recherchesSansClic(Carbon $debut, Carbon $fin): array
+    private function recherchesSansResultat(Carbon $debut, Carbon $fin): array
     {
-        $recherches = DB::table('evenements')
+        return DB::table('evenements')
             ->where('type', 'recherche')
             ->whereNotNull('terme_recherche')
+            ->where(DB::raw("metadata->>'resultats'"), '0')
             ->whereBetween('created_at', [$debut, $fin])
-            ->select('terme_recherche', 'session_id', 'created_at')
-            ->get();
-
-        if ($recherches->isEmpty()) {
-            return [];
-        }
-
-        $sansClic = [];
-
-        foreach ($recherches as $r) {
-            $aVu = DB::table('evenements')
-                ->where('type', 'vue_produit')
-                ->where('session_id', $r->session_id)
-                ->whereBetween('created_at', [$r->created_at, Carbon::parse($r->created_at)->addMinutes(10)])
-                ->exists();
-
-            if (!$aVu) {
-                $terme = $r->terme_recherche;
-                $sansClic[$terme] = ($sansClic[$terme] ?? 0) + 1;
-            }
-        }
-
-        arsort($sansClic);
-
-        return collect($sansClic)
-            ->take(10)
-            ->map(fn ($total, $terme) => ['terme' => $terme, 'total' => $total])
-            ->values()
+            ->select('terme_recherche', DB::raw('COUNT(*) as total'))
+            ->groupBy('terme_recherche')
+            ->orderByDesc('total')
+            ->limit(10)
+            ->get()
+            ->map(fn ($r) => ['terme' => $r->terme_recherche, 'total' => (int) $r->total])
             ->all();
     }
 

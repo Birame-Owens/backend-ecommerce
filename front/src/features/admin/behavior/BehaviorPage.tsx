@@ -275,18 +275,18 @@ export default function BehaviorPage() {
                 )}
             </Card>
 
-            {/* Recherches sans résultat cliqué */}
+            {/* Recherches sans aucun résultat */}
             <Card
               title="Cherché mais pas trouvé"
               subtitle="Opportunités"
               icon={XCircle}
-              hint="Recherches qui n'ont mené à aucune consultation de produit. Souvent : des articles que vos clients veulent mais que vous ne vendez pas encore."
+              hint="Recherches qui n'ont renvoyé aucun résultat : des articles que vos clients veulent mais que vous ne vendez pas encore. À envisager d'ajouter au catalogue."
             >
-              {data.recherches_sans_clic.length === 0
+              {data.recherches_sans_resultat.length === 0
                 ? <Empty msg="Rien ici — vos visiteurs trouvent ce qu'ils cherchent." />
                 : (
                   <div className="space-y-1.5">
-                    {data.recherches_sans_clic.map((r, i) => (
+                    {data.recherches_sans_resultat.map((r, i) => (
                       <div key={i} className="flex items-center justify-between px-3 py-2 bg-rose-50 border border-rose-100 rounded-lg">
                         <span className="text-[13px] text-ink truncate">{r.terme}</span>
                         <span className="text-[12px] font-bold text-rose-500 tabular-nums flex-shrink-0 ml-2">{r.total}×</span>

@@ -36,7 +36,7 @@ export interface ComportementReport {
     taux_conversion: number
   }>
   recherches_frequentes: Array<{ terme: string; total: number }>
-  recherches_sans_clic: Array<{ terme: string; total: number }>
+  recherches_sans_resultat: Array<{ terme: string; total: number }>
   top_categories: Array<{ nom: string; vues: number }>
   echecs_paiement: Array<{ methode: string; total: number }>
 }
