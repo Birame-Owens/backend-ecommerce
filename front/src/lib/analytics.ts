@@ -14,11 +14,20 @@
  * "webkit.messageHandlers" émises par ces mêmes navigateurs. On journalise
  * l'échec de chargement du script (via Sentry si dispo) pour avoir une
  * preuve concrète plutôt que de deviner, sans jamais faire planter la page.
+ *
+ * Consent Mode : sans signal de consentement explicite, gtag.js met les
+ * évènements en file d'attente (dataLayer) sans jamais les envoyer, de façon
+ * silencieuse — script chargé, config exécutée, mais aucun hit ne part.
+ * Le site n'a pas de bannière de cookies, donc on accorde le consentement
+ * par défaut avant tout autre appel gtag (sinon rien ne s'envoie jamais).
  */
 
 import * as Sentry from '@sentry/react'
 
-type GtagArgs = [string, string, Record<string, unknown>?] | [string, Date]
+type GtagArgs =
+  | [string, string, Record<string, unknown>?]
+  | [string, Date]
+  | [string, Record<string, string>]
 
 declare global {
   interface Window {
@@ -38,6 +47,13 @@ export function initGA(measurementId: string | null | undefined): void {
   if (!alreadyLoaded) {
     window.dataLayer = window.dataLayer || []
     window.gtag = function gtag(...args: GtagArgs) { window.dataLayer!.push(args) }
+
+    // Doit être appelé avant 'js'/'config' : sans ça, gtag.js met les hits en
+    // attente indéfiniment sans jamais les envoyer (voir note en haut du fichier).
+    window.gtag('consent', 'default', {
+      ad_storage: 'granted',
+      analytics_storage: 'granted',
+    })
     window.gtag('js', new Date())
 
     const script = document.createElement('script')
