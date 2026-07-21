@@ -8,7 +8,15 @@
  * SPA : GA ne voit pas les navigations React Router par défaut, d'où
  * send_page_view: false + trackPageview() appelé manuellement à chaque
  * changement de route (voir ClientLayout).
+ *
+ * Certains navigateurs intégrés (Instagram, WhatsApp, Snapchat) bloquent ou
+ * limitent googletagmanager.com — cf. les erreurs Sentry
+ * "webkit.messageHandlers" émises par ces mêmes navigateurs. On journalise
+ * l'échec de chargement du script (via Sentry si dispo) pour avoir une
+ * preuve concrète plutôt que de deviner, sans jamais faire planter la page.
  */
+
+import * as Sentry from '@sentry/react'
 
 type GtagArgs = [string, string, Record<string, unknown>?] | [string, Date]
 
@@ -35,6 +43,13 @@ export function initGA(measurementId: string | null | undefined): void {
     const script = document.createElement('script')
     script.async = true
     script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`
+    script.onerror = () => {
+      Sentry.captureMessage('gtag.js n\'a pas pu se charger (navigateur intégré ou bloqueur ?)', {
+        level: 'warning',
+        tags: { source: 'analytics' },
+        extra: { userAgent: navigator.userAgent, measurementId },
+      })
+    }
     document.head.appendChild(script)
   }
 
