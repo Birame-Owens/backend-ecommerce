@@ -618,6 +618,31 @@ public function analytics(RapportRequest $request): JsonResponse
 }
 
 /**
+ * Rapport comportemental (business intelligence first-party) : entonnoir de
+ * conversion, produits vus vs achetés, recherches, abandons de panier/paiement.
+ */
+public function comportement(RapportRequest $request): JsonResponse
+{
+    try {
+        $periode = $this->getPeriodeDates($request->input('periode', '30_jours'), $request->only(['date_debut', 'date_fin']));
+        $rapport = app(\App\Services\Admin\RapportComportementService::class)
+            ->getReport($periode['debut'], $periode['fin']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $rapport,
+            'meta' => ['type' => 'comportement', 'periode' => $periode]
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Erreur rapport comportement', ['error' => $e->getMessage()]);
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de la génération du rapport comportemental'
+        ], 500);
+    }
+}
+
+/**
  * Rapport de performance produits
  */
 public function performanceProduits(RapportRequest $request): JsonResponse
