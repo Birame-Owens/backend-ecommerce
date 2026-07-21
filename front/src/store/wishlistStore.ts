@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { logEvent } from '@/lib/events'
 
 export interface WishlistItem {
   id: number
@@ -22,11 +23,15 @@ export const useWishlistStore = create<WishlistState>()(
     (set, get) => ({
       items: [],
       toggle: (item) =>
-        set((s) => ({
-          items: s.items.some((x) => x.id === item.id)
-            ? s.items.filter((x) => x.id !== item.id)
-            : [...s.items, item],
-        })),
+        set((s) => {
+          const present = s.items.some((x) => x.id === item.id)
+          logEvent(present ? 'retrait_wishlist' : 'ajout_wishlist', { produit_id: item.id })
+          return {
+            items: present
+              ? s.items.filter((x) => x.id !== item.id)
+              : [...s.items, item],
+          }
+        }),
       has: (id) => get().items.some((x) => x.id === id),
       clear: () => set({ items: [] }),
     }),

@@ -5,6 +5,7 @@ use App\Models\Produit;
 use App\Models\Category;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use App\Services\Client\EvenementService;
 
 class SearchService
 {
@@ -123,21 +124,8 @@ class SearchService
 
     public function saveSearch(string $query, ?int $userId = null): void
     {
-        // Log des recherches pour analytics futures.
-        // Best-effort : un échec d'analytics (ex: table search_logs absente — il
-        // n'existe aucune migration) ne doit JAMAIS faire échouer la recherche.
-        try {
-            DB::table('search_logs')->insert([
-                'query' => $query,
-                'user_id' => $userId,
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-                'created_at' => now()
-            ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning(
-                'saveSearch ignoré (analytics): ' . $e->getMessage()
-            );
-        }
+        // NB: $userId ici est un id User, pas Client — EvenementService résout
+        // le client_id lui-même depuis l'utilisateur authentifié le cas échéant.
+        app(EvenementService::class)->log('recherche', ['terme_recherche' => $query]);
     }
 }
