@@ -60,7 +60,7 @@ class RapportComportementTest extends TestCase
                     'entonnoir',
                     'produits_performance',
                     'recherches_frequentes',
-                    'recherches_sans_clic',
+                    'recherches_sans_resultat',
                     'top_categories',
                     'echecs_paiement',
                 ],

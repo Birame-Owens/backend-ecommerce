@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { catalogClientApi } from '@/api/client/catalog'
@@ -29,13 +29,20 @@ export function SearchPage() {
     enabled: submitted.length >= 2,
   })
 
-  // Journalise UNIQUEMENT la recherche validée (terme final complet), pas
-  // chaque frappe — voir ProductController::index (côté serveur, désactivé).
+  // Journalise UNIQUEMENT la recherche validée (terme final complet), une
+  // seule fois par terme, AVEC le nombre de résultats — c'est ce qui permet
+  // au dashboard de distinguer « cherché sans aucun résultat » (article
+  // manquant) d'une recherche qui a bien trouvé des produits.
+  const loggedRef = useRef<string | null>(null)
   useEffect(() => {
-    if (submitted.length >= 2) {
-      logEvent('recherche', { terme_recherche: submitted })
+    if (submitted.length >= 2 && !isLoading && data && loggedRef.current !== submitted) {
+      loggedRef.current = submitted
+      logEvent('recherche', {
+        terme_recherche: submitted,
+        metadata: { resultats: data.pagination.total },
+      })
     }
-  }, [submitted])
+  }, [submitted, isLoading, data])
 
   const products = data?.products ?? []
 
