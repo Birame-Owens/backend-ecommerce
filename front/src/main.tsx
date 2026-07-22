@@ -13,6 +13,18 @@ if (sentryDsn) {
     integrations: [Sentry.browserTracingIntegration()],
     // 10% des transactions tracées (perf) — ajustable
     tracesSampleRate: 0.1,
+    // Bruit non-actionnable : scripts injectés par les navigateurs intégrés
+    // de Snapchat / Instagram / Facebook / WhatsApp (WebView iOS/Android)
+    // quand le site est ouvert depuis un lien dans ces applis. Ces erreurs
+    // viennent de LEUR code, pas du nôtre — inutile de polluer Sentry avec.
+    ignoreErrors: [
+      /SCDynimacBridge/i,       // Snapchat
+      /webkit\.messageHandlers/i,
+      /sendDataToNative/i,
+      /sendPageHideMessage/i,
+      /instantSearchSDKJSBridge/i, // Facebook / Instagram
+      /_AutofillCallbackHandler/i, // WebView Android
+    ],
   })
 }
 
