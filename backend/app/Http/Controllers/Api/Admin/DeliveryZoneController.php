@@ -18,10 +18,11 @@ class DeliveryZoneController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'nom'             => 'required|string|max:100',
-            'prix'            => 'required|numeric|min:0',
-            'est_active'      => 'boolean',
-            'ordre_affichage' => 'integer|min:0',
+            'nom'               => 'required|string|max:100',
+            'prix'              => 'required|numeric|min:0',
+            'est_active'        => 'boolean',
+            'ordre_affichage'   => 'integer|min:0',
+            'eligible_gratuite' => 'boolean',
         ]);
 
         $zone = DeliveryZone::create($data);
@@ -31,10 +32,11 @@ class DeliveryZoneController extends Controller
     public function update(Request $request, DeliveryZone $deliveryZone): JsonResponse
     {
         $data = $request->validate([
-            'nom'             => 'sometimes|required|string|max:100',
-            'prix'            => 'sometimes|required|numeric|min:0',
-            'est_active'      => 'boolean',
-            'ordre_affichage' => 'integer|min:0',
+            'nom'               => 'sometimes|required|string|max:100',
+            'prix'              => 'sometimes|required|numeric|min:0',
+            'est_active'        => 'boolean',
+            'ordre_affichage'   => 'integer|min:0',
+            'eligible_gratuite' => 'boolean',
         ]);
 
         $deliveryZone->update($data);

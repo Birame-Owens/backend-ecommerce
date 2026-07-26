@@ -9,6 +9,7 @@ interface ZoneFormState {
   prix: string
   est_active: boolean
   ordre_affichage: string
+  eligible_gratuite: boolean
 }
 
 const emptyForm = (): ZoneFormState => ({
@@ -16,6 +17,7 @@ const emptyForm = (): ZoneFormState => ({
   prix: '',
   est_active: true,
   ordre_affichage: '0',
+  eligible_gratuite: false,
 })
 
 function ZoneModal({
@@ -29,7 +31,7 @@ function ZoneModal({
 }) {
   const [form, setForm] = useState<ZoneFormState>(
     zone
-      ? { nom: zone.nom, prix: String(zone.prix), est_active: zone.est_active, ordre_affichage: String(zone.ordre_affichage) }
+      ? { nom: zone.nom, prix: String(zone.prix), est_active: zone.est_active, ordre_affichage: String(zone.ordre_affichage), eligible_gratuite: zone.eligible_gratuite }
       : emptyForm()
   )
   const [saving, setSaving] = useState(false)
@@ -48,6 +50,7 @@ function ZoneModal({
         prix,
         est_active: form.est_active,
         ordre_affichage: Number(form.ordre_affichage) || 0,
+        eligible_gratuite: form.eligible_gratuite,
       })
       onClose()
     } catch {
@@ -144,6 +147,31 @@ function ZoneModal({
                 <span className="text-[12px] text-ink">{form.est_active ? 'Active' : 'Inactive'}</span>
               </label>
             </div>
+          </div>
+
+          {/* Éligibilité à la livraison gratuite au-dessus du seuil */}
+          <div className="rounded-xl border border-beige-300 bg-beige-100 p-3.5">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.eligible_gratuite}
+                onChange={(e) => setForm((f) => ({ ...f, eligible_gratuite: e.target.checked }))}
+                className="sr-only"
+              />
+              <div
+                className={`mt-0.5 w-10 h-5 rounded-full flex-shrink-0 transition-colors ${form.eligible_gratuite ? 'bg-beige-500' : 'bg-beige-300'}`}
+                onClick={() => setForm((f) => ({ ...f, eligible_gratuite: !f.eligible_gratuite }))}
+              >
+                <div className={`w-4 h-4 rounded-full bg-white m-0.5 transition-transform ${form.eligible_gratuite ? 'translate-x-5' : ''}`} />
+              </div>
+              <div>
+                <span className="text-[12.5px] font-semibold text-ink">Livraison gratuite au-dessus du seuil</span>
+                <p className="text-[11px] text-muted mt-0.5">
+                  Si coché, cette zone devient gratuite quand le panier dépasse le seuil (Paramètres → Livraison).
+                  À réserver aux zones proches (Dakar) pour protéger la marge.
+                </p>
+              </div>
+            </label>
           </div>
 
           <div className="flex gap-3 pt-2">
@@ -303,7 +331,14 @@ export default function DeliveryZonesPage() {
               {/* Name */}
               <div className="flex items-center">
                 <div>
-                  <p className="text-[13px] font-semibold text-ink">{zone.nom}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-[13px] font-semibold text-ink">{zone.nom}</p>
+                    {zone.eligible_gratuite && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-ok/10 text-ok text-[10px] font-semibold">
+                        Gratuite au seuil
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[11px] text-muted mt-0.5">Ordre: {zone.ordre_affichage}</p>
                 </div>
               </div>

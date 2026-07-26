@@ -10,7 +10,7 @@ class DeliveryZoneController extends Controller
 {
     public function index(): JsonResponse
     {
-        $zones = DeliveryZone::active()->get(['id', 'nom', 'prix', 'ordre_affichage']);
+        $zones = DeliveryZone::active()->get(['id', 'nom', 'prix', 'ordre_affichage', 'eligible_gratuite']);
         return response()->json(['success' => true, 'data' => $zones]);
     }
 }

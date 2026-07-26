@@ -6,6 +6,7 @@ export interface AdminDeliveryZone {
   prix: number
   est_active: boolean
   ordre_affichage: number
+  eligible_gratuite: boolean
   created_at: string
   updated_at: string
 }
@@ -15,6 +16,7 @@ export interface DeliveryZonePayload {
   prix: number
   est_active?: boolean
   ordre_affichage?: number
+  eligible_gratuite?: boolean
 }
 
 export const deliveryZonesAdminApi = {

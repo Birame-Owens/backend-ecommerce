@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { NIcon, WAGlyph } from '@/components/client/NIcon'
-import { useCartStore, cartTotal, cartSubtotal, cartCount, type CartItem } from '@/store/cartStore'
+import { useCartStore, cartSubtotal, cartCount, type CartItem } from '@/store/cartStore'
 import { checkoutApi } from '@/api/client/checkout'
 import { useToastStore } from '@/store/toastStore'
 import { useShopStore, buildWaUrl } from '@/store/shopStore'
+import { useDeliveryInfo, computeShipping, isPickupZone } from '@/hooks/useDeliveryInfo'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
@@ -251,13 +252,33 @@ function CouponSection() {
 /* ─── Page ─────────────────────────────────────────────────────── */
 export function CartPage() {
   const navigate = useNavigate()
-  const { items, clearCart, removeItem, coupon } = useCartStore()
+  const { items, clearCart, removeItem, coupon, deliveryZoneId, setDeliveryZoneId } = useCartStore()
   const subtotal = cartSubtotal(items)
-  const total = cartTotal(items, coupon)
+  const discount = coupon?.discount ?? 0
+  const afterDiscount = Math.max(0, subtotal - discount)
   const count = cartCount(items)
   const waNumber = useShopStore((s) => s.waNumber)
 
   const [pendingItem, setPendingItem] = useState<CartItem | null>(null)
+
+  /* Livraison : zone choisie dès le panier (plus de surprise au checkout) */
+  const { zones, freeThreshold } = useDeliveryInfo()
+  const selectedZone = useMemo(() => {
+    if (deliveryZoneId != null) {
+      const found = zones.find((z) => z.id === deliveryZoneId)
+      if (found) return found
+    }
+    // Défaut : première zone de livraison réelle (pas le retrait), pour afficher
+    // un coût honnête au cas typique. Le retrait reste sélectionnable.
+    return zones.find((z) => !isPickupZone(z)) ?? zones[0] ?? null
+  }, [zones, deliveryZoneId])
+  const shipping = computeShipping(selectedZone, afterDiscount, freeThreshold)
+  const total = afterDiscount + shipping
+
+  // Barre de progression vers la gratuité (uniquement pour une zone éligible, Dakar/proches)
+  const zoneEligible = !!selectedZone?.eligible_gratuite && freeThreshold != null
+  const remainingForFree = zoneEligible ? Math.max(0, freeThreshold! - afterDiscount) : 0
+  const freeProgress = zoneEligible ? Math.min(100, (afterDiscount / freeThreshold!) * 100) : 0
 
   /* WhatsApp message */
   const waMsg = [
@@ -268,6 +289,7 @@ export function CartPage() {
       return `• ${i.nom}${i.couleur ? ` — ${l1}: ${i.couleur}` : ''}${i.taille ? `, ${l2}: ${i.taille}` : ''} ×${i.qty} — ${fmt(i.prix * i.qty)}`
     }),
     ...(coupon ? [`\nCode promo: ${coupon.code} (-${fmt(coupon.discount)})`] : []),
+    ...(selectedZone ? [`Livraison (${selectedZone.nom}) : ${shipping === 0 ? 'gratuite' : fmt(shipping)}`] : []),
     '',
     `*Total : ${fmt(total)}*`,
   ].join('\n')
@@ -412,6 +434,46 @@ export function CartPage() {
                   <CouponSection />
                 </div>
 
+                {/* Zone de livraison — choisie dès le panier */}
+                {zones.length > 0 && (
+                  <div className="border-t border-line pt-3 mb-3">
+                    <label htmlFor="cart-zone" className="text-[11px] font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
+                      <NIcon name="truck" size={14} strokeWidth={1.7} className="text-accent" />
+                      Zone de livraison
+                    </label>
+                    <select
+                      id="cart-zone"
+                      value={selectedZone?.id ?? ''}
+                      onChange={(e) => setDeliveryZoneId(Number(e.target.value))}
+                      className="w-full h-10 px-3 rounded-[8px] border border-line bg-white text-[13px] text-ink
+                        focus:outline-none focus:border-accent transition-colors"
+                    >
+                      {zones.map((z) => (
+                        <option key={z.id} value={z.id}>
+                          {z.nom} — {z.prix === 0 ? 'Gratuit' : fmt(z.prix)}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Barre de progression vers la livraison gratuite */}
+                    {zoneEligible && remainingForFree > 0 && (
+                      <div className="mt-3">
+                        <p className="text-[12px] text-ink-2 mb-1.5">
+                          Plus que <span className="font-bold text-accent tabular-nums">{fmt(remainingForFree)}</span> pour la <span className="font-semibold">livraison gratuite</span>
+                        </p>
+                        <div className="h-2 rounded-full bg-sand overflow-hidden">
+                          <div className="h-full rounded-full bg-accent transition-all duration-500" style={{ width: `${freeProgress}%` }} />
+                        </div>
+                      </div>
+                    )}
+                    {zoneEligible && remainingForFree === 0 && (
+                      <p className="mt-2 text-[12px] font-semibold text-ok flex items-center gap-1.5">
+                        <NIcon name="check" size={14} strokeWidth={2.2} /> Livraison gratuite débloquée
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* Subtotal / discount / shipping */}
                 <div className="border-t border-line pt-3 mb-3 space-y-1.5">
                   <div className="flex justify-between text-[13px] text-muted">
@@ -425,14 +487,16 @@ export function CartPage() {
                     </div>
                   )}
                   <div className="flex justify-between text-[13px] text-muted">
-                    <span>Livraison</span>
-                    <span className="font-medium text-ok">À confirmer</span>
+                    <span className="truncate pr-2">Livraison{selectedZone ? ` · ${selectedZone.nom}` : ''}</span>
+                    <span className={`font-medium tabular-nums flex-shrink-0 ${shipping === 0 ? 'text-ok' : 'text-ink'}`}>
+                      {shipping === 0 ? (isPickupZone(selectedZone) ? 'Retrait gratuit' : 'Gratuite') : fmt(shipping)}
+                    </span>
                   </div>
                 </div>
 
                 {/* Total */}
                 <div className="flex justify-between items-baseline border-t border-line pt-3 mb-5">
-                  <span className="font-semibold text-[15px] text-ink">Total estimé</span>
+                  <span className="font-semibold text-[15px] text-ink">Total</span>
                   <span className="font-bold text-[22px] text-accent tabular-nums">{fmt(total)}</span>
                 </div>
 

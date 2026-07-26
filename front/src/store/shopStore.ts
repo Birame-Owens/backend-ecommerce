@@ -12,6 +12,7 @@ interface ShopState {
   email: string
   address: string
   gaId: string | null
+  freeShippingThreshold: number | null // seuil de livraison gratuite (F), null si désactivé
   loaded: boolean
   load: () => Promise<void>
 }
@@ -28,6 +29,7 @@ export const useShopStore = create<ShopState>()(
       email: 'contact@nd-world.site',
       address: 'Dakar, Sénégal',
       gaId: null,
+      freeShippingThreshold: null,
       loaded: false,
       load: async () => {
         try {
@@ -35,6 +37,7 @@ export const useShopStore = create<ShopState>()(
           if (res.data.success) {
             const c = res.data.data.company
             const analytics = res.data.data.analytics
+            const shipping = res.data.data.shipping
             set({
               waNumber: (c.whatsapp ?? '').replace(/\D/g, '') || get().waNumber,
               shopName: c.name ?? get().shopName,
@@ -45,6 +48,9 @@ export const useShopStore = create<ShopState>()(
               email: c.email || get().email,
               address: c.address || get().address,
               gaId: analytics?.ga_measurement_id ?? null,
+              freeShippingThreshold: shipping?.enabled === false
+                ? null
+                : (shipping?.free_threshold ?? null),
               loaded: true,
             })
           }
@@ -59,6 +65,7 @@ export const useShopStore = create<ShopState>()(
         waNumber: s.waNumber, shopName: s.shopName, logo: s.logo,
         instagram: s.instagram, facebook: s.facebook, tiktok: s.tiktok,
         email: s.email, address: s.address, gaId: s.gaId,
+        freeShippingThreshold: s.freeShippingThreshold,
       }),
     }
   )
