@@ -18,6 +18,131 @@ const timelineSteps = [
   { key: 'livree', label: 'Livree' },
 ]
 
+/* ─── Réglages de livraison éditables (seuil, tarif par défaut, on/off) ─── */
+function ShippingSettingsCard({
+  settings,
+  onSaved,
+}: {
+  settings: AdminShippingSettings | null
+  onSaved: (s: AdminShippingSettings) => void
+}) {
+  const [threshold, setThreshold] = useState('')
+  const [defaultCost, setDefaultCost] = useState('')
+  const [enabled, setEnabled] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+
+  useEffect(() => {
+    if (settings) {
+      setThreshold(String(Math.round(settings.free_threshold)))
+      setDefaultCost(String(Math.round(settings.default_cost)))
+      setEnabled(settings.is_enabled)
+    }
+  }, [settings])
+
+  const dirty = !!settings && (
+    Number(threshold) !== Math.round(settings.free_threshold) ||
+    Number(defaultCost) !== Math.round(settings.default_cost) ||
+    enabled !== settings.is_enabled
+  )
+
+  async function handleSave() {
+    const ft = Number(threshold)
+    const dc = Number(defaultCost)
+    if (isNaN(ft) || ft < 0 || isNaN(dc) || dc < 0) {
+      setMsg({ type: 'err', text: 'Valeurs invalides.' })
+      return
+    }
+    setSaving(true)
+    setMsg(null)
+    try {
+      const res = await shippingAdminApi.updateSettings({ default_cost: dc, free_threshold: ft, is_enabled: enabled })
+      onSaved(res.data.data)
+      setMsg({ type: 'ok', text: 'Paramètres enregistrés.' })
+    } catch {
+      setMsg({ type: 'err', text: "Échec de l'enregistrement." })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-beige-50 border border-beige-300 rounded-2xl p-5 shadow-beige">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <p className="text-xs text-muted uppercase tracking-widest">Réglages</p>
+          <h3 className="text-lg font-serif font-semibold text-ink">Livraison & gratuité</h3>
+        </div>
+        <Truck className="w-4 h-4 text-beige-500" strokeWidth={1.5} />
+      </div>
+
+      <div className="space-y-4">
+        {/* Activation */}
+        <div className="flex items-start gap-3 bg-beige-100 rounded-xl border border-beige-300 p-3">
+          <button
+            type="button"
+            onClick={() => setEnabled((v) => !v)}
+            className={`mt-0.5 w-10 h-5 rounded-full flex-shrink-0 transition-colors ${enabled ? 'bg-beige-500' : 'bg-beige-300'}`}
+            aria-pressed={enabled}
+          >
+            <div className={`w-4 h-4 rounded-full bg-white m-0.5 transition-transform ${enabled ? 'translate-x-5' : ''}`} />
+          </button>
+          <div>
+            <p className="text-sm font-semibold text-ink">{enabled ? 'Règles de livraison actives' : 'Règles de livraison désactivées'}</p>
+            <p className="text-[11px] text-muted mt-0.5">
+              Doit être <b>Active</b> pour que la gratuité au-dessus du seuil s'applique. N'ajoute aucun frais : les zones facturent déjà leur prix.
+            </p>
+          </div>
+        </div>
+
+        {/* Seuil de gratuité */}
+        <div>
+          <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted mb-1.5">
+            Livraison gratuite dès (FCFA)
+          </label>
+          <input
+            type="number" min={0} step={500}
+            value={threshold}
+            onChange={(e) => setThreshold(e.target.value)}
+            className="w-full h-10 px-3.5 rounded-xl border border-beige-300 bg-beige-100 text-[13px] text-ink
+              focus:outline-none focus:ring-2 focus:ring-beige-400/40 focus:border-beige-400"
+          />
+          <p className="text-[11px] text-muted mt-1">Gratuité appliquée aux zones marquées « éligibles » (Admin → Zones de livraison).</p>
+        </div>
+
+        {/* Tarif par défaut */}
+        <div>
+          <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted mb-1.5">
+            Tarif par défaut (FCFA)
+          </label>
+          <input
+            type="number" min={0} step={100}
+            value={defaultCost}
+            onChange={(e) => setDefaultCost(e.target.value)}
+            className="w-full h-10 px-3.5 rounded-xl border border-beige-300 bg-beige-100 text-[13px] text-ink
+              focus:outline-none focus:ring-2 focus:ring-beige-400/40 focus:border-beige-400"
+          />
+          <p className="text-[11px] text-muted mt-1">Utilisé seulement si aucune zone n'est sélectionnée (rare).</p>
+        </div>
+
+        {msg && (
+          <p className={`text-[12px] font-medium ${msg.type === 'ok' ? 'text-ok' : 'text-red-500'}`}>{msg.text}</p>
+        )}
+
+        <button
+          onClick={handleSave}
+          disabled={saving || !dirty}
+          className="w-full h-10 rounded-xl bg-beige-500 text-white text-[13px] font-semibold
+            hover:bg-beige-400 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {saving && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+          {saving ? 'Enregistrement…' : 'Enregistrer'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function ShippingPage() {
   const [orders, setOrders] = useState<AdminOrderListItem[]>([])
   const [stats, setStats] = useState<AdminOrderStats | null>(null)
@@ -387,23 +512,7 @@ export default function ShippingPage() {
           </div>
         </div>
 
-        <div className="bg-beige-50 border border-beige-300 rounded-2xl p-5 shadow-beige">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-xs text-muted uppercase tracking-widest">Zones livraison</p>
-              <h3 className="text-lg font-serif font-semibold text-ink">Parametres actuels</h3>
-            </div>
-            <MapPin className="w-4 h-4 text-beige-500" strokeWidth={1.5} />
-          </div>
-          <div className="space-y-3 text-sm text-muted">
-            <div className="bg-beige-100 rounded-xl border border-beige-300 p-3">
-              <p className="text-xs text-muted uppercase tracking-widest">Livraison standard</p>
-              <p className="text-sm font-semibold text-ink mt-2">Frais: {settings ? `${fmtMoney(settings.default_cost)} FCFA` : '—'}</p>
-              <p>Gratuite des: {settings ? `${fmtMoney(settings.free_threshold)} FCFA` : '—'}</p>
-              <p>Statut: {settings?.is_enabled ? 'Active' : 'Inactive'}</p>
-            </div>
-          </div>
-        </div>
+        <ShippingSettingsCard settings={settings} onSaved={(s) => setSettings(s)} />
       </div>
 
       <div className="lg:hidden space-y-4">
