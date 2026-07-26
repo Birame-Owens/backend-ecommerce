@@ -227,10 +227,14 @@ class PageDataController extends Controller
                     'address' => config('company.address', 'Dakar, Sénégal')
                 ],
                 'currency' => 'FCFA',
-                'shipping' => [
-                    'free_threshold' => 50000,
-                    'default_fee' => 2500
-                ],
+                'shipping' => (function () {
+                    $s = \App\Models\ShippingSetting::getSettings();
+                    return [
+                        'enabled'        => (bool) $s->is_enabled,
+                        'free_threshold' => (float) $s->free_threshold,
+                        'default_fee'    => (float) $s->default_cost,
+                    ];
+                })(),
                 'social' => [
                     'facebook' => config('services.social.facebook'),
                     'instagram' => config('services.social.instagram'),

@@ -440,10 +440,14 @@ Route::prefix('client')->group(function () use ($statelessPublic) {
                     'ga_measurement_id' => \App\Models\ShopSetting::getValue('analytics_ga_id') ?: null,
                 ],
                 'currency' => 'F CFA',
-                'shipping' => [
-                    'free_threshold' => env('SHIPPING_FREE_THRESHOLD', 50000),
-                    'default_fee' => env('SHIPPING_DEFAULT_COST', 2500)
-                ],
+                'shipping' => (function () {
+                    $s = \App\Models\ShippingSetting::getSettings();
+                    return [
+                        'enabled'        => (bool) $s->is_enabled,
+                        'free_threshold' => (float) $s->free_threshold,
+                        'default_fee'    => (float) $s->default_cost,
+                    ];
+                })(),
                 'features' => [
                     'guest_checkout' => true,
                     'whatsapp_support' => true,

@@ -30,6 +30,7 @@ export interface CartCoupon {
 interface CartState {
   items: CartItem[]
   coupon: CartCoupon | null
+  deliveryZoneId: number | null // zone choisie dans le panier, pré-remplie au checkout
   _savedAt: number
   addItem: (item: Omit<CartItem, 'key'>) => void
   removeItem: (key: string) => void
@@ -37,6 +38,7 @@ interface CartState {
   clearCart: () => void
   applyCoupon: (coupon: CartCoupon) => void
   removeCoupon: () => void
+  setDeliveryZoneId: (id: number | null) => void
 }
 
 const now = () => Date.now()
@@ -46,6 +48,7 @@ export const useCartStore = create<CartState>()(
     (set) => ({
       items: [],
       coupon: null,
+      deliveryZoneId: null,
       _savedAt: now(),
       addItem: (item) => {
         const key = `${item.id}-${item.couleur || 'nc'}-${item.taille || 'nc'}`
@@ -85,6 +88,7 @@ export const useCartStore = create<CartState>()(
       clearCart: () => set({ items: [], coupon: null, _savedAt: now() }),
       applyCoupon: (coupon) => set({ coupon, _savedAt: now() }),
       removeCoupon: () => set({ coupon: null, _savedAt: now() }),
+      setDeliveryZoneId: (id) => set({ deliveryZoneId: id, _savedAt: now() }),
     }),
     {
       name: 'ndeya-cart',

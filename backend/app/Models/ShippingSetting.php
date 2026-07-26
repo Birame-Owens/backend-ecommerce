@@ -32,7 +32,7 @@ class ShippingSetting extends Model
         if (!$settings) {
             $settings = self::create([
                 'default_cost' => 2500,
-                'free_threshold' => 50000,
+                'free_threshold' => 20000,
                 'is_enabled' => true,
             ]);
         }

@@ -14,6 +14,7 @@ export interface DeliveryZone {
   nom: string
   prix: number
   ordre_affichage: number
+  eligible_gratuite?: boolean
 }
 
 export interface OrderCustomer {
