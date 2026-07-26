@@ -313,6 +313,15 @@ class CheckoutService
 
         if ($deliveryZone) {
             $shippingCost = (float) $deliveryZone->prix;
+
+            // Gratuité au-dessus du seuil, réservée aux zones éligibles (Dakar / proches).
+            // Les régions lointaines restent payantes même au-dessus du seuil.
+            if ($shippingCost > 0 && $deliveryZone->eligible_gratuite) {
+                $shippingSettings = \App\Models\ShippingSetting::getSettings();
+                if ($shippingSettings->is_enabled && ($subtotal - $discount) >= $shippingSettings->free_threshold) {
+                    $shippingCost = 0;
+                }
+            }
         } else {
             $shippingSettings = \App\Models\ShippingSetting::getSettings();
             if ($shippingSettings->is_enabled) {

@@ -5,6 +5,8 @@ import axios from 'axios'
 import { NIcon } from '@/components/client/NIcon'
 import { useCartStore, cartSubtotal, cartCount } from '@/store/cartStore'
 import { checkoutApi, type DeliveryZone } from '@/api/client/checkout'
+import { computeShipping } from '@/hooks/useDeliveryInfo'
+import { useShopStore } from '@/store/shopStore'
 import { useToastStore } from '@/store/toastStore'
 import { useClientAuthStore } from '@/store/clientAuthStore'
 import { trackBeginCheckout } from '@/lib/analytics'
@@ -98,9 +100,10 @@ function ZoneCard({ zone, selected, onSelect }: {
 /* ─── Page ─────────────────────────────────────────────────────── */
 export function CheckoutPage() {
   const navigate = useNavigate()
-  const { items, coupon, clearCart } = useCartStore()
+  const { items, coupon, clearCart, deliveryZoneId, setDeliveryZoneId } = useCartStore()
   const toast = useToastStore((s) => s.show)
   const { user, isAuthenticated } = useClientAuthStore()
+  const freeThreshold = useShopStore((s) => s.freeShippingThreshold)
 
   const subtotal = cartSubtotal(items)
   const discount = coupon?.discount ?? 0
@@ -126,7 +129,7 @@ export function CheckoutPage() {
   const [zonesLoading, setZonesLoading] = useState(true)
   const [zoneSearch, setZoneSearch] = useState('')
 
-  const shippingCost = selectedZone?.prix ?? 0
+  const shippingCost = computeShipping(selectedZone, subtotal - discount, freeThreshold)
   const total = subtotal - discount + shippingCost
   const pickup = isPickup(selectedZone)
 
@@ -144,11 +147,16 @@ export function CheckoutPage() {
       .then((res) => {
         if (res.data.success && res.data.data.length > 0) {
           setZones(res.data.data)
-          setSelectedZone(res.data.data[0])
+          // Pré-remplir la zone choisie dans le panier, sinon la première zone
+          // de livraison réelle (pas le retrait) pour rester cohérent avec le panier.
+          const stored = res.data.data.find((z) => z.id === deliveryZoneId)
+          const firstDelivery = res.data.data.find((z) => !isPickup(z))
+          setSelectedZone(stored ?? firstDelivery ?? res.data.data[0])
         }
       })
       .catch(() => {})
       .finally(() => setZonesLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -339,7 +347,8 @@ export function CheckoutPage() {
                   <div className="space-y-2">
                     {filteredZones.map((zone) => (
                       <ZoneCard key={zone.id} zone={zone}
-                        selected={selectedZone?.id === zone.id} onSelect={setSelectedZone} />
+                        selected={selectedZone?.id === zone.id}
+                        onSelect={(z) => { setSelectedZone(z); setDeliveryZoneId(z.id) }} />
                     ))}
                     {filteredZones.length === 0 && (
                       <p className="text-[12px] text-muted text-center py-3">Aucune zone trouvée.</p>

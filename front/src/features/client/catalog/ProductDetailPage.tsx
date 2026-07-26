@@ -6,6 +6,7 @@ import { reviewsClientApi } from '@/api/client/reviews'
 import { colorHex, needsBorder } from '@/lib/colorPalette'
 import { NProductCard } from '@/components/client/NProductCard'
 import { NImage } from '@/components/client/NImage'
+import { DeliveryHint } from '@/components/client/DeliveryHint'
 import { NIcon, Stars, WAGlyph } from '@/components/client/NIcon'
 import { useWishlistStore } from '@/store/wishlistStore'
 import { useCartStore, cartCount } from '@/store/cartStore'
@@ -508,6 +509,9 @@ export function ProductDetailPage() {
             </span>
           </div>
 
+          {/* Repère de livraison — visible dès la fiche produit */}
+          <DeliveryHint />
+
           {/* Bannière OOS globale */}
           {!product.en_stock && (
             <div className="flex items-center gap-3 px-4 py-3 rounded-[12px] bg-red-50 border border-red-200">
@@ -756,6 +760,9 @@ export function ProductDetailPage() {
                 {variantIsOutOfStock ? 'Rupture de stock' : 'En stock'}
               </span>
             </div>
+
+            {/* Repère de livraison — visible dès la fiche produit */}
+            <DeliveryHint />
 
             {/* OOS banner */}
             {!product.en_stock && (
