@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Tag, CreditCard,
   Percent, Star, BarChart3, LogOut, X, Menu, Send, Truck, Settings, MapPin, Filter,
+  GalleryHorizontal,
 } from 'lucide-react'
 import { useAdminAuthStore } from '@/store/adminAuthStore'
 import { adminAuthApi } from '@/api/admin/auth'
@@ -9,6 +10,7 @@ import { adminAuthApi } from '@/api/admin/auth'
 const menuItems = [
   { name: 'Tableau de bord', icon: LayoutDashboard, path: '/admin/dashboard' },
   { name: 'Catégories',     icon: Tag,              path: '/admin/categories' },
+  { name: 'Bannières accueil', icon: GalleryHorizontal, path: '/admin/bannieres' },
   { name: 'Produits',        icon: Package,          path: '/admin/produits' },
   { name: 'Commandes',      icon: ShoppingCart,     path: '/admin/commandes' },
   { name: 'Paiements',      icon: CreditCard,       path: '/admin/paiements' },

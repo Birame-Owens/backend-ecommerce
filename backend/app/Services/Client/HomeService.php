@@ -8,6 +8,7 @@ use App\Models\Promotion;
 use App\Models\AvisClient;
 use App\Models\Client;
 use App\Models\Commande;
+use App\Models\BanniereAccueil;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -59,6 +60,7 @@ class HomeService
                 'date_fin' => $mainPromo->date_fin->toISOString(),
                 'jours_restants' => $mainPromo->date_fin->diffInDays(now())
             ] : null,
+            'bannieres' => $this->getBannieresActives(),
             'default_message' => [
                 'titre' => 'NDEYA SHOP',
                 'sous_titre' => 'Mode Africaine Authentique',
@@ -66,6 +68,22 @@ class HomeService
                 'cta' => 'Découvrir la Collection'
             ]
         ];
+    }
+
+    /**
+     * Bannieres actives du carrousel accueil (gerees depuis l'admin)
+     */
+    private function getBannieresActives(): array
+    {
+        return BanniereAccueil::actives()->get()->map(function ($banniere) {
+            return [
+                'id' => $banniere->id,
+                'titre' => $banniere->titre,
+                'sous_titre' => $banniere->sous_titre,
+                'image_url' => $banniere->image_url,
+                'lien_url' => $banniere->lien_url,
+            ];
+        })->toArray();
     }
 
     /**
