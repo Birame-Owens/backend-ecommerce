@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Admin\AuthController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\CategoryController;
+use App\Http\Controllers\Api\Admin\BanniereController;
 use App\Http\Controllers\Api\Admin\ProduitController;
 use App\Http\Controllers\Api\Admin\CommandeController; 
 use App\Http\Controllers\Api\Admin\ClientController;
@@ -150,6 +151,11 @@ Route::prefix('admin')->group(function () {
         Route::post('/categories/{category}/toggle-status', [CategoryController::class, 'toggleStatus']);
         Route::get('/categories/{category}/sous-categories', [CategoryController::class, 'sousCategoriesOf']);
         Route::apiResource('categories', CategoryController::class);
+
+        // Bannieres accueil (carrousel gere depuis l'admin)
+        Route::post('/bannieres/{banniere}/toggle-status', [BanniereController::class, 'toggleStatus']);
+        Route::post('/bannieres/reorder', [BanniereController::class, 'reorder']);
+        Route::apiResource('bannieres', BanniereController::class)->except(['show']);
 
         // =================== SYNCHRONISATION CATÉGORIES-PRODUITS ===================
         Route::prefix('sync')->name('sync.')->group(function () {

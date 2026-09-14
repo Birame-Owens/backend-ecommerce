@@ -85,10 +85,19 @@ export interface Testimonial {
   photos: string[]
 }
 
+export interface BanniereAccueil {
+  id: number
+  titre: string | null
+  sous_titre: string | null
+  image_url: string | null
+  lien_url: string | null
+}
+
 export interface HomeData {
   hero_banner: {
     has_promotion: boolean
     promotion: PromotionBanner | null
+    bannieres: BanniereAccueil[]
     default_message: {
       titre: string
       sous_titre: string

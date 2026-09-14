@@ -29,14 +29,90 @@ const SLIDES = [
   },
 ]
 
+const HERO_ROTATION_MS = 4000
+
 function Hero({ data }: { data: HomeData }) {
   const navigate = useNavigate()
   const [idx, setIdx] = useState(0)
+  const bannieres = data.hero_banner.bannieres ?? []
+  const hasBannieres = bannieres.length > 0
+  const slideCount = hasBannieres ? bannieres.length : SLIDES.length
 
   useEffect(() => {
-    const id = setInterval(() => setIdx((v) => (v + 1) % SLIDES.length), 5200)
+    if (slideCount <= 1) return
+    const id = setInterval(() => setIdx((v) => (v + 1) % slideCount), HERO_ROTATION_MS)
     return () => clearInterval(id)
-  }, [])
+  }, [slideCount])
+
+  useEffect(() => {
+    if (idx >= slideCount) setIdx(0)
+  }, [slideCount, idx])
+
+  if (hasBannieres) {
+    const active = bannieres[idx] ?? bannieres[0]
+
+    return (
+      <section className="relative overflow-hidden bg-[#1A1A1A]" style={{ minHeight: 'min(75dvh, 620px)' }}>
+        {bannieres.map((b, k) => (
+          <div
+            key={b.id}
+            className="absolute inset-0 transition-opacity duration-700 ease-in-out"
+            style={{ opacity: k === idx ? 1 : 0 }}
+          >
+            {b.image_url && (
+              <img
+                src={b.image_url}
+                alt={b.titre || 'NDEYA SHOP'}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/25 to-transparent" />
+          </div>
+        ))}
+
+        {(active.titre || active.sous_titre) && (
+          <div className="relative z-10 flex items-center h-full">
+            <div className="w-full max-w-7xl mx-auto px-6 lg:px-8 py-20 md:py-28 lg:py-32">
+              <div className="max-w-[560px]">
+                {active.titre && (
+                  <h1
+                    className="font-serif font-bold text-white leading-none whitespace-pre-line mb-5"
+                    style={{ fontSize: 'clamp(38px, 7vw, 72px)' }}
+                  >
+                    {active.titre}
+                  </h1>
+                )}
+                {active.sous_titre && (
+                  <p className="text-[14px] md:text-[16px] text-white/85 leading-relaxed max-w-[340px] mb-8">
+                    {active.sous_titre}
+                  </p>
+                )}
+                {active.lien_url && (
+                  <button
+                    onClick={() => navigate(active.lien_url!)}
+                    className="inline-flex items-center gap-2.5 px-7 h-12 rounded-[10px] bg-btn text-white
+                      text-[12px] font-semibold tracking-widest uppercase hover:bg-btn-dark transition-colors"
+                  >
+                    Découvrir <NIcon name="arrow" size={15} strokeWidth={2} />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {bannieres.length > 1 && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+            {bannieres.map((_, k) => (
+              <button key={k} onClick={() => setIdx(k)}
+                className="h-1.5 rounded-full bg-white transition-all duration-300"
+                style={{ width: k === idx ? 28 : 8, opacity: k === idx ? 1 : 0.5 }} />
+            ))}
+          </div>
+        )}
+      </section>
+    )
+  }
 
   const s = SLIDES[idx]
   const heroTitle = idx === 0 && data.hero_banner.default_message.titre

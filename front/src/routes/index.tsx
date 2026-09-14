@@ -28,6 +28,7 @@ function lazy_<T extends React.ComponentType<unknown>>(factory: () => Promise<{ 
 const LoginPage      = lazy_(() => import('@/features/admin/auth/LoginPage').then(m => ({ default: m.LoginPage })))
 const DashboardPage  = lazy_(() => import('@/features/admin/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })))
 const AdminCategoriesPage = lazy_(() => import('@/features/admin/categories/CategoriesPage').then(m => ({ default: m.CategoriesPage })))
+const AdminBannieresPage  = lazy_(() => import('@/features/admin/bannieres/BannieresPage').then(m => ({ default: m.BannieresPage })))
 const AdminProductsPage   = lazy_(() => import('@/features/admin/products/ProductsPage').then(m => ({ default: m.ProductsPage })))
 const OrdersPage     = lazy_(() => import('@/features/admin/orders/OrdersPage').then(m => ({ default: m.OrdersPage })))
 const ClientsPage    = lazy_(() => import('@/features/admin/clients/ClientsPage'))
@@ -72,6 +73,7 @@ export const router = createBrowserRouter(
               children: [
                 { path: 'dashboard',    element: <DashboardPage /> },
                 { path: 'categories',   element: <AdminCategoriesPage /> },
+                { path: 'bannieres',     element: <AdminBannieresPage /> },
                 { path: 'produits',     element: <AdminProductsPage /> },
                 { path: 'commandes',    element: <OrdersPage /> },
                 { path: 'clients',      element: <ClientsPage /> },
