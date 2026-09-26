@@ -56,6 +56,7 @@ export interface OrderArticle {
   prix_total_article: number
   taille_choisie?: string | null
   couleur_choisie?: string | null
+  est_cadeau?: boolean
   produit?: { images_produits?: Array<{ url: string }> }
 }
 

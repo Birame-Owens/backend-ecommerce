@@ -159,9 +159,18 @@ export function OrderDetailsModal({
                           }
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-ink">{article.produit.nom}</p>
+                          <p className="text-sm font-semibold text-ink">
+                            {article.produit.nom}
+                            {article.est_cadeau && (
+                              <span className="ml-2 align-middle text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                                🎁 Cadeau offert
+                              </span>
+                            )}
+                          </p>
                           <p className="text-xs text-muted">
-                            {article.quantite} × {fmtMoney(article.prix_unitaire)} FCFA
+                            {article.est_cadeau
+                              ? `${article.quantite} × offert (valeur ${fmtMoney(article.valeur_cadeau ?? 0)} FCFA)`
+                              : `${article.quantite} × ${fmtMoney(article.prix_unitaire)} FCFA`}
                             {article.taille_choisie ? ` · Taille ${article.taille_choisie}` : ''}
                             {article.couleur_choisie ? ` · ${article.couleur_choisie}` : ''}
                           </p>

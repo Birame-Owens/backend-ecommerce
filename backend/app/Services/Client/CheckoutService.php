@@ -7,6 +7,7 @@ use App\Models\Commande;
 use App\Models\ArticlesCommande;
 use App\Models\Paiement;
 use App\Models\Produit;
+use App\Services\OffreCadeauService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -167,6 +168,9 @@ class CheckoutService
             // 2. Valider les articles du panier et réserver leur stock
             $validatedItems = $this->validateCartItems($data['items']);
 
+            // 2b. Cadeaux offerts : recalculés ici, jamais repris du panier client
+            $gifts = $this->reserveGifts($validatedItems);
+
             // 3. Calculer les totaux
             $totals = $this->calculateTotals($validatedItems, $data['coupon_code'] ?? null, $data['delivery_zone_id'] ?? null);
 
@@ -175,6 +179,7 @@ class CheckoutService
 
             // 5. Créer les articles de commande
             $this->createOrderItems($commande, $validatedItems);
+            $this->createGiftItems($commande, $gifts);
 
             DB::commit();
 
@@ -250,6 +255,32 @@ class CheckoutService
         }
 
         return $validatedItems;
+    }
+
+    /**
+     * Détermine et réserve les cadeaux dus (offres « produit acheté → cadeau
+     * offert »). Un cadeau qui ne peut plus être réservé (rupture entre-temps)
+     * est simplement omis : il ne doit jamais bloquer la commande.
+     */
+    private function reserveGifts(array $validatedItems): array
+    {
+        $gifts = [];
+
+        foreach (app(OffreCadeauService::class)->calculerCadeaux($validatedItems) as $gift) {
+            $offre = $gift['offre'];
+
+            try {
+                $this->reserveProductStock($gift['produit'], $gift['quantity'], $offre->couleur_offerte, $offre->taille_offerte);
+                $gifts[] = $gift;
+            } catch (Exception $e) {
+                \Log::warning('Cadeau offert non réservé (stock insuffisant)', [
+                    'offre_cadeau_id' => $offre->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $gifts;
     }
 
     /**
@@ -465,6 +496,32 @@ class CheckoutService
     }
 
     /**
+     * Lignes cadeau : 0 F, marquées « cadeau offert » (factures, emails, admin).
+     */
+    private function createGiftItems(Commande $commande, array $gifts): void
+    {
+        foreach ($gifts as $gift) {
+            $produit = $gift['produit'];
+            $offre = $gift['offre'];
+
+            ArticlesCommande::create([
+                'commande_id' => $commande->id,
+                'produit_id' => $produit->id,
+                'nom_produit' => "{$produit->nom} (cadeau offert)",
+                'description_produit' => $produit->description_courte ?? $produit->description,
+                'quantite' => $gift['quantity'],
+                'prix_unitaire' => 0,
+                'prix_total_article' => 0,
+                'taille_choisie' => $offre->taille_offerte,
+                'couleur_choisie' => $offre->couleur_offerte,
+                'est_cadeau' => true,
+                'valeur_cadeau' => (float) $produit->prix,
+                'offre_cadeau_id' => $offre->id,
+            ]);
+        }
+    }
+
+    /**
      * Appelée à la confirmation du paiement. Le stock a normalement déjà été
      * réservé à la création de la commande (ou re-réservé par initiatePayment
      * si la réservation avait expiré) — ici on ne fait donc que comptabiliser
@@ -497,7 +554,10 @@ class CheckoutService
                     }
                 }
 
-                $produit->increment('nombre_ventes', $article->quantite);
+                // Un cadeau offert n'est pas une vente du produit.
+                if (!$article->est_cadeau) {
+                    $produit->increment('nombre_ventes', $article->quantite);
+                }
             }
         }
 

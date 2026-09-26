@@ -7,6 +7,8 @@ import { colorHex, needsBorder } from '@/lib/colorPalette'
 import { NProductCard } from '@/components/client/NProductCard'
 import { NImage } from '@/components/client/NImage'
 import { DeliveryHint } from '@/components/client/DeliveryHint'
+import { GiftBadge, GiftOfferBlock } from '@/components/client/GiftOffer'
+import { useGiftOffer } from '@/hooks/useGiftOffers'
 import { NIcon, Stars, WAGlyph } from '@/components/client/NIcon'
 import { useWishlistStore } from '@/store/wishlistStore'
 import { useCartStore, cartCount } from '@/store/cartStore'
@@ -122,6 +124,7 @@ export function ProductDetailPage() {
   })
 
   const product = data?.product ?? null
+  const giftOffer = useGiftOffer(product?.id)
   const related = data?.related_products ?? []
 
   useEffect(() => {
@@ -452,6 +455,7 @@ export function ProductDetailPage() {
             {product.est_nouveaute && !product.en_promo && (
               <span className="px-2.5 py-1 rounded-full bg-ink text-white text-[10px] font-bold">Nouveau</span>
             )}
+            {giftOffer && product.en_stock && <GiftBadge />}
           </div>
           {/* Overlay rupture */}
           {variantIsOutOfStock && (
@@ -508,6 +512,9 @@ export function ProductDetailPage() {
               {variantIsOutOfStock ? 'Rupture' : 'En stock'}
             </span>
           </div>
+
+          {/* Cadeau offert avec ce produit */}
+          {giftOffer && product.en_stock && <GiftOfferBlock offre={giftOffer} />}
 
           {/* Repère de livraison — visible dès la fiche produit */}
           <DeliveryHint />
@@ -683,6 +690,7 @@ export function ProductDetailPage() {
               <div className="absolute top-3 left-3 flex gap-1.5">
                 {product.en_promo && <span className="px-2.5 py-1 rounded-full bg-accent text-white text-[10px] font-bold">-{pct}%</span>}
                 {product.est_nouveaute && !product.en_promo && <span className="px-2.5 py-1 rounded-full bg-ink text-white text-[10px] font-bold">Nouveau</span>}
+                {giftOffer && product.en_stock && <GiftBadge />}
               </div>
               <button
                 onClick={() => toggle({ id: product.id, nom: product.nom, slug: product.slug, prix: product.prix, prix_promo: product.prix_promo, image_principale: product.image_principale })}
@@ -760,6 +768,9 @@ export function ProductDetailPage() {
                 {variantIsOutOfStock ? 'Rupture de stock' : 'En stock'}
               </span>
             </div>
+
+            {/* Cadeau offert avec ce produit */}
+            {giftOffer && product.en_stock && <GiftOfferBlock offre={giftOffer} />}
 
             {/* Repère de livraison — visible dès la fiche produit */}
             <DeliveryHint />

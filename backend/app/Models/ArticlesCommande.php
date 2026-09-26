@@ -67,7 +67,10 @@ class ArticlesCommande extends Model
 		'cout_materiaux' => 'float',
 		'temps_production_heures' => 'float',
 		'controle_qualite_ok' => 'bool',
-		'note_client_article' => 'int'
+		'note_client_article' => 'int',
+		'est_cadeau' => 'bool',
+		'valeur_cadeau' => 'float',
+		'offre_cadeau_id' => 'int'
 	];
 
 	protected $fillable = [
@@ -95,7 +98,10 @@ class ArticlesCommande extends Model
 		'temps_production_heures',
 		'controle_qualite_ok',
 		'notes_qualite',
-		'note_client_article'
+		'note_client_article',
+		'est_cadeau',
+		'valeur_cadeau',
+		'offre_cadeau_id'
 	];
 
 	public function commande()

@@ -138,13 +138,19 @@ export function CheckoutSuccessPage() {
                           {article.couleur_choisie ? ` · ${article.couleur_choisie}` : ''}
                           {article.taille_choisie ? ` · ${article.taille_choisie}` : ''}
                         </p>
-                        <p className="text-[12px] font-semibold text-ink mt-0.5 tabular-nums">
-                          {fmt(article.prix_unitaire)} × {article.quantite}
-                        </p>
+                        {!article.est_cadeau && (
+                          <p className="text-[12px] font-semibold text-ink mt-0.5 tabular-nums">
+                            {fmt(article.prix_unitaire)} × {article.quantite}
+                          </p>
+                        )}
                       </div>
-                      <span className="text-[13px] font-bold text-ink tabular-nums flex-shrink-0">
-                        {fmt(article.prix_total_article)}
-                      </span>
+                      {article.est_cadeau ? (
+                        <span className="text-[12px] font-bold text-ok flex-shrink-0">🎁 OFFERT</span>
+                      ) : (
+                        <span className="text-[13px] font-bold text-ink tabular-nums flex-shrink-0">
+                          {fmt(article.prix_total_article)}
+                        </span>
+                      )}
                     </div>
                   )
                 })}

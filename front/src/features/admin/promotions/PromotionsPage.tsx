@@ -13,6 +13,7 @@ import type {
   AdminPromotionStats,
 } from '@/types/admin'
 import { fmtMoney } from '@/features/admin/orders/orderHelpers'
+import { OffresCadeauxPanel } from './OffresCadeauxPanel'
 
 interface ToastItem { id: number; message: string; type: 'success' | 'error' }
 
@@ -689,6 +690,7 @@ export default function PromotionsPage() {
 
   const [deleteLoadingId, setDeleteLoadingId] = useState<number | null>(null)
   const [toasts, setToasts] = useState<ToastItem[]>([])
+  const [tab, setTab] = useState<'promotions' | 'cadeaux'>('promotions')
 
   const addToast = (message: string, type: ToastItem['type'] = 'success') => {
     const id = Date.now() + Math.floor(Math.random() * 1000)
@@ -897,6 +899,29 @@ export default function PromotionsPage() {
         </div>
       </div>
 
+      <div className="flex gap-1 p-1 mb-6 rounded-xl bg-beige-100 w-fit" role="tablist">
+        {([
+          ['promotions', 'Promotions & codes', Percent],
+          ['cadeaux', 'Cadeaux offerts', Gift],
+        ] as const).map(([key, label, Icon]) => (
+          <button
+            key={key}
+            role="tab"
+            aria-selected={tab === key}
+            onClick={() => setTab(key)}
+            className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+              tab === key ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'
+            }`}
+          >
+            <Icon className="w-3.5 h-3.5" strokeWidth={1.8} />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'cadeaux' && <OffresCadeauxPanel onToast={addToast} />}
+
+      {tab === 'promotions' && (<>
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <StatCard title="Promotions actives" value={stats ? String(stats.promotions_actives) : '—'} icon={Sparkles} iconBg="bg-beige-200" iconColor="text-beige-500" loading={statsLoading} />
         <StatCard title="Produits en promo" value={stats ? String(stats.total_promotions) : '—'} icon={Tag} iconBg="bg-amber-100" iconColor="text-amber-700" loading={statsLoading} />
@@ -1259,6 +1284,8 @@ export default function PromotionsPage() {
           </button>
         </div>
       )}
+
+      </>)}
 
       {viewTarget && (
         <DetailDrawer

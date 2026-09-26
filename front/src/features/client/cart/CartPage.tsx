@@ -6,6 +6,8 @@ import { checkoutApi } from '@/api/client/checkout'
 import { useToastStore } from '@/store/toastStore'
 import { useShopStore, buildWaUrl } from '@/store/shopStore'
 import { useDeliveryInfo, computeShipping, isPickupZone } from '@/hooks/useDeliveryInfo'
+import { useCartGifts } from '@/hooks/useGiftOffers'
+import { CartGiftRow } from '@/components/client/GiftOffer'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
@@ -258,6 +260,7 @@ export function CartPage() {
   const afterDiscount = Math.max(0, subtotal - discount)
   const count = cartCount(items)
   const waNumber = useShopStore((s) => s.waNumber)
+  const gifts = useCartGifts(items)
 
   const [pendingItem, setPendingItem] = useState<CartItem | null>(null)
 
@@ -288,6 +291,7 @@ export function CartPage() {
       const { l1, l2 } = variantLabels(i)
       return `• ${i.nom}${i.couleur ? ` — ${l1}: ${i.couleur}` : ''}${i.taille ? `, ${l2}: ${i.taille}` : ''} ×${i.qty} — ${fmt(i.prix * i.qty)}`
     }),
+    ...gifts.map((g) => `• 🎁 ${g.offre.cadeau.nom}${g.offre.couleur ? ` — ${g.offre.couleur}` : ''}${g.offre.taille ? `, ${g.offre.taille}` : ''} ×${g.quantity} — OFFERT (0 F)`),
     ...(coupon ? [`\nCode promo: ${coupon.code} (-${fmt(coupon.discount)})`] : []),
     ...(selectedZone ? [`Livraison (${selectedZone.nom}) : ${shipping === 0 ? 'gratuite' : fmt(shipping)}`] : []),
     '',
@@ -391,6 +395,9 @@ export function CartPage() {
               {items.map((item) => (
                 <CartItemRow key={item.key} item={item} onRemoveRequest={handleRemoveRequest} />
               ))}
+              {gifts.map((g) => (
+                <CartGiftRow key={`gift-${g.offre.id}`} offre={g.offre} quantity={g.quantity} />
+              ))}
 
               {/* Continue shopping */}
               <div className="py-4">
@@ -426,6 +433,9 @@ export function CartPage() {
                       </div>
                     )
                   })}
+                  {gifts.map((g) => (
+                    <CartGiftRow key={`gift-${g.offre.id}`} offre={g.offre} quantity={g.quantity} compact />
+                  ))}
                 </div>
 
                 {/* Coupon input */}

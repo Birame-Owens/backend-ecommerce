@@ -4,6 +4,8 @@ import { useForm } from 'react-hook-form'
 import axios from 'axios'
 import { NIcon } from '@/components/client/NIcon'
 import { useCartStore, cartSubtotal, cartCount } from '@/store/cartStore'
+import { useCartGifts } from '@/hooks/useGiftOffers'
+import { CartGiftRow } from '@/components/client/GiftOffer'
 import { checkoutApi, type DeliveryZone } from '@/api/client/checkout'
 import { computeShipping } from '@/hooks/useDeliveryInfo'
 import { useShopStore } from '@/store/shopStore'
@@ -108,6 +110,7 @@ export function CheckoutPage() {
   const subtotal = cartSubtotal(items)
   const discount = coupon?.discount ?? 0
   const count = cartCount(items)
+  const gifts = useCartGifts(items)
 
   useEffect(() => {
     if (items.length > 0) {
@@ -463,6 +466,9 @@ export function CheckoutPage() {
                       {fmt(item.prix * item.qty)}
                     </span>
                   </div>
+                ))}
+                {gifts.map((g) => (
+                  <CartGiftRow key={`gift-${g.offre.id}`} offre={g.offre} quantity={g.quantity} compact />
                 ))}
               </div>
 

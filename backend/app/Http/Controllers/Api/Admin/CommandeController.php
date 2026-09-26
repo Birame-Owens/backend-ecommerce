@@ -500,6 +500,8 @@ class CommandeController extends Controller
                     'taille_choisie' => $article->taille_choisie,
                     'couleur_choisie' => $article->couleur_choisie,
                     'demandes_personnalisation' => $article->demandes_personnalisation,
+                    'est_cadeau' => (bool) $article->est_cadeau,
+                    'valeur_cadeau' => $article->valeur_cadeau,
                     'statut_production' => $article->statut_production,
                     'statut_production_label' => $this->getStatutProductionLabel($article->statut_production),
                     
@@ -872,6 +874,11 @@ class CommandeController extends Controller
 
             // Préparer les articles
             foreach ($commande->articles_commandes as $article) {
+                // Les cadeaux offerts ne se dupliquent pas comme des articles payants.
+                if ($article->est_cadeau) {
+                    continue;
+                }
+
                 $articleData = [
                     'produit_id' => $article->produit_id,
                     'quantite' => $article->quantite,

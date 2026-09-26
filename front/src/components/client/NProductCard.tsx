@@ -7,6 +7,8 @@ import { useCartStore } from '@/store/cartStore'
 import { useToastStore } from '@/store/toastStore'
 import { useShopStore, buildWaUrl } from '@/store/shopStore'
 import type { ProductClient } from '@/api/client/home'
+import { useGiftOffer } from '@/hooks/useGiftOffers'
+import { GiftBadge } from './GiftOffer'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
@@ -17,6 +19,7 @@ export const NProductCard = memo(function NProductCard({ product }: { product: P
   const toast = useToastStore((s) => s.show)
   const waNumber = useShopStore((s) => s.waNumber)
   const liked = has(product.id)
+  const giftOffer = useGiftOffer(product.id)
 
   const displayPrice = product.prix_promo ?? product.prix
   const pct = product.prix_promo
@@ -98,7 +101,7 @@ export const NProductCard = memo(function NProductCard({ product }: { product: P
         )}
 
         {/* Tags */}
-        <div className="absolute top-2.5 left-2.5 flex gap-1.5 z-10">
+        <div className="absolute top-2.5 left-2.5 right-12 flex flex-wrap gap-1.5 z-10">
           {product.prix_promo && (
             <span className="text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full bg-accent text-white" aria-label={`Réduction de ${pct}%`}>
               -{pct}%
@@ -109,6 +112,7 @@ export const NProductCard = memo(function NProductCard({ product }: { product: P
               New
             </span>
           )}
+          {giftOffer && inStock && <GiftBadge />}
           {!inStock && (
             <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-500 text-white">
               Rupture de stock
