@@ -225,6 +225,12 @@ Route::prefix('admin')->group(function () {
         Route::post('/promotions/{promotion}/duplicate', [PromotionController::class, 'duplicate']);
         Route::apiResource('promotions', PromotionController::class);
 
+        // Offres « produit acheté → cadeau offert »
+        Route::post('/offres-cadeaux/{offreCadeau}/toggle-status', [\App\Http\Controllers\Api\Admin\OffreCadeauController::class, 'toggleStatus']);
+        Route::apiResource('offres-cadeaux', \App\Http\Controllers\Api\Admin\OffreCadeauController::class)
+            ->only(['index', 'store', 'update', 'destroy'])
+            ->parameters(['offres-cadeaux' => 'offreCadeau']);
+
         // Paramètres de livraison
         Route::get('/shipping-settings', [\App\Http\Controllers\Api\Admin\ShippingSettingsController::class, 'index']);
         Route::put('/shipping-settings', [\App\Http\Controllers\Api\Admin\ShippingSettingsController::class, 'update']);
@@ -398,6 +404,8 @@ Route::prefix('client')->group(function () use ($statelessPublic) {
     // =================== ZONES DE LIVRAISON ===================
     Route::withoutMiddleware($statelessPublic)->group(function () {
         Route::get('/delivery-zones', [\App\Http\Controllers\Api\Client\DeliveryZoneController::class, 'index']);
+        // Hors cache de réponse : dépend du stock du cadeau (cache applicatif de 60 s).
+        Route::get('/offres-cadeaux', [\App\Http\Controllers\Api\Client\OffreCadeauController::class, 'index']);
     });
 
     // =================== CHECKOUT & PAIEMENT ===================

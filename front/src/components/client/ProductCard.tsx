@@ -2,6 +2,8 @@ import { Heart, ImageIcon, ShoppingBag, Star } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { ProductClient } from '@/api/client/home'
+import { useGiftOffer } from '@/hooks/useGiftOffers'
+import { GiftBadge } from './GiftOffer'
 
 function fmt(n: number | undefined | null) {
   return (n ?? 0).toLocaleString('fr-FR')
@@ -13,6 +15,7 @@ function currentPrice(product: ProductClient) {
 
 export function ProductCard({ product }: { product: ProductClient }) {
   const [liked, setLiked] = useState(false)
+  const giftOffer = useGiftOffer(product.id)
   const category = product.categorie ?? (product as any).category ?? null
 
   return (
@@ -30,6 +33,7 @@ export function ProductCard({ product }: { product: ProductClient }) {
         <div className="absolute top-2 left-2 flex flex-col gap-1">
           {product.en_promo && <span className="px-2 py-0.5 text-[10px] font-bold bg-rose-500 text-white rounded-full shadow-sm">Promo</span>}
           {product.est_nouveaute && <span className="px-2 py-0.5 text-[10px] font-bold bg-beige-500 text-white rounded-full shadow-sm">Nouveau</span>}
+          {giftOffer && <GiftBadge />}
         </div>
 
         <button

@@ -42,6 +42,8 @@ export interface AdminOrderArticle {
   taille_choisie?: string | null
   couleur_choisie?: string | null
   demandes_personnalisation?: string | null
+  est_cadeau?: boolean
+  valeur_cadeau?: number | null
   statut_production?: string | null
   statut_production_label?: string | null
   type_confection?: string | null
