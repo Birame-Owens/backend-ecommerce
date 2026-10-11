@@ -53,6 +53,18 @@ class CommandeControllerLabelTest extends TestCase
         $response->assertHeader('content-type', 'application/pdf');
     }
 
+    public function test_label_fits_on_a_single_page(): void
+    {
+        $admin = $this->makeAdmin();
+        $commande = $this->makeCommande();
+
+        $response = $this->actingAs($admin, 'sanctum')
+            ->get("/api/admin/commandes/{$commande->id}/etiquette");
+
+        // dompdf écrit un objet « /Type /Page » par page : l'ancienne étiquette en produisait 2.
+        $this->assertSame(1, preg_match_all('#/Type\s*/Page\b#', $response->getContent()));
+    }
+
     public function test_guest_cannot_generate_delivery_label(): void
     {
         $commande = $this->makeCommande();
