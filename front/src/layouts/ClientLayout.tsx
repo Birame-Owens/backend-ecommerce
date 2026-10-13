@@ -5,13 +5,14 @@ import { NNavBar } from '@/components/client/NNavBar'
 import { AnnouncementBar } from '@/components/client/AnnouncementBar'
 import { useShopStore } from '@/store/shopStore'
 import { useClientAuthStore } from '@/store/clientAuthStore'
-import { initGA, trackPageview } from '@/lib/analytics'
+import { initGA, initMetaPixel, trackPageview } from '@/lib/analytics'
 
 export function ClientLayout() {
   const loadConfig = useShopStore((s) => s.load)
   const fetchUser = useClientAuthStore((s) => s.fetchUser)
   const logo = useShopStore((s) => s.logo)
   const gaId = useShopStore((s) => s.gaId)
+  const metaPixelId = useShopStore((s) => s.metaPixelId)
   const location = useLocation()
 
   useEffect(() => {
@@ -24,8 +25,13 @@ export function ClientLayout() {
   }, [gaId])
 
   useEffect(() => {
-    if (gaId) trackPageview(location.pathname + location.search)
-  }, [gaId, location.pathname, location.search])
+    if (metaPixelId) initMetaPixel(metaPixelId)
+  }, [metaPixelId])
+
+  // Une page vue par navigation React Router (GA et Meta ne les voient pas seuls en SPA).
+  useEffect(() => {
+    if (gaId || metaPixelId) trackPageview(location.pathname + location.search)
+  }, [gaId, metaPixelId, location.pathname, location.search])
 
   // Favicon dynamique = logo de la boutique (rebranding sans toucher au code)
   useEffect(() => {

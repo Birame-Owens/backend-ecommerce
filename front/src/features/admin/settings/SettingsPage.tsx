@@ -67,6 +67,7 @@ export default function SettingsPage() {
   // Formulaire Analytics
   const [analyticsForm, setAnalyticsForm] = useState({
     analytics_ga_id: '',
+    analytics_meta_pixel_id: '',
   })
 
   // Formulaire notifications
@@ -124,7 +125,7 @@ export default function SettingsPage() {
         })
         setSocialForm({ ...s.social })
         setSeoForm({ ...s.seo })
-        setAnalyticsForm({ ...s.analytics })
+        setAnalyticsForm((f) => ({ ...f, ...s.analytics }))
         setNotifForm({
           notif_nouvelle_commande: s.notifications.notif_nouvelle_commande === '1',
           notif_paiement_recu:     s.notifications.notif_paiement_recu === '1',
@@ -601,7 +602,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-xs text-muted uppercase tracking-widest">Analytics</p>
-                    <h2 className="text-lg font-serif font-semibold text-ink">Google Analytics</h2>
+                    <h2 className="text-lg font-serif font-semibold text-ink">Suivi des visites et des ventes</h2>
                   </div>
                   <BarChart3 className="w-4 h-4 text-beige-500" strokeWidth={1.5} />
                 </div>
@@ -611,13 +612,29 @@ export default function SettingsPage() {
                     <input
                       className={`w-full ${inputCls}`}
                       value={analyticsForm.analytics_ga_id}
-                      onChange={(e) => setAnalyticsForm({ analytics_ga_id: e.target.value })}
+                      onChange={(e) => setAnalyticsForm((f) => ({ ...f, analytics_ga_id: e.target.value }))}
                       placeholder="G-XXXXXXXXXX"
                     />
                     <p className="text-[11px] text-muted mt-1.5">
                       Trouvable dans Google Analytics → Administration → Flux de données. Une fois enregistré,
                       le suivi des visites, des vues produit, des ajouts au panier et des achats démarre automatiquement.
                       Laissez vide pour désactiver le suivi.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1">ID du pixel Meta (Facebook / Instagram)</label>
+                    <input
+                      className={`w-full ${inputCls}`}
+                      value={analyticsForm.analytics_meta_pixel_id}
+                      onChange={(e) => setAnalyticsForm((f) => ({ ...f, analytics_meta_pixel_id: e.target.value.replace(/\D/g, '') }))}
+                      placeholder="1234567890123456"
+                      inputMode="numeric"
+                    />
+                    <p className="text-[11px] text-muted mt-1.5">
+                      Trouvable dans le Gestionnaire d'évènements Meta → Ensembles de données (uniquement des chiffres).
+                      Une fois enregistré, les visites, vues produit, ajouts au panier, débuts de commande et achats
+                      sont envoyés à Meta : indispensable pour les campagnes publicitaires « Ventes ».
+                      Laissez vide pour désactiver.
                     </p>
                   </div>
                 </div>

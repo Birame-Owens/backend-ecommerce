@@ -452,6 +452,12 @@ Route::prefix('client')->group(function () use ($statelessPublic) {
                 'analytics' => [
                     // Configuré depuis Admin → Paramètres → Analytics. Vide = tracking désactivé.
                     'ga_measurement_id' => \App\Models\ShopSetting::getValue('analytics_ga_id') ?: null,
+                    // Pixel Meta (Facebook/Instagram Ads). Un ID de pixel n'est fait que de chiffres :
+                    // toute autre valeur est ignorée pour ne jamais injecter n'importe quoi dans le script.
+                    'meta_pixel_id' => (function () {
+                        $id = trim((string) \App\Models\ShopSetting::getValue('analytics_meta_pixel_id'));
+                        return preg_match('/^\d{10,20}$/', $id) ? $id : null;
+                    })(),
                 ],
                 'currency' => 'F CFA',
                 'shipping' => (function () {

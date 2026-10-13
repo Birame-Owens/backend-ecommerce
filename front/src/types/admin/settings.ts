@@ -34,6 +34,7 @@ export interface AdminShopSettingsNotifications {
 
 export interface AdminShopSettingsAnalytics {
   analytics_ga_id: string
+  analytics_meta_pixel_id?: string
 }
 
 export interface AdminShopSettings {
