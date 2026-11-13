@@ -89,4 +89,43 @@ class RapportComportementTest extends TestCase
             ->assertJsonPath('data.produits_performance.0.vues', 3)
             ->assertJsonPath('data.recherches_frequentes.0.terme', 'robe rouge');
     }
+
+    public function test_daily_periods_only_count_that_day(): void
+    {
+        $admin = $this->makeAdmin();
+        $produit = $this->makeProduit();
+
+        // 2 vues aujourd'hui, 1 vue hier, 1 vue il y a 3 jours
+        Evenement::create(['session_id' => 'a1', 'type' => 'vue_produit', 'produit_id' => $produit->id, 'created_at' => now()]);
+        Evenement::create(['session_id' => 'a2', 'type' => 'vue_produit', 'produit_id' => $produit->id, 'created_at' => now()]);
+        Evenement::create(['session_id' => 'h1', 'type' => 'vue_produit', 'produit_id' => $produit->id, 'created_at' => now()->subDay()->setTime(12, 0)]);
+        Evenement::create(['session_id' => 'v1', 'type' => 'vue_produit', 'produit_id' => $produit->id, 'created_at' => now()->subDays(3)->setTime(12, 0)]);
+
+        $this->actingAs($admin, 'sanctum')
+            ->getJson('/api/admin/rapports/comportement?periode=aujourd_hui')
+            ->assertStatus(200)
+            ->assertJsonPath('data.resume.vues_produits', 2)
+            ->assertJsonPath('data.resume.visiteurs_uniques', 2);
+
+        $this->actingAs($admin, 'sanctum')
+            ->getJson('/api/admin/rapports/comportement?periode=hier')
+            ->assertStatus(200)
+            ->assertJsonPath('data.resume.vues_produits', 1);
+
+        // Un jour précis choisi dans le calendrier = période personnalisée d'un jour
+        $jour = now()->subDays(3)->format('Y-m-d');
+        $this->actingAs($admin, 'sanctum')
+            ->getJson("/api/admin/rapports/comportement?periode=personnalise&date_debut={$jour}&date_fin={$jour}")
+            ->assertStatus(200)
+            ->assertJsonPath('data.resume.vues_produits', 1);
+    }
+
+    public function test_future_day_is_rejected(): void
+    {
+        $demain = now()->addDay()->format('Y-m-d');
+
+        $this->actingAs($this->makeAdmin(), 'sanctum')
+            ->getJson("/api/admin/rapports/comportement?periode=personnalise&date_debut={$demain}&date_fin={$demain}")
+            ->assertStatus(422);
+    }
 }

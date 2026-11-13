@@ -9,11 +9,22 @@ import {
 import { rapportsAdminApi, type ComportementReport } from '@/api/admin/rapports'
 
 const PERIODS: { id: string; label: string }[] = [
+  { id: 'aujourd_hui',   label: "Aujourd'hui" },
+  { id: 'hier',          label: 'Hier' },
   { id: '7_jours',       label: '7 jours' },
   { id: '30_jours',      label: '30 jours' },
   { id: 'mois_actuel',   label: 'Ce mois' },
   { id: 'mois_precedent',label: 'Mois dernier' },
 ]
+
+/** Période « un jour précis » : choisi dans le calendrier, envoyé comme période personnalisée d'un jour. */
+const JOUR = 'jour'
+
+/** Date du jour au format AAAA-MM-JJ, en heure locale (toISOString décalerait d'un jour après minuit UTC). */
+function today() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') }
 
@@ -100,20 +111,30 @@ function Funnel({ data }: { data: ComportementReport['entonnoir'] }) {
 
 export default function BehaviorPage() {
   const [period, setPeriod] = useState('30_jours')
+  const [day, setDay] = useState('')
   const [data, setData] = useState<ComportementReport | null>(null)
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
     setLoading(true)
     try {
-      const res = await rapportsAdminApi.comportement({ periode: period })
+      const params = period === JOUR && day
+        ? { periode: 'personnalise', date_debut: day, date_fin: day }
+        : { periode: period }
+      const res = await rapportsAdminApi.comportement(params)
       setData(res.data.data)
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { load() }, [period]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load() }, [period, day]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const choisirJour = (value: string) => {
+    if (!value) return
+    setDay(value)
+    setPeriod(JOUR)
+  }
 
   return (
     <div className="px-6 py-8">
@@ -124,8 +145,8 @@ export default function BehaviorPage() {
             Où vos visiteurs abandonnent, et ce qui les fait acheter. Données internes fiables (indépendantes de Google Analytics).
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex bg-beige-100 border border-beige-300 rounded-xl p-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap bg-beige-100 border border-beige-300 rounded-xl p-1">
             {PERIODS.map(p => (
               <button
                 key={p.id}
@@ -138,6 +159,22 @@ export default function BehaviorPage() {
               </button>
             ))}
           </div>
+          <label
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors ${
+              period === JOUR ? 'bg-beige-500 text-white border-beige-500' : 'bg-beige-100 border-beige-300 text-muted'
+            }`}
+            title="Voir les événements d'un jour précis"
+          >
+            Jour
+            <input
+              type="date"
+              value={day}
+              max={today()}
+              onChange={(e) => choisirJour(e.target.value)}
+              aria-label="Choisir un jour"
+              className="bg-transparent outline-none text-xs font-semibold [color-scheme:light]"
+            />
+          </label>
           <button
             onClick={load}
             className="p-2.5 rounded-xl border border-beige-300 hover:bg-beige-200 transition-colors"
