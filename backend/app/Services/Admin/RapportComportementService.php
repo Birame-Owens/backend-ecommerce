@@ -25,6 +25,7 @@ class RapportComportementService
             'recherches_sans_resultat'=> $this->recherchesSansResultat($debut, $fin),
             'top_categories'          => $this->topCategories($debut, $fin),
             'echecs_paiement'         => $this->echecsPaiement($debut, $fin),
+            'relances_panier'         => app(RelancePanierService::class)->statistiques($debut, $fin),
         ];
     }
 

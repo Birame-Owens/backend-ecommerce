@@ -57,3 +57,38 @@ describe('BehaviorPage — périodes journalières', () => {
     }))
   })
 })
+
+describe('BehaviorPage — relances de paniers abandonnés', () => {
+  beforeEach(() => mockComportement.mockReset())
+
+  it('affiche les relances envoyées, le taux et le CA récupérés', async () => {
+    mockComportement.mockResolvedValue({ data: { data: {
+      ...rapportVide(),
+      relances_panier: {
+        active: true, envoyees: 4, paniers_recuperes: 1, ca_recupere: 30000,
+        dernieres: [
+          { client: 'Awa Diallo', etape: 1, nombre_articles: 2, montant_panier: 30000, envoye_at: '2026-11-12T10:00:00Z', recupere: true },
+        ],
+      },
+    } } })
+
+    renderWithProviders(<BehaviorPage />)
+
+    expect(await screen.findByText('Relances de paniers abandonnés')).toBeInTheDocument()
+    expect(screen.getByText('25 %')).toBeInTheDocument()
+    expect(screen.getByText('Awa Diallo')).toBeInTheDocument()
+    expect(screen.getByText('Récupéré')).toBeInTheDocument()
+    expect(screen.queryByText(/relances sont désactivées/)).not.toBeInTheDocument()
+  })
+
+  it("signale quand les relances sont désactivées", async () => {
+    mockComportement.mockResolvedValue({ data: { data: {
+      ...rapportVide(),
+      relances_panier: { active: false, envoyees: 0, paniers_recuperes: 0, ca_recupere: 0, dernieres: [] },
+    } } })
+
+    renderWithProviders(<BehaviorPage />)
+
+    expect(await screen.findByText(/relances sont désactivées/)).toBeInTheDocument()
+  })
+})

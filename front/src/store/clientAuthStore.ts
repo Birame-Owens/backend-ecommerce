@@ -30,6 +30,7 @@ export interface RegisterPayload {
   password: string
   password_confirmation: string
   accepte_conditions: boolean
+  accepte_promotions?: boolean
   ville?: string
 }
 

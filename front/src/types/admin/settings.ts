@@ -30,6 +30,7 @@ export interface AdminShopSettingsNotifications {
   notif_paiement_recu: string
   notif_livraison: string
   notif_promotions: string
+  notif_relance_panier?: string
 }
 
 export interface AdminShopSettingsAnalytics {

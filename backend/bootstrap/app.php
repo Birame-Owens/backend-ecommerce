@@ -17,6 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'api/*',
+            // Désinscription « en un clic » envoyée en POST par les messageries : protégée par signature d'URL.
+            'desinscription/*',
         ]);
 
         // Headers sécurité sur toutes les réponses
