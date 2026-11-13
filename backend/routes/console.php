@@ -10,3 +10,5 @@ Artisan::command('inspire', function () {
 
 Schedule::command('model:prune', ['--model' => 'App\\Models\\AdminAuditLog'])->daily();
 Schedule::command('commandes:liberer-stock-expire')->everyFiveMinutes()->withoutOverlapping();
+// Relances e-mail des paniers abandonnés (sans effet tant qu'elles sont désactivées dans l'admin).
+Schedule::command('paniers:relancer')->hourly()->withoutOverlapping();

@@ -48,7 +48,9 @@ class AuthService
                 'type_client' => 'nouveau',
                 'accepte_whatsapp' => $data['accepte_whatsapp'] ?? true,
                 'accepte_email' => $data['accepte_email'] ?? true,
-                'accepte_promotions' => $data['accepte_promotions'] ?? true
+                // Consentement explicite aux e-mails commerciaux (offres, relances de panier) :
+                // case non cochée par défaut à l'inscription.
+                'accepte_promotions' => (bool) ($data['accepte_promotions'] ?? false)
             ]);
 
         // Générer le token

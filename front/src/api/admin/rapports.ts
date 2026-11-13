@@ -39,6 +39,22 @@ export interface ComportementReport {
   recherches_sans_resultat: Array<{ terme: string; total: number }>
   top_categories: Array<{ nom: string; vues: number }>
   echecs_paiement: Array<{ methode: string; total: number }>
+  relances_panier?: RelancesPanierStats
+}
+
+export interface RelancesPanierStats {
+  active: boolean
+  envoyees: number
+  paniers_recuperes: number
+  ca_recupere: number
+  dernieres: Array<{
+    client: string
+    etape: number
+    nombre_articles: number
+    montant_panier: number
+    envoye_at: string | null
+    recupere: boolean
+  }>
 }
 
 export const rapportsAdminApi = {

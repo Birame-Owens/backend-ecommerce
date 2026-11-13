@@ -65,6 +65,8 @@ class ShopSetting extends Model
                 'notif_paiement_recu'     => '1',
                 'notif_livraison'         => '1',
                 'notif_promotions'        => '0',
+                // Relances e-mail des paniers abandonnés : désactivées tant que le commerçant ne les active pas.
+                'notif_relance_panier'    => '0',
             ],
             'analytics' => [
                 'analytics_ga_id'        => '',

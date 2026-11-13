@@ -12,6 +12,7 @@ interface RegisterForm {
   email: string; telephone: string
   password: string; password_confirmation: string
   accepte_conditions: boolean
+  accepte_promotions: boolean
 }
 
 function inputCls(err?: boolean) {
@@ -149,6 +150,7 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         password: data.password,
         password_confirmation: data.password_confirmation,
         accepte_conditions: data.accepte_conditions,
+        accepte_promotions: !!data.accepte_promotions,
       })
       toast('Inscription réussie ! Bienvenue 🎉', 'check')
       onSuccess()
@@ -267,6 +269,19 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         </label>
         <FieldErr id="reg-conditions-err" msg={errors.accepte_conditions?.message} />
       </div>
+
+      {/* Consentement facultatif, non coché par défaut : offres et rappels de panier par e-mail. */}
+      <label className="flex items-start gap-3 cursor-pointer">
+        <input
+          id="reg-promotions"
+          type="checkbox"
+          {...register('accepte_promotions')}
+          className="mt-0.5 w-4 h-4 accent-accent cursor-pointer"
+        />
+        <span className="text-[12px] text-ink-2 leading-snug">
+          Je souhaite recevoir par e-mail les nouveautés, offres et rappels de mon panier (désinscription en un clic).
+        </span>
+      </label>
 
       <button type="submit" disabled={loading}
         className="w-full h-12 rounded-[10px] bg-accent text-white text-[13px] font-bold

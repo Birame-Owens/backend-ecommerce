@@ -76,6 +76,7 @@ export default function SettingsPage() {
     notif_paiement_recu: true,
     notif_livraison: true,
     notif_promotions: false,
+    notif_relance_panier: false,
   })
 
   // Formulaire boutique (description, localisation, horaires)
@@ -131,6 +132,7 @@ export default function SettingsPage() {
           notif_paiement_recu:     s.notifications.notif_paiement_recu === '1',
           notif_livraison:         s.notifications.notif_livraison === '1',
           notif_promotions:        s.notifications.notif_promotions === '1',
+          notif_relance_panier:    s.notifications.notif_relance_panier === '1',
         })
       } catch {
         showToast('Impossible de charger les paramètres.', 'error')
@@ -181,6 +183,7 @@ export default function SettingsPage() {
     notif_paiement_recu:     notifForm.notif_paiement_recu     ? '1' : '0',
     notif_livraison:         notifForm.notif_livraison         ? '1' : '0',
     notif_promotions:        notifForm.notif_promotions        ? '1' : '0',
+    notif_relance_panier:    notifForm.notif_relance_panier    ? '1' : '0',
   })
 
   const handleSaveBoutique = () => saveSettings(boutiqueForm)
@@ -439,6 +442,7 @@ export default function SettingsPage() {
                     { key: 'notif_paiement_recu',     label: 'Paiement reçu'         },
                     { key: 'notif_livraison',         label: 'Livraison expédiée'    },
                     { key: 'notif_promotions',        label: 'Promotions'            },
+                    { key: 'notif_relance_panier',    label: 'Relance des paniers abandonnés (e-mail 2 h puis 24 h)' },
                   ] as const).map(({ key, label }) => (
                     <label key={key} className="flex items-center justify-between bg-beige-100 border border-beige-300 rounded-2xl px-3 py-3 cursor-pointer">
                       <span className="text-sm font-medium text-ink">{label}</span>

@@ -4,9 +4,9 @@ import {
 } from 'recharts'
 import {
   Users, Eye, ShoppingCart, CreditCard, CheckCircle2, RefreshCw,
-  Search, AlertTriangle, TrendingDown, Filter, Package, XCircle,
+  Search, AlertTriangle, TrendingDown, Filter, Package, XCircle, Mail,
 } from 'lucide-react'
-import { rapportsAdminApi, type ComportementReport } from '@/api/admin/rapports'
+import { rapportsAdminApi, type ComportementReport, type RelancesPanierStats } from '@/api/admin/rapports'
 
 const PERIODS: { id: string; label: string }[] = [
   { id: 'aujourd_hui',   label: "Aujourd'hui" },
@@ -67,6 +67,59 @@ function Empty({ msg }: { msg: string }) {
       <Package className="w-7 h-7 mb-2 opacity-30" strokeWidth={1.5} />
       <p className="text-xs text-center max-w-xs">{msg}</p>
     </div>
+  )
+}
+
+/* ── Relances de paniers abandonnés (e-mails automatiques) ───────────── */
+function RelancesPanier({ data }: { data: RelancesPanierStats }) {
+  const taux = data.envoyees > 0 ? Math.round(data.paniers_recuperes / data.envoyees * 1000) / 10 : 0
+
+  return (
+    <Card
+      title="Relances de paniers abandonnés"
+      subtitle="E-mails automatiques"
+      icon={Mail}
+      hint="Clients connectés et consentants qui ont laissé un panier : un e-mail 2 h après, un rappel 24 h après. Un panier est « récupéré » si le client commande dans les 7 jours suivant la relance."
+    >
+      {!data.active && (
+        <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-[12px] text-amber-800">
+          Les relances sont désactivées. Activez « Relance des paniers abandonnés » dans Paramètres → Notifications.
+        </div>
+      )}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        {[
+          { label: 'E-mails envoyés', value: fmt(data.envoyees) },
+          { label: 'Paniers récupérés', value: fmt(data.paniers_recuperes) },
+          { label: 'Taux de récupération', value: `${taux.toLocaleString('fr-FR')} %` },
+          { label: 'CA récupéré', value: `${fmt(Math.round(data.ca_recupere))} F` },
+        ].map((k) => (
+          <div key={k.label} className="bg-white/60 border border-beige-200 rounded-xl p-3">
+            <p className="text-xl font-bold text-ink leading-none">{k.value}</p>
+            <p className="text-[11px] font-semibold text-muted uppercase tracking-wider mt-1.5">{k.label}</p>
+          </div>
+        ))}
+      </div>
+      {data.dernieres.length === 0
+        ? <Empty msg="Aucune relance envoyée sur la période." />
+        : (
+          <div className="divide-y divide-beige-200">
+            {data.dernieres.map((r, i) => (
+              <div key={i} className="flex items-center justify-between gap-3 py-2 text-[12.5px]">
+                <div className="min-w-0">
+                  <p className="font-semibold text-ink truncate">{r.client}</p>
+                  <p className="text-muted">
+                    {r.etape === 1 ? '1re relance' : 'Rappel'} · {r.nombre_articles} article{r.nombre_articles > 1 ? 's' : ''} · {fmt(Math.round(r.montant_panier))} F
+                    {r.envoye_at && <> · {new Date(r.envoye_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</>}
+                  </p>
+                </div>
+                <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[11px] font-semibold ${r.recupere ? 'bg-emerald-50 text-emerald-700' : 'bg-beige-100 text-muted'}`}>
+                  {r.recupere ? 'Récupéré' : 'En attente'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+    </Card>
   )
 }
 
@@ -352,6 +405,8 @@ export default function BehaviorPage() {
               </div>
             </Card>
           )}
+
+          {data.relances_panier && <RelancesPanier data={data.relances_panier} />}
         </div>
       )}
     </div>
