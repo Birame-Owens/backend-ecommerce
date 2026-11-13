@@ -507,6 +507,16 @@ class RapportController extends Controller
     private function getPeriodeDates(string $periode, array $customDates = []): array
     {
         return match($periode) {
+            'aujourd_hui' => [
+                'debut' => now()->startOfDay(),
+                'fin' => now()->endOfDay(),
+                'label' => "Aujourd'hui"
+            ],
+            'hier' => [
+                'debut' => now()->subDay()->startOfDay(),
+                'fin' => now()->subDay()->endOfDay(),
+                'label' => 'Hier'
+            ],
             '7_jours' => [
                 'debut' => now()->subDays(7)->startOfDay(),
                 'fin' => now()->endOfDay(),

@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\MessageBag;
 
 class RapportRequest extends FormRequest
 {
@@ -20,7 +21,7 @@ class RapportRequest extends FormRequest
             'periode' => [
                 'nullable',
                 'string',
-                'in:7_jours,30_jours,mois_actuel,mois_precedent,trimestre_actuel,annee_actuelle,personnalise'
+                'in:aujourd_hui,hier,7_jours,30_jours,mois_actuel,mois_precedent,trimestre_actuel,annee_actuelle,personnalise'
             ],
             
             // Dates personnalisées
@@ -209,23 +210,25 @@ class RapportRequest extends FormRequest
     /**
      * Suggestions pour corriger les erreurs
      */
-    private function getSuggestions($errors): array
+    private function getSuggestions(MessageBag $errors): array
     {
+        // MessageBag n'est pas un tableau : isset($errors['x']) plantait (erreur 500
+        // au lieu de 422 dès qu'un paramètre de rapport était invalide).
         $suggestions = [];
 
-        if (isset($errors['periode'])) {
+        if ($errors->has('periode')) {
             $suggestions[] = 'Utilisez une période prédéfinie comme "30_jours" ou "mois_actuel".';
         }
 
-        if (isset($errors['date_debut']) || isset($errors['date_fin'])) {
-            $suggestions[] = 'Vérifiez que les dates sont au format YYYY-MM-DD et que la date de début est antérieure à la date de fin.';
+        if ($errors->has('date_debut') || $errors->has('date_fin')) {
+            $suggestions[] = 'Vérifiez que les dates sont au format YYYY-MM-DD, que la date de début est antérieure à la date de fin et qu\'aucune n\'est dans le futur.';
         }
 
-        if (isset($errors['limit'])) {
+        if ($errors->has('limit')) {
             $suggestions[] = 'La limite doit être entre 5 et 100 éléments selon le type de rapport.';
         }
 
-        if (isset($errors['group_by'])) {
+        if ($errors->has('group_by')) {
             $suggestions[] = 'Pour un groupement par année, sélectionnez une période d\'au moins 12 mois.';
         }
 
