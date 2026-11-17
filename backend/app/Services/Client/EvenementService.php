@@ -39,9 +39,15 @@ class EvenementService
      * requête SQL (au lieu d'une par événement). Les identifiants de produit
      * et de catégorie inconnus sont mis à null plutôt que de rejeter le paquet.
      *
-     * @param  array<int, array{type:string, produit_id?:?int, categorie_id?:?int, terme_recherche?:?string, metadata?:?array}>  $events
+     * Horodatage : chaque événement est daté au moment du CLIC, pas à la
+     * réception du paquet. Le navigateur fournit l'heure du clic (`t`) et
+     * l'heure d'envoi (`$envoyeA`), toutes deux selon SON horloge ; seul leur
+     * écart est utilisé (heure serveur − écart). Une horloge de téléphone
+     * fausse n'a donc aucun effet.
+     *
+     * @param  array<int, array{type:string, produit_id?:?int, categorie_id?:?int, terme_recherche?:?string, metadata?:?array, t?:?int}>  $events
      */
-    public function logBatch(array $events): int
+    public function logBatch(array $events, ?int $envoyeA = null): int
     {
         if ($events === []) {
             return 0;
@@ -53,7 +59,7 @@ class EvenementService
             $contexte = $this->contexte();
             $maintenant = now();
 
-            $lignes = array_map(function (array $e) use ($produits, $categories, $contexte, $maintenant) {
+            $lignes = array_map(function (array $e) use ($produits, $categories, $contexte, $maintenant, $envoyeA) {
                 $produitId = isset($e['produit_id']) ? (int) $e['produit_id'] : null;
                 $categorieId = isset($e['categorie_id']) ? (int) $e['categorie_id'] : null;
 
@@ -64,7 +70,10 @@ class EvenementService
                     'commande_id'     => null,
                     'terme_recherche' => isset($e['terme_recherche']) ? mb_substr(trim((string) $e['terme_recherche']), 0, 255) : null,
                     'metadata'        => $this->metadata($e['metadata'] ?? null),
-                    'created_at'      => $maintenant,
+                    // Chaîne à la milliseconde : une date Carbon serait arrondie à la seconde par le pilote SQL.
+                    'created_at'      => $maintenant->copy()
+                        ->subMilliseconds(self::ageMs($e['t'] ?? null, $envoyeA))
+                        ->format('Y-m-d H:i:s.v'),
                 ];
             }, $events);
 
@@ -79,6 +88,22 @@ class EvenementService
 
             return 0;
         }
+    }
+
+    /** Écart maximal accepté entre le clic et l'envoi (au-delà : valeur suspecte, plafonnée). */
+    private const AGE_MAX_MS = 24 * 60 * 60 * 1000;
+
+    /**
+     * Ancienneté d'un événement au moment de l'envoi, en ms (0 si inconnue,
+     * plafonnée à 24 h ; jamais négative même avec des valeurs incohérentes).
+     */
+    public static function ageMs(mixed $t, ?int $envoyeA): int
+    {
+        if ($envoyeA === null || !is_numeric($t)) {
+            return 0;
+        }
+
+        return (int) max(0, min(self::AGE_MAX_MS, $envoyeA - (int) $t));
     }
 
     /** Colonnes communes à tous les événements de la requête en cours. */

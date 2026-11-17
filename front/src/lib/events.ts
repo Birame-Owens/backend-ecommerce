@@ -44,6 +44,8 @@ export interface EventPayload {
 
 interface QueuedEvent extends EventPayload {
   type: EventType
+  /** Heure du clic (horloge du navigateur) : le serveur date l'événement à ce moment-là. */
+  t: number
 }
 
 export const FLUSH_DELAY_MS = 4000
@@ -55,7 +57,7 @@ let timer: ReturnType<typeof setTimeout> | null = null
 const exitHooks = new Set<() => void>()
 
 export function logEvent(type: EventType, payload: EventPayload = {}): void {
-  queue.push({ type, ...payload })
+  queue.push({ type, ...payload, t: Date.now() })
   if (queue.length >= MAX_BATCH) {
     flushEvents()
   } else if (!timer) {
@@ -75,7 +77,7 @@ export function flushEvents(exit = false): void {
     return
   }
 
-  clientApi.post(BATCH_URL, { events }).catch(() => { /* best-effort : jamais bloquant */ })
+  clientApi.post(BATCH_URL, { events, envoye_a: Date.now() }).catch(() => { /* best-effort : jamais bloquant */ })
   if (queue.length) flushEvents(exit)
 }
 
@@ -84,7 +86,7 @@ function sendWithBeacon(events: QueuedEvent[]): boolean {
     if (typeof navigator === 'undefined' || !navigator.sendBeacon) return false
     const base = import.meta.env.VITE_API_URL || ''
     // text/plain = requête « simple » : pas de requête CORS préalable, envoi garanti à la fermeture.
-    const blob = new Blob([JSON.stringify({ events })], { type: 'text/plain;charset=UTF-8' })
+    const blob = new Blob([JSON.stringify({ events, envoye_a: Date.now() })], { type: 'text/plain;charset=UTF-8' })
     return navigator.sendBeacon(`${base}${BATCH_URL}`, blob)
   } catch {
     return false

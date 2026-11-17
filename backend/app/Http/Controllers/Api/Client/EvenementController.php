@@ -101,13 +101,17 @@ class EvenementController extends Controller
                 'categorie_id'    => 'nullable|integer|min:1',
                 'terme_recherche' => 'nullable|string|max:255',
                 'metadata'        => 'nullable|array',
+                't'               => 'nullable|integer|min:0',
             ]);
             if ($validator->passes()) {
                 $valides[] = $validator->validated();
             }
         }
 
-        $this->evenements->logBatch($valides);
+        // Heure d'envoi selon l'horloge du navigateur (voir EvenementService::logBatch).
+        $envoyeA = is_array($corps) && is_numeric($corps['envoye_a'] ?? null) ? (int) $corps['envoye_a'] : null;
+
+        $this->evenements->logBatch($valides, $envoyeA);
 
         return response()->noContent();
     }

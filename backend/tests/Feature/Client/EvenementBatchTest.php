@@ -163,6 +163,35 @@ class EvenementBatchTest extends TestCase
         $this->assertSame(1, Evenement::where('type', 'changement_variante')->count());
     }
 
+    public function test_chaque_evenement_est_date_au_moment_du_clic_a_la_milliseconde(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow('2026-11-17 15:06:20.500');
+        // Horloge du téléphone fausse (an 2001) : seul l'écart clic → envoi compte.
+        $envoi = 1_000_000_000_000;
+
+        $this->withHeaders(['User-Agent' => self::UA_MOBILE])->postJson('/api/client/evenements/batch', [
+            'envoye_a' => $envoi,
+            'events'   => [
+                ['type' => 'changement_variante', 't' => $envoi - 5_000, 'metadata' => ['axe' => 'couleur', 'valeur' => 'Noir']],
+                ['type' => 'changement_variante', 't' => $envoi - 1_250, 'metadata' => ['axe' => 'couleur', 'valeur' => 'Blanc']],
+                ['type' => 'vue_panier'], // ancien format sans heure : heure de réception
+            ],
+        ])->assertNoContent();
+
+        $dates = Evenement::orderBy('id')->get()->map(fn ($e) => $e->created_at->format('H:i:s.v'))->all();
+        $this->assertSame(['15:06:15.500', '15:06:19.250', '15:06:20.500'], $dates);
+        \Illuminate\Support\Carbon::setTestNow();
+    }
+
+    public function test_un_ecart_incoherent_ne_produit_jamais_une_date_absurde(): void
+    {
+        $this->assertSame(0, EvenementService::ageMs(2_000, 1_000));           // clic « après » l'envoi
+        $this->assertSame(0, EvenementService::ageMs('abc', 1_000));           // valeur invalide
+        $this->assertSame(0, EvenementService::ageMs(1_000, null));            // pas d'heure d'envoi
+        $this->assertSame(86_400_000, EvenementService::ageMs(0, 10 ** 12));   // plafonné à 24 h
+        $this->assertSame(3_000, EvenementService::ageMs(7_000, 10_000));
+    }
+
     public function test_detection_du_type_d_appareil(): void
     {
         $this->assertSame('mobile', EvenementService::appareil(self::UA_MOBILE));
