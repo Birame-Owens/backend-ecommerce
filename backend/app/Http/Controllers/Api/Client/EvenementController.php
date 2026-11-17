@@ -33,7 +33,9 @@ class EvenementController extends Controller
         'ajout_wishlist',
         'retrait_wishlist',
         'debut_checkout',
+        // Choix d'une couleur / taille (intérêt fin pour une variante précise).
         'changement_variante',
+        // Partage d'une fiche (WhatsApp, Facebook, lien copié…).
         'partage_produit',
         'clic_whatsapp',
         // Recherche VALIDÉE uniquement (terme final), journalisée depuis la

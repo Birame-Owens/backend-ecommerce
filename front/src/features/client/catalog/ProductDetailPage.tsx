@@ -244,11 +244,21 @@ export function ProductDetailPage() {
     return buildWaUrl(waNumber, msg)
   }, [product, color, size, axis1Label, axis2Label])
 
+  /* Collecte comportementale : choix d'une variante (vrai changement uniquement) et partages. */
+  function logVariante(axe: 'couleur' | 'taille', valeur: string, actuelle: string | null) {
+    if (!product || valeur === actuelle) return
+    logEvent('changement_variante', { produit_id: product.id, metadata: { axe, valeur } })
+  }
+  function logPartage(canal: 'natif' | 'whatsapp' | 'facebook' | 'lien_copie') {
+    if (product) logEvent('partage_produit', { produit_id: product.id, metadata: { canal } })
+  }
+
   function handleShare() {
     const url = window.location.href
     const text = product ? `Regarde ce produit sur ND WORLD : *${product.nom}* — ${fmt(product.prix_affiche)} CFA` : ''
     if (navigator.share) {
-      navigator.share({ title: product?.nom ?? 'ND WORLD', text, url }).catch(() => {})
+      // Résolu seulement si le partage a eu lieu (rejeté si le client annule).
+      navigator.share({ title: product?.nom ?? 'ND WORLD', text, url }).then(() => logPartage('natif')).catch(() => {})
     } else {
       setShareOpen((v) => !v)
     }
@@ -256,6 +266,7 @@ export function ProductDetailPage() {
 
   function handleCopyLink() {
     navigator.clipboard.writeText(window.location.href).then(() => {
+      logPartage('lien_copie')
       toast('Lien copié !', 'check')
       setShareOpen(false)
     })
@@ -320,6 +331,7 @@ export function ProductDetailPage() {
             const isSelected = color === c
             const hex = colorHex(c)
             function handleSelect() {
+              logVariante('couleur', c, color)
               setColor(c); setSize(firstSize(product!, c)); setColorError(false)
               const imgIdx = images.findIndex((img) => img.couleur_associee === c)
               if (imgIdx >= 0) setActiveIdx(imgIdx)
@@ -371,7 +383,7 @@ export function ProductDetailPage() {
           {sizes.map((s) => {
             const sOos = sizeStockMap[s] === 0
             return (
-              <button key={s} onClick={() => { setSize(s); setSizeError(false) }}
+              <button key={s} onClick={() => { logVariante('taille', s, size); setSize(s); setSizeError(false) }}
                 aria-pressed={size === s} aria-label={`${axis2Label} ${s}${sOos ? ' — rupture de stock' : ''}`}
                 className={`relative min-w-[48px] h-11 px-3 rounded-[8px] text-[12px] font-bold border transition-all overflow-hidden
                   ${size === s
@@ -488,7 +500,7 @@ export function ProductDetailPage() {
           <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
             {colorThumbs.map(({ color: c, img, idx }) => (
               <button key={c} title={c}
-                onClick={() => { setActiveIdx(idx); setColor(c); setSize(firstSize(product, c)); setColorError(false) }}
+                onClick={() => { logVariante('couleur', c, color); setActiveIdx(idx); setColor(c); setSize(firstSize(product, c)); setColorError(false) }}
                 className={`flex-shrink-0 w-16 h-20 rounded-[10px] overflow-hidden border-2 transition-all
                   ${color === c ? 'border-accent scale-105' : 'border-line-2 opacity-70 hover:opacity-100'}`}>
                 <NImage src={img!.thumbnail ?? img!.medium} alt={c} className="w-full h-full" />
@@ -725,7 +737,7 @@ export function ProductDetailPage() {
               <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-hide">
                 {colorThumbs.map(({ color: c, img, idx }) => (
                   <button key={c} title={c}
-                    onClick={() => { setActiveIdx(idx); setColor(c); setSize(firstSize(product, c)); setColorError(false) }}
+                    onClick={() => { logVariante('couleur', c, color); setActiveIdx(idx); setColor(c); setSize(firstSize(product, c)); setColorError(false) }}
                     className={`flex-shrink-0 w-[72px] h-[90px] rounded-[10px] overflow-hidden border-2 transition-all
                       ${color === c ? 'border-accent' : 'border-line-2 hover:border-ink opacity-70 hover:opacity-100'}`}>
                     <NImage src={img!.thumbnail ?? img!.medium} alt={c} className="w-full h-full" />
@@ -755,14 +767,14 @@ export function ProductDetailPage() {
                   <NIcon name="share" size={17} strokeWidth={1.8} />
                 </button>
                 {shareOpen && (
-                  <div className="absolute right-0 top-11 z-30 w-52 bg-white rounded-[12px] border border-line shadow-card-lg py-1.5">
+                  <div data-partage className="absolute right-0 top-11 z-30 w-52 bg-white rounded-[12px] border border-line shadow-card-lg py-1.5">
                     <a href={buildWaUrl(waNumber, `Regarde ce produit sur ND WORLD : *${product.nom}* — ${fmt(product.prix_affiche)} CFA\n${window.location.href}`)}
-                      target="_blank" rel="noreferrer" onClick={() => setShareOpen(false)}
+                      target="_blank" rel="noreferrer" onClick={() => { logPartage('whatsapp'); setShareOpen(false) }}
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-paper text-[13px] text-ink transition-colors">
                       <WAGlyph size={16} /> WhatsApp
                     </a>
                     <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
-                      target="_blank" rel="noreferrer" onClick={() => setShareOpen(false)}
+                      target="_blank" rel="noreferrer" onClick={() => { logPartage('facebook'); setShareOpen(false) }}
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-paper text-[13px] text-ink transition-colors">
                       <NIcon name="globe" size={16} strokeWidth={1.8} /> Facebook
                     </a>
