@@ -263,7 +263,9 @@ class ProductController extends Controller
 {
     try {
         $result = $this->productService->getProductDetailPageData($slug);
-        return response()->json($result);
+        // Produit masqué ou supprimé : vrai 404 (la page affiche « Produit introuvable »)
+        // au lieu d'un 200 sans données qui faisait planter le front (« erreur réseau »).
+        return response()->json($result, ($result['success'] ?? false) ? 200 : 404);
     } catch (\Exception $e) {
         return response()->json([
             'success' => false,

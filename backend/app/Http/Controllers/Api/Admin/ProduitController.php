@@ -938,11 +938,18 @@ class ProduitController extends Controller
     {
         Cache::forget('client_home_data');
         Cache::forget('home_page_data_' . now()->format('Y-m-d-H'));
-        Cache::forget('products:list:' . md5(json_encode([])));
+        // Toutes les listes (catégories, tris, pages), pas seulement la liste sans filtre :
+        // sinon un produit masqué restait visible dans sa catégorie jusqu'à 1 h.
+        \App\Services\Client\ProductService::invalidateListCache();
 
         if ($slug) {
-            Cache::forget('product:detail:' . $slug);
             Cache::forget('product:page_data:' . $slug);
+            try {
+                // Le détail est mis en cache avec le tag « products » : un forget sans tag ne l'atteint pas.
+                Cache::tags(['products'])->forget('product:detail:' . $slug);
+            } catch (\Throwable $e) {
+                Cache::forget('product:detail:' . $slug);
+            }
         }
 
         try {

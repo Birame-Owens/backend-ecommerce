@@ -54,6 +54,7 @@ class CategoryProductSyncService
                 $q->where('est_active', false);
             })
             ->update(['est_visible' => false]);
+            \App\Services\Client\ProductService::invalidateListCache();
 
         if ($affected > 0) {
             Log::warning("$affected produit(s) désactivé(s) - catégorie inactive", [
@@ -170,6 +171,7 @@ class CategoryProductSyncService
             $affected = $category->produits()
                 ->where('est_visible', true)
                 ->update(['est_visible' => false]);
+            \App\Services\Client\ProductService::invalidateListCache();
 
             Log::info('Produits désactivés - catégorie inactive', [
                 'category_id' => $categoryId,

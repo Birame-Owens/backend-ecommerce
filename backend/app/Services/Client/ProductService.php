@@ -19,10 +19,25 @@ class ProductService
      * Obtenir les produits avec cache Redis optimisé
      * OPTIMISÉ: Cache intelligent par page et filtres (sans tagging)
      */
+    private const LIST_VERSION_KEY = 'products:list:version';
+
+    public static function listCacheVersion(): int
+    {
+        return (int) Cache::get(self::LIST_VERSION_KEY, 1);
+    }
+
+    /** Invalide toutes les listes de produits mises en cache. */
+    public static function invalidateListCache(): void
+    {
+        Cache::forever(self::LIST_VERSION_KEY, self::listCacheVersion() + 1);
+    }
+
     public function getProducts(array $filters = []): array
     {
-        // Générer clé de cache basée sur les filtres
-        $cacheKey = 'products:list:' . md5(json_encode($filters));
+        // Clé de cache basée sur les filtres + un numéro de version : toute
+        // modification d'un produit côté admin change la version, ce qui rend
+        // obsolètes d'un coup TOUTES les listes (catégories, tris, pages...).
+        $cacheKey = 'products:list:v' . self::listCacheVersion() . ':' . md5(json_encode($filters));
         $cacheTtl = config('ndeya_cache.ttl.products_list', 3600);
 
         return Cache::remember($cacheKey, $cacheTtl, function () use ($filters) {

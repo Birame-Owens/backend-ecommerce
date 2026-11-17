@@ -36,6 +36,8 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Cookie\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \Illuminate\Session\Middleware\StartSession::class,
+            // Jeton client prioritaire sur la session admin du même navigateur.
+            \App\Http\Middleware\PreferBearerToken::class,
         ]);
 
         $middleware->api(append: [
