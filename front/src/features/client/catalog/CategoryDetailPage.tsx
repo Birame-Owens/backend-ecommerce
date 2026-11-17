@@ -6,6 +6,7 @@ import type { CategoryPreview } from '@/api/client/home'
 import { NProductCard } from '@/components/client/NProductCard'
 import { NIcon } from '@/components/client/NIcon'
 import { SeoHead } from '@/components/client/SeoHead'
+import { logEvent } from '@/lib/events'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
@@ -133,6 +134,22 @@ export function CategoryDetailPage() {
     setSelectedSubcat(null)
     setQuickFilter('all')
   }, [slug])
+
+  // Collecte comportementale : filtres réellement utilisés (pas l'état par défaut).
+  const categoryId = category?.id
+  useEffect(() => {
+    if (!categoryId) return
+    if (quickFilter === 'all' && !priceMin && !priceMax && !selectedSubcat) return
+    logEvent('filtre_catalogue', {
+      categorie_id: categoryId,
+      metadata: {
+        filtre: quickFilter,
+        prix_min: priceMin ? Number(priceMin) : null,
+        prix_max: priceMax ? Number(priceMax) : null,
+        sous_categorie: selectedSubcat,
+      },
+    })
+  }, [categoryId, quickFilter, priceMin, priceMax, selectedSubcat])
 
   const activeSlug = selectedSubcat ?? slug
 

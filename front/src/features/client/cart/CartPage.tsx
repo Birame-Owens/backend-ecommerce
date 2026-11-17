@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { logEvent } from '@/lib/events'
 import { useNavigate } from 'react-router-dom'
 import { NIcon, WAGlyph } from '@/components/client/NIcon'
 import { useCartStore, cartSubtotal, cartCount, type CartItem } from '@/store/cartStore'
@@ -264,6 +265,16 @@ export function CartPage() {
 
   const [pendingItem, setPendingItem] = useState<CartItem | null>(null)
 
+  // Collecte comportementale : consultation du panier et vidage volontaire.
+  useEffect(() => {
+    logEvent('vue_panier', { metadata: { nb_articles: count, montant: subtotal } })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  function handleClearCart() {
+    logEvent('vidage_panier', { metadata: { nb_articles: count, montant: subtotal } })
+    clearCart()
+  }
+
   /* Livraison : zone choisie dès le panier (plus de surprise au checkout) */
   const { zones, freeThreshold } = useDeliveryInfo()
   const selectedZone = useMemo(() => {
@@ -333,7 +344,7 @@ export function CartPage() {
           </span>
           {items.length > 0 && (
             <button
-              onClick={clearCart}
+              onClick={handleClearCart}
               className="text-[11.5px] font-semibold text-muted hover:text-red-500 transition-colors"
             >
               Vider
@@ -356,7 +367,7 @@ export function CartPage() {
             </h1>
             {items.length > 0 && (
               <button
-                onClick={clearCart}
+                onClick={handleClearCart}
                 className="flex items-center gap-2 px-4 h-9 rounded-full border border-line
                   text-[12px] font-semibold text-muted hover:text-red-500 hover:border-red-200
                   hover:bg-red-50 transition-colors"

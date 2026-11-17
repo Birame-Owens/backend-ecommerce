@@ -2,24 +2,27 @@
 
 namespace App\Services\Client;
 
+use App\Models\Category;
 use App\Models\Evenement;
+use App\Models\Produit;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Journalisation des événements comportementaux (business intelligence
- * interne, fiable — voir Evenement/migration pour le contexte).
+ * interne, détection d'anomalies, recommandation).
  *
  * Ne doit jamais faire échouer l'action métier en cours : toute erreur est
  * avalée et journalisée en warning, jamais relancée.
  */
 class EvenementService
 {
+    /** Taille maximale des métadonnées d'un événement (JSON encodé). */
+    private const METADATA_MAX_OCTETS = 2048;
+
     public function log(string $type, array $attributes = []): void
     {
         try {
-            Evenement::create(array_merge([
-                'session_id' => $this->sessionId(),
-                'client_id'  => $this->clientId(),
+            Evenement::create(array_merge($this->contexte(), [
                 'type'       => $type,
                 'created_at' => now(),
             ], $attributes));
@@ -29,6 +32,121 @@ class EvenementService
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Enregistre un paquet d'événements envoyés par le navigateur en UNE seule
+     * requête SQL (au lieu d'une par événement). Les identifiants de produit
+     * et de catégorie inconnus sont mis à null plutôt que de rejeter le paquet.
+     *
+     * @param  array<int, array{type:string, produit_id?:?int, categorie_id?:?int, terme_recherche?:?string, metadata?:?array}>  $events
+     */
+    public function logBatch(array $events): int
+    {
+        if ($events === []) {
+            return 0;
+        }
+
+        try {
+            $produits = $this->idsExistants(Produit::class, array_column($events, 'produit_id'));
+            $categories = $this->idsExistants(Category::class, array_column($events, 'categorie_id'));
+            $contexte = $this->contexte();
+            $maintenant = now();
+
+            $lignes = array_map(function (array $e) use ($produits, $categories, $contexte, $maintenant) {
+                $produitId = isset($e['produit_id']) ? (int) $e['produit_id'] : null;
+                $categorieId = isset($e['categorie_id']) ? (int) $e['categorie_id'] : null;
+
+                return $contexte + [
+                    'type'            => $e['type'],
+                    'produit_id'      => $produitId && isset($produits[$produitId]) ? $produitId : null,
+                    'categorie_id'    => $categorieId && isset($categories[$categorieId]) ? $categorieId : null,
+                    'commande_id'     => null,
+                    'terme_recherche' => isset($e['terme_recherche']) ? mb_substr(trim((string) $e['terme_recherche']), 0, 255) : null,
+                    'metadata'        => $this->metadata($e['metadata'] ?? null),
+                    'created_at'      => $maintenant,
+                ];
+            }, $events);
+
+            Evenement::insert($lignes);
+
+            return count($lignes);
+        } catch (\Throwable $e) {
+            Log::warning('Paquet d\'événements non journalisé', [
+                'nombre' => count($events),
+                'error'  => $e->getMessage(),
+            ]);
+
+            return 0;
+        }
+    }
+
+    /** Colonnes communes à tous les événements de la requête en cours. */
+    private function contexte(): array
+    {
+        $agent = (string) request()->userAgent();
+
+        return [
+            'session_id' => $this->sessionId(),
+            'empreinte'  => $this->empreinte($agent),
+            'appareil'   => self::appareil($agent),
+            'client_id'  => $this->clientId(),
+        ];
+    }
+
+    /**
+     * Hachage non réversible (HMAC avec la clé de l'application) du préfixe IP
+     * (/24 en IPv4, /48 en IPv6) et du navigateur : relie les sessions d'un même
+     * appareil sans jamais stocker l'adresse IP.
+     */
+    private function empreinte(string $agent): string
+    {
+        $ip = (string) (request()->header('CF-Connecting-IP') ?: request()->ip());
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $prefixe = implode('.', array_slice(explode('.', $ip), 0, 3));
+        } elseif (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $prefixe = implode(':', array_slice(explode(':', $ip), 0, 3));
+        } else {
+            $prefixe = '';
+        }
+
+        return substr(hash_hmac('sha256', $prefixe . '|' . $agent, (string) config('app.key')), 0, 32);
+    }
+
+    public static function appareil(string $agent): string
+    {
+        $a = strtolower($agent);
+
+        return match (true) {
+            $a === '' => 'inconnu',
+            (bool) preg_match('/bot|crawl|spider|slurp|headless|phantom|python|curl|wget|httpclient|facebookexternalhit|lighthouse/', $a) => 'robot',
+            (bool) preg_match('/ipad|tablet|kindle|silk|(android(?!.*mobile))/', $a) => 'tablette',
+            (bool) preg_match('/mobi|iphone|ipod|android|opera mini|iemobile/', $a) => 'mobile',
+            default => 'ordinateur',
+        };
+    }
+
+    private function metadata(mixed $metadata): ?string
+    {
+        if (!is_array($metadata) || $metadata === []) {
+            return null;
+        }
+
+        $json = json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+
+        return ($json !== false && strlen($json) <= self::METADATA_MAX_OCTETS) ? $json : null;
+    }
+
+    /** @return array<int, true> */
+    private function idsExistants(string $modele, array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', array_filter($ids)))));
+        if ($ids === []) {
+            return [];
+        }
+
+        return array_fill_keys($modele::whereIn('id', $ids)->pluck('id')->all(), true);
     }
 
     private function sessionId(): string

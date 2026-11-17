@@ -328,6 +328,10 @@ Route::prefix('client')->group(function () use ($statelessPublic) {
     Route::withoutMiddleware($statelessPublic)
         ->post('/evenements', [\App\Http\Controllers\Api\Client\EvenementController::class, 'store'])
         ->middleware('throttle.api:60,1');
+    // Paquets d'événements (jusqu'à 50 par appel) : moins de requêtes, une seule écriture en base.
+    Route::withoutMiddleware($statelessPublic)
+        ->post('/evenements/batch', [\App\Http\Controllers\Api\Client\EvenementController::class, 'batch'])
+        ->middleware('throttle.api:60,1');
 
     // =================== PANIER (SESSION BASED) ===================
     Route::prefix('cart')->group(function () {
