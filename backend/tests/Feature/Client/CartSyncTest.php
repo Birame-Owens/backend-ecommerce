@@ -142,6 +142,35 @@ class CartSyncTest extends TestCase
         $this->sync([['produit_id' => $produit->id, 'quantite' => 500]])->assertUnprocessable();
     }
 
+    public function test_le_panier_est_relu_sur_un_autre_appareil_avec_prix_et_stock_actuels(): void
+    {
+        $produit = $this->makeProduit(['stock_disponible' => 2]);
+        $masque = $this->makeProduit();
+        $this->sync([
+            ['produit_id' => $produit->id, 'quantite' => 3, 'taille' => 'M', 'couleur' => 'Rouge'],
+            ['produit_id' => $masque->id, 'quantite' => 1],
+        ]);
+        $produit->update(['prix_promo' => 12000]);
+        $masque->update(['est_visible' => false]);
+
+        $items = $this->actingAs($this->user, 'sanctum')
+            ->getJson('/api/client/cart/sync')
+            ->assertOk()
+            ->json('data.items');
+
+        $this->assertCount(1, $items);
+        $this->assertSame($produit->id, $items[0]['id']);
+        $this->assertSame($produit->slug, $items[0]['slug']);
+        $this->assertEquals(12000, $items[0]['prix']);       // prix actuel (promo)
+        $this->assertSame(2, $items[0]['qty']);               // plafonné au stock
+        $this->assertSame(['M', 'Rouge'], [$items[0]['taille'], $items[0]['couleur']]);
+    }
+
+    public function test_la_relecture_est_reservee_au_client_connecte(): void
+    {
+        $this->getJson('/api/client/cart/sync')->assertUnauthorized();
+    }
+
     public function test_de_bout_en_bout_le_panier_synchronise_declenche_la_relance(): void
     {
         Mail::fake();

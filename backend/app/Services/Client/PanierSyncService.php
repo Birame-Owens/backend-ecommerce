@@ -91,6 +91,49 @@ class PanierSyncService
     }
 
     /**
+     * Contenu de la copie serveur, au format du panier du navigateur : permet à
+     * un client de retrouver son panier sur un autre appareil (ex. : panier rempli
+     * sur ordinateur, e-mail de relance ouvert sur téléphone). Prix et stock
+     * actuels ; produits masqués ou supprimés écartés.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function recuperer(User $user): array
+    {
+        $panier = Panier::where('session_id', 'user_' . $user->id)->first();
+        if (!$panier) {
+            return [];
+        }
+
+        return $panier->articles_paniers()
+            ->with(['produit' => fn ($q) => $q->where('est_visible', true)])
+            ->get()
+            ->filter(fn ($a) => $a->produit !== null)
+            ->map(function ($a) {
+                $p = $a->produit;
+                $stock = ($p->gestion_stock && !$p->fait_sur_mesure) ? (int) $p->stock_disponible : null;
+
+                return [
+                    'id'                     => $p->id,
+                    'nom'                    => $p->nom,
+                    'slug'                   => $p->slug,
+                    'prix'                   => (float) ($p->prix_promo ?: $p->prix),
+                    'image'                  => $p->image_url,
+                    'couleur'                => $a->couleur_choisie,
+                    'taille'                 => $a->taille_choisie,
+                    'type_variante'          => $p->type_variante ?: 'aucun',
+                    'qty'                    => $stock !== null ? min((int) $a->quantite, $stock) : (int) $a->quantite,
+                    'stock_max'              => $stock,
+                    'sur_mesure'             => (bool) $p->fait_sur_mesure,
+                    'delai_production_jours' => $p->delai_production_jours,
+                ];
+            })
+            ->filter(fn ($item) => $item['qty'] > 0)
+            ->values()
+            ->all();
+    }
+
+    /**
      * Fusionne les doublons (même produit/taille/couleur), écarte les produits
      * invisibles et fixe le prix depuis la base.
      *

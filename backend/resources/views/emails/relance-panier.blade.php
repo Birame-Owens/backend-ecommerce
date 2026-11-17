@@ -25,7 +25,7 @@
                 <tr>
                     <td align="center" style="background-color: #4A2C22; padding: 28px 20px;">
                         @if($logo)
-                            <img src="{{ $logo }}" alt="{{ $boutiqueNom }}" width="64" height="64" style="border-radius: 32px; margin: 0 auto 10px auto;">
+                            <img src="{{ $logo }}" alt="{{ $boutiqueNom }}" width="64" height="64" style="border-radius: 32px; margin: 0 auto 10px auto; color: #F8F3ED; font-size: 12px;">
                         @endif
                         <p style="margin: 0; font-size: 20px; letter-spacing: 4px; text-transform: uppercase; color: #F8F3ED; font-weight: bold;">{{ $boutiqueNom }}</p>
                     </td>
@@ -46,7 +46,7 @@
                         </h1>
                         <p style="margin: 0; font-size: 15px; line-height: 24px; color: #4A4843;">
                             @if($etape === 1)
-                                Vous avez ajouté ces articles à votre panier sans finaliser votre commande. Ils sont toujours disponibles : il vous suffit de vous connecter pour les retrouver.
+                                Vous avez laissé ces articles dans votre panier sans finaliser votre commande. Ils vous attendent : connectez-vous à votre compte pour les retrouver, sur votre téléphone comme sur votre ordinateur.
                             @else
                                 Votre sélection est toujours enregistrée dans votre compte. Finalisez votre commande avant que vos articles préférés ne soient plus disponibles.
                             @endif

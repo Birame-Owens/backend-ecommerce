@@ -64,12 +64,65 @@ export function startCartSync(): () => void {
     }
   }
 
+  /*
+   * Même panier sur plusieurs appareils : à la connexion, si le panier du
+   * navigateur est VIDE, on relit d'abord la copie du serveur (ex. : panier
+   * rempli sur ordinateur, e-mail de relance ouvert sur téléphone). Tant que
+   * cette lecture n'a pas abouti, on n'envoie rien : sinon le panier vide de
+   * ce navigateur effacerait la copie du serveur. Panier local non vide : il
+   * fait foi (c'est l'appareil utilisé en ce moment).
+   */
+  let restoredFor: number | null = null
+  let attemptedFor: number | null = null // une seule tentative de relecture par connexion
+  let restoring = false
+
+  const restore = async (userId: number) => {
+    restoring = true
+    attemptedFor = userId
+    try {
+      const res = await clientApi.get<{ data?: { items?: Omit<CartItem, 'key'>[] } }>('/api/client/cart/sync')
+      const serverItems = res.data?.data?.items ?? []
+      const stillSameUser = useClientAuthStore.getState().user?.id === userId
+      if (!stillSameUser) return
+      restoredFor = userId
+      if (serverItems.length > 0 && useCartStore.getState().items.length === 0) {
+        const items: CartItem[] = serverItems.map((i) => ({
+          ...i,
+          key: `${i.id}-${i.couleur || 'nc'}-${i.taille || 'nc'}`,
+        }))
+        // Déjà identique au serveur : rien à renvoyer.
+        lastSent = `${userId}:${cartSignature(items)}`
+        writeLastSent(lastSent)
+        useCartStore.setState({ items, _savedAt: Date.now() })
+      }
+    } catch {
+      // Échec réseau : on n'a rien relu, donc on n'envoie rien non plus (restoredFor reste vide).
+    } finally {
+      restoring = false
+      schedule()
+    }
+  }
+
   const schedule = () => {
     const current = pending()
-    if (!current && lastSent !== null) {
-      // Déconnexion : le serveur supprime sa copie du panier, il faudra la renvoyer à la reconnexion.
-      lastSent = null
-      try { localStorage.removeItem(STORAGE_KEY) } catch { /* stockage indisponible */ }
+    if (!current) {
+      restoredFor = null
+      attemptedFor = null
+      if (lastSent !== null) {
+        // Déconnexion : le serveur supprime sa copie du panier, il faudra la renvoyer à la reconnexion.
+        lastSent = null
+        try { localStorage.removeItem(STORAGE_KEY) } catch { /* stockage indisponible */ }
+      }
+    }
+    const userId = useClientAuthStore.getState().user?.id
+    if (current && userId != null && restoredFor !== userId) {
+      if (current.items.length > 0) {
+        restoredFor = userId
+      } else {
+        if (timer) { clearTimeout(timer); timer = null }
+        if (!restoring && attemptedFor !== userId) void restore(userId)
+        return
+      }
     }
     if (!current || current.key === lastSent) {
       if (timer) { clearTimeout(timer); timer = null }
