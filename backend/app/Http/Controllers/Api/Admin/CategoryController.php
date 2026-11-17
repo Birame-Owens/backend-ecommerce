@@ -549,6 +549,8 @@ class CategoryController extends Controller
     {
         Cache::forget('client_home_data');
         Cache::forget('home:categories_preview');
+        // Désactiver une catégorie masque ses produits : listes de produits à recalculer.
+        \App\Services\Client\ProductService::invalidateListCache();
         try {
             Cache::tags(['api_responses'])->flush();
         } catch (\Throwable $e) {

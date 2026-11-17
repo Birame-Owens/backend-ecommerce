@@ -57,8 +57,9 @@ class AuthService
 
         DB::commit();
 
-        // Connecter l'utilisateur et migrer le panier
-        Auth::login($user);
+        // Le client s'authentifie par jeton : on ne l'écrit PAS dans la session
+        // (partagée avec l'admin du même navigateur), on le pose juste pour cette requête.
+        Auth::setUser($user);
         app(CartService::class)->migrateGuestCart();
         $token = $user->createToken('client-session')->plainTextToken;
 
@@ -105,8 +106,8 @@ class AuthService
 
     // Créer un nouveau token
 
-    // Connecter l'utilisateur et migrer le panier
-    Auth::login($user);
+    // Jeton uniquement : ne pas écraser la session (éventuellement admin) du navigateur.
+    Auth::setUser($user);
     app(CartService::class)->migrateGuestCart();
 
     // Mettre à jour les stats de connexion
@@ -190,14 +191,9 @@ class AuthService
                 $panier->delete(); // Supprimer panier
             }
             
-            // Déconnecter de la session
-            Auth::logout();
-            
-            // Régénérer l'ID de session pour éviter fixation de session
-            if (request()->hasSession()) {
-                request()->session()->invalidate();
-                request()->session()->regenerateToken();
-            }
+            // Pas de Auth::logout() ni d'invalidation de session : le client est
+            // authentifié par jeton (révoqué ci-dessus) et la session du navigateur
+            // peut appartenir à l'admin connecté dans un autre onglet.
         }
 
         return ['success' => true, 'message' => 'Déconnexion réussie'];
