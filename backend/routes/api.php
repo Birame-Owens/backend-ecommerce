@@ -341,6 +341,9 @@ Route::prefix('client')->group(function () use ($statelessPublic) {
         Route::post('/whatsapp', [CartController::class, 'generateWhatsAppMessage']);
         Route::post('/apply-coupon', [CartController::class, 'applyCoupon']);
         Route::delete('/remove-coupon', [CartController::class, 'removeCoupon']);
+        // Copie serveur du panier navigateur d'un client connecté (relances de paniers abandonnés).
+        Route::put('/sync', \App\Http\Controllers\Api\Client\CartSyncController::class)
+            ->middleware(['auth:sanctum', 'throttle.api:30,1']);
     });
     
     // =================== FAVORIS (SESSION BASED) ===================
