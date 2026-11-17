@@ -41,6 +41,19 @@ describe('events — envoi par paquets', () => {
     expect(sentEvents().map((e) => e.type)).toEqual(['ajout_panier', 'vue_panier', 'retrait_panier'])
   })
 
+  it("chaque événement porte l'heure du clic, et le paquet son heure d'envoi", async () => {
+    vi.setSystemTime(1_000_000)
+    logEvent('changement_variante', { produit_id: 7 })
+    vi.setSystemTime(1_002_500)
+    logEvent('changement_variante', { produit_id: 7 })
+
+    await vi.advanceTimersByTimeAsync(FLUSH_DELAY_MS)
+
+    const corps = post.mock.calls[0][1] as { events: Array<{ t: number }>; envoye_a: number }
+    expect(corps.events.map((e) => e.t)).toEqual([1_000_000, 1_002_500])
+    expect(corps.envoye_a).toBeGreaterThanOrEqual(1_002_500)
+  })
+
   it('envoie tout de suite quand le paquet est plein', () => {
     for (let i = 0; i < MAX_BATCH; i++) logEvent('ajout_panier', { produit_id: i + 1 })
     expect(post).toHaveBeenCalledTimes(1)
