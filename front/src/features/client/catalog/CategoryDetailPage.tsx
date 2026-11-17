@@ -135,8 +135,13 @@ export function CategoryDetailPage() {
     setQuickFilter('all')
   }, [slug])
 
-  // Collecte comportementale : filtres réellement utilisés (pas l'état par défaut).
+  // Collecte comportementale : vue de la catégorie (journalisée ici car la
+  // liste est servie depuis un cache serveur) et filtres réellement utilisés.
   const categoryId = category?.id
+  useEffect(() => {
+    if (categoryId) logEvent('vue_categorie', { categorie_id: categoryId })
+  }, [categoryId])
+
   useEffect(() => {
     if (!categoryId) return
     if (quickFilter === 'all' && !priceMin && !priceMax && !selectedSubcat) return

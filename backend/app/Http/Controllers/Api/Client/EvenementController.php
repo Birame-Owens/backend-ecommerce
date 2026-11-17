@@ -21,6 +21,10 @@ class EvenementController extends Controller
     /** Types autorisés depuis le client — le reste est journalisé côté serveur uniquement. */
     public const TYPES_AUTORISES = [
         'debut_session',
+        // Vues journalisées par le navigateur : les pages catalogue sont mises
+        // en cache côté serveur, qui ne voit donc pas chaque visite.
+        'vue_produit',
+        'vue_categorie',
         'ajout_panier',
         'retrait_panier',
         'modification_quantite',

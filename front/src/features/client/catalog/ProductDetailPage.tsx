@@ -17,6 +17,7 @@ import { useToastStore } from '@/store/toastStore'
 import { useShopStore, buildWaUrl } from '@/store/shopStore'
 import { SeoHead } from '@/components/client/SeoHead'
 import { trackViewItem } from '@/lib/analytics'
+import { logEvent } from '@/lib/events'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
@@ -142,6 +143,8 @@ export function ProductDetailPage() {
 
   useEffect(() => {
     if (product) {
+      // Journalisé ici (et non côté serveur) : la fiche est servie depuis un cache.
+      logEvent('vue_produit', { produit_id: product.id, categorie_id: product.category?.id ?? null })
       trackViewItem({
         item_id: product.id,
         item_name: product.nom,

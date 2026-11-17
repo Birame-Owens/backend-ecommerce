@@ -25,12 +25,9 @@ class SearchController extends Controller
 
             $result = $this->searchService->search($query, $filters);
 
-            // Sauvegarder la recherche pour analytics
-            // Guard sanctum (token) : pas de dépendance à la session web -> route cacheable.
-            if (strlen($query) >= 2) {
-                $userId = auth('sanctum')->id();
-                $this->searchService->saveSearch($query, $userId);
-            }
+            // Pas de journal ici : la recherche VALIDÉE (avec son nombre de
+            // résultats) est envoyée par la page /recherche. Journaliser cette
+            // route mise en cache doublait les recherches ou les perdait.
 
             return response()->json([
                 'success' => true,

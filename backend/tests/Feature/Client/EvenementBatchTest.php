@@ -126,6 +126,32 @@ class EvenementBatchTest extends TestCase
         $this->assertSame($client->id, Evenement::first()->client_id);
     }
 
+    public function test_les_vues_sont_envoyees_par_le_navigateur(): void
+    {
+        $this->envoyer([
+            ['type' => 'vue_produit', 'produit_id' => $this->produit->id, 'categorie_id' => $this->produit->categorie_id],
+            ['type' => 'vue_categorie', 'categorie_id' => $this->produit->categorie_id],
+        ])->assertNoContent();
+
+        $this->assertSame(1, Evenement::where('type', 'vue_produit')->where('produit_id', $this->produit->id)->count());
+        $this->assertSame(1, Evenement::where('type', 'vue_categorie')->count());
+    }
+
+    /**
+     * Ces routes GET sont mises en cache (nginx + API) : y journaliser ne
+     * comptait que les accès hors cache, et la recherche en double.
+     */
+    public function test_les_routes_catalogue_en_cache_ne_journalisent_plus(): void
+    {
+        $this->withoutMiddleware([\App\Http\Middleware\ApiResponseCache::class]);
+
+        $this->getJson('/api/client/products/robe-wax/page-data')->assertOk();
+        $this->getJson('/api/client/categories/robes/products')->assertOk();
+        $this->getJson('/api/client/search?q=robe')->assertOk();
+
+        $this->assertSame(0, Evenement::count());
+    }
+
     public function test_detection_du_type_d_appareil(): void
     {
         $this->assertSame('mobile', EvenementService::appareil(self::UA_MOBILE));

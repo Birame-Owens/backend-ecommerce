@@ -16,6 +16,8 @@ import clientApi from '@/lib/clientAxios'
  */
 export type EventType =
   | 'debut_session'
+  | 'vue_produit'
+  | 'vue_categorie'
   | 'ajout_panier'
   | 'retrait_panier'
   | 'modification_quantite'
