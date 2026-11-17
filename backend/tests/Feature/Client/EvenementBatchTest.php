@@ -152,6 +152,17 @@ class EvenementBatchTest extends TestCase
         $this->assertSame(0, Evenement::count());
     }
 
+    public function test_variante_et_partage_acceptes(): void
+    {
+        $this->envoyer([
+            ['type' => 'changement_variante', 'produit_id' => $this->produit->id, 'metadata' => ['axe' => 'taille', 'valeur' => 'M']],
+            ['type' => 'partage_produit', 'produit_id' => $this->produit->id, 'metadata' => ['canal' => 'whatsapp']],
+        ])->assertNoContent();
+
+        $this->assertSame(['canal' => 'whatsapp'], Evenement::where('type', 'partage_produit')->value('metadata'));
+        $this->assertSame(1, Evenement::where('type', 'changement_variante')->count());
+    }
+
     public function test_detection_du_type_d_appareil(): void
     {
         $this->assertSame('mobile', EvenementService::appareil(self::UA_MOBILE));

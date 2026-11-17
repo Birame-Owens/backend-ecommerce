@@ -146,6 +146,8 @@ function trackWhatsappClicks(e: MouseEvent) {
   if (isAdminPage()) return
   const link = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null
   if (!link) return
+  // Un partage de produit vers WhatsApp est journalisé comme « partage_produit », pas comme un contact.
+  if (link.closest('[data-partage]')) return
   if (!/(^|\/\/)(wa\.me|api\.whatsapp\.com|web\.whatsapp\.com)/.test(link.href)) return
   logEvent('clic_whatsapp', { metadata: { page: location.pathname } })
 }

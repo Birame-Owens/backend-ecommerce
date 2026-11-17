@@ -108,4 +108,22 @@ describe('events — envoi par paquets', () => {
     expect(events[0]).toMatchObject({ type: 'clic_whatsapp', metadata: { page: '/panier' } })
     a.remove()
   })
+
+  it("un partage de produit vers WhatsApp n'est pas compté comme un contact", async () => {
+    sessionStorage.setItem('ndeya-session-debut', '1')
+    startEventTracking()
+    const menu = document.createElement('div')
+    menu.setAttribute('data-partage', '')
+    const a = document.createElement('a')
+    a.href = 'https://wa.me/?text=Regarde'
+    a.addEventListener('click', (e) => e.preventDefault())
+    menu.appendChild(a)
+    document.body.appendChild(menu)
+
+    a.click()
+    await vi.advanceTimersByTimeAsync(FLUSH_DELAY_MS)
+
+    expect(post).not.toHaveBeenCalled()
+    menu.remove()
+  })
 })
