@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import * as Sentry from '@sentry/react'
 import './styles/global.css'
 import { App } from './App'
+import { startCartSync } from './lib/cartSync'
 
 // Monitoring des erreurs front (no-op si VITE_SENTRY_DSN absent)
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN
@@ -41,6 +42,9 @@ window.addEventListener('vite:preloadError', () => {
     window.location.reload()
   }
 })
+
+// Copie serveur du panier des clients connectés (relances de paniers abandonnés).
+startCartSync()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
