@@ -9,6 +9,7 @@ import { NImage } from '@/components/client/NImage'
 import { DeliveryHint } from '@/components/client/DeliveryHint'
 import { GiftBadge, GiftOfferBlock } from '@/components/client/GiftOffer'
 import { useGiftOffer } from '@/hooks/useGiftOffers'
+import { useDwellTime, useRecoTracking } from '@/hooks/useEventTracking'
 import { NIcon, Stars, WAGlyph } from '@/components/client/NIcon'
 import { useWishlistStore } from '@/store/wishlistStore'
 import { useCartStore, cartCount } from '@/store/cartStore'
@@ -126,6 +127,18 @@ export function ProductDetailPage() {
   const product = data?.product ?? null
   const giftOffer = useGiftOffer(product?.id)
   const related = data?.related_products ?? []
+
+  // Collecte comportementale : temps passé sur la fiche + recommandations vues/cliquées.
+  useDwellTime(product?.id)
+  const relatedShown = related.slice(0, 4)
+  const recoOptions = {
+    source: 'produits_similaires',
+    version: 'categorie_v1', // même catégorie, triés par ventes (pas encore de modèle)
+    produitOrigine: product?.id,
+    produits: relatedShown.map((p) => p.id),
+  }
+  const recoDesktop = useRecoTracking(recoOptions)
+  const recoMobile = useRecoTracking(recoOptions)
 
   useEffect(() => {
     if (product) {
@@ -902,7 +915,7 @@ export function ProductDetailPage() {
 
         {/* ─ Produits similaires desktop ─ */}
         {related.length > 0 && (
-          <section className="mt-16 pt-10 border-t border-line">
+          <section ref={recoDesktop.ref} className="mt-16 pt-10 border-t border-line">
             <div className="flex items-end justify-between mb-8">
               <div>
                 <p className="text-[10px] font-bold tracking-[.2em] uppercase text-accent mb-1">Découvrir</p>
@@ -916,7 +929,11 @@ export function ProductDetailPage() {
               )}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6">
-              {related.slice(0, 4).map((p) => <NProductCard key={p.id} product={p} />)}
+              {relatedShown.map((p, i) => (
+                <div key={p.id} onClickCapture={() => recoDesktop.onClick(p.id, i + 1)}>
+                  <NProductCard product={p} />
+                </div>
+              ))}
             </div>
           </section>
         )}
@@ -924,7 +941,7 @@ export function ProductDetailPage() {
 
       {/* ─ Produits similaires mobile ─ */}
       {related.length > 0 && (
-        <section className="md:hidden px-4 pb-10 pt-6 border-t border-line">
+        <section ref={recoMobile.ref} className="md:hidden px-4 pb-10 pt-6 border-t border-line">
           <div className="flex items-end justify-between mb-5">
             <h2 className="font-serif font-bold text-[22px] text-ink">Vous aimerez aussi</h2>
             {product.category && (
@@ -935,7 +952,11 @@ export function ProductDetailPage() {
             )}
           </div>
           <div className="grid grid-cols-2 gap-3.5">
-            {related.slice(0, 4).map((p) => <NProductCard key={p.id} product={p} />)}
+            {relatedShown.map((p, i) => (
+              <div key={p.id} onClickCapture={() => recoMobile.onClick(p.id, i + 1)}>
+                <NProductCard product={p} />
+              </div>
+            ))}
           </div>
         </section>
       )}

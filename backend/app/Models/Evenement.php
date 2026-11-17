@@ -10,6 +10,8 @@ class Evenement extends Model
 
     protected $fillable = [
         'session_id',
+        'empreinte',
+        'appareil',
         'client_id',
         'type',
         'produit_id',

@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/react'
 import './styles/global.css'
 import { App } from './App'
 import { startCartSync } from './lib/cartSync'
+import { startEventTracking } from './lib/events'
 
 // Monitoring des erreurs front (no-op si VITE_SENTRY_DSN absent)
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN
@@ -45,6 +46,8 @@ window.addEventListener('vite:preloadError', () => {
 
 // Copie serveur du panier des clients connectés (relances de paniers abandonnés).
 startCartSync()
+// Collecte comportementale par paquets (début de visite, clics WhatsApp, envoi à la fermeture).
+startEventTracking()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

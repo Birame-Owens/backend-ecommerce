@@ -74,7 +74,15 @@ export const useCartStore = create<CartState>()(
         return { items: s.items.filter((i) => i.key !== key), _savedAt: now() }
       }),
       updateQty: (key, delta) =>
-        set((s) => ({
+        set((s) => {
+          const item = s.items.find((i) => i.key === key)
+          if (item) {
+            logEvent('modification_quantite', {
+              produit_id: item.id,
+              metadata: { delta, quantite: Math.max(0, item.qty + delta), taille: item.taille, couleur: item.couleur },
+            })
+          }
+          return {
           _savedAt: now(),
           items: s.items
             .map((i) => {
@@ -84,7 +92,8 @@ export const useCartStore = create<CartState>()(
               return { ...i, qty: capped }
             })
             .filter((i) => i.qty > 0),
-        })),
+          }
+        }),
       clearCart: () => set({ items: [], coupon: null, _savedAt: now() }),
       applyCoupon: (coupon) => set({ coupon, _savedAt: now() }),
       removeCoupon: () => set({ coupon: null, _savedAt: now() }),
