@@ -9,6 +9,8 @@ import { useShopStore, buildWaUrl } from '@/store/shopStore'
 import { useDeliveryInfo, computeShipping, isPickupZone } from '@/hooks/useDeliveryInfo'
 import { useCartGifts } from '@/hooks/useGiftOffers'
 import { CartGiftRow } from '@/components/client/GiftOffer'
+import { NAuthModal } from '@/components/client/NAuthModal'
+import { useClientAuthStore } from '@/store/clientAuthStore'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') + ' F' }
 
@@ -264,6 +266,10 @@ export function CartPage() {
   const gifts = useCartGifts(items)
 
   const [pendingItem, setPendingItem] = useState<CartItem | null>(null)
+  // Panier vide et pas connecté (ex. : lien de relance ouvert sur un autre appareil) :
+  // la connexion recharge le panier gardé sur le serveur (voir lib/cartSync).
+  const isLoggedIn = useClientAuthStore((s) => !!s.user && !!s.token)
+  const [authOpen, setAuthOpen] = useState(false)
 
   // Collecte comportementale : consultation du panier et vidage volontaire.
   useEffect(() => {
@@ -387,15 +393,32 @@ export function CartPage() {
             </div>
             <h2 className="font-serif font-bold text-[22px] text-ink mb-2">Votre panier est vide</h2>
             <p className="text-[14px] text-muted mb-7 max-w-xs mx-auto">
-              Ajoutez des produits depuis nos collections pour commencer.
+              {isLoggedIn
+                ? 'Ajoutez des produits depuis nos collections pour commencer.'
+                : 'Vous avez un compte ? Connectez-vous pour retrouver les articles de votre panier.'}
             </p>
-            <button
-              onClick={() => navigate('/categories')}
-              className="inline-flex items-center gap-2 px-7 h-12 rounded-[10px] bg-accent text-white
-                text-[12px] font-semibold tracking-widest uppercase hover:bg-accent-dark transition-colors"
-            >
-              Explorer les collections <NIcon name="arrow" size={14} strokeWidth={2} />
-            </button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              {!isLoggedIn && (
+                <button
+                  onClick={() => setAuthOpen(true)}
+                  className="inline-flex items-center gap-2 px-7 h-12 rounded-[10px] bg-accent text-white
+                    text-[12px] font-semibold tracking-widest uppercase hover:bg-accent-dark transition-colors"
+                >
+                  Se connecter
+                </button>
+              )}
+              <button
+                onClick={() => navigate('/categories')}
+                className={isLoggedIn
+                  ? `inline-flex items-center gap-2 px-7 h-12 rounded-[10px] bg-accent text-white
+                    text-[12px] font-semibold tracking-widest uppercase hover:bg-accent-dark transition-colors`
+                  : `inline-flex items-center gap-2 px-7 h-12 rounded-[10px] border border-line text-ink
+                    text-[12px] font-semibold tracking-widest uppercase hover:border-accent transition-colors`}
+              >
+                Explorer les collections <NIcon name="arrow" size={14} strokeWidth={2} />
+              </button>
+            </div>
+            <NAuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} initialTab="login" />
           </div>
         ) : (
           /* ─── Cart layout ─── */

@@ -27,4 +27,10 @@ class CartSyncController extends Controller
 
         return response()->json(['success' => true, 'data' => $resultat]);
     }
+
+    /** Panier gardé sur le serveur, pour le retrouver sur un autre appareil. */
+    public function show(Request $request, PanierSyncService $service): JsonResponse
+    {
+        return response()->json(['success' => true, 'data' => ['items' => $service->recuperer($request->user())]]);
+    }
 }
