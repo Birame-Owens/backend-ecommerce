@@ -691,10 +691,11 @@ class ProductService
             return ['success' => false, 'message' => 'Produit non trouvé'];
         }
 
-        // Incrémenter les vues hors du cache, en arrière-plan (non bloquant)
+        // Incrémenter les vues hors du cache, en arrière-plan (non bloquant).
+        // L'événement « vue_produit » est journalisé par le navigateur : cette
+        // réponse est mise en cache (nginx + API), un journal ici perdait des vues.
         dispatch(function () use ($cached) {
             Produit::where('id', $cached['product_id'])->increment('nombre_vues');
-            app(EvenementService::class)->log('vue_produit', ['produit_id' => $cached['product_id']]);
         })->afterResponse();
 
         return [

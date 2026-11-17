@@ -118,11 +118,9 @@ class CategoryController extends Controller
                 return response()->json(['success' => false, 'message' => 'Catégorie non trouvée'], 404);
             }
 
-            // Uniquement la 1ère page (page 2, 3... c'est de la pagination, pas
-            // une nouvelle "visite" de catégorie pour les statistiques).
-            if ((int) $request->query('page', 1) <= 1) {
-                $this->evenements->log('vue_categorie', ['categorie_id' => $category->id]);
-            }
+            // La « vue de catégorie » est journalisée par le navigateur (paquets
+            // d'événements) : cette réponse est mise en cache (nginx + API), donc
+            // un journal ici ne comptait que les accès hors cache.
 
             $filters = $request->only(['search', 'min_price', 'max_price', 'on_sale', 'sort', 'direction', 'per_page', 'est_nouveaute', 'est_populaire', 'page']);
             $filters['category'] = $category->id;
